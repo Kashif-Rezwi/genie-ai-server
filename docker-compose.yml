@@ -12,6 +12,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - genie-network
 
   redis:
     image: redis:7-alpine
@@ -19,12 +21,52 @@ services:
     restart: always
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - genie-network
+
+  app:
+    build:
+      context: ./server
+      dockerfile: dockerfile
+    container_name: genie-app
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: development
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: genie_user
+      POSTGRES_PASSWORD: genie_pass
+      POSTGRES_DB: genie_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: uTXDLSkkQdEu0u0iaMWqP+IUou/XZbok9er5BH5lpK8kQIPNEz1XZLShxZJ9kZsMkpRtlfn56LPD7PiayGXXJQ==
+      JWT_EXPIRES_IN: 7d
+      PORT: 4000
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    networks:
+      - genie-network
 
   adminer:
     image: adminer
     restart: always
     ports:
       - "8080:8080"
+    networks:
+      - genie-network
 
 volumes:
   postgres_data:
+  redis_data:
+
+networks:
+  genie-network:
+    driver: bridge
