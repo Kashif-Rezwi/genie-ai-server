@@ -5,9 +5,9 @@ services:
     container_name: genie-postgres
     restart: always
     environment:
-      POSTGRES_USER: genieUser
-      POSTGRES_PASSWORD: geniePassword
-      POSTGRES_DB: genieDB
+      POSTGRES_USER: genie_user
+      POSTGRES_PASSWORD: genie_pass
+      POSTGRES_DB: genie_db
     ports:
       - "5432:5432"
     volumes:

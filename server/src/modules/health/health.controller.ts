@@ -1,7 +1,11 @@
 import { Controller, Get } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 @Controller('health')
 export class HealthController {
+    constructor(@InjectDataSource() private dataSource: DataSource) { }
+
     @Get()
     check() {
         return {
@@ -13,7 +17,11 @@ export class HealthController {
     }
 
     @Get('ready')
-    ready() {
-        return { status: 'ready', database: 'pending' };
+    async ready() {
+        const isDbConnected = this.dataSource.isInitialized;
+        return { 
+            status: isDbConnected ? 'ready' : 'not ready',
+            database: isDbConnected ? 'connected' : 'disconnected'
+        };
     }
 }
