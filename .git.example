@@ -1,0 +1,8 @@
+NODE_ENV=development
+PORT=4000
+POSTGRES_USER=genie_user
+POSTGRES_PASSWORD=genie_pass
+POSTGRES_DB=genie_db
+REDIS_HOST=redis
+REDIS_PORT=6379
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
