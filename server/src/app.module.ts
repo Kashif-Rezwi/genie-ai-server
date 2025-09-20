@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { AIModule } from './modules/ai/ai.module';
 import { databaseConfig } from './config/database.config';
 
 @Module({
@@ -18,6 +19,7 @@ import { databaseConfig } from './config/database.config';
         HealthModule,
         AuthModule,
         UsersModule,
+        AIModule,
     ],
 })
 export class AppModule { }
