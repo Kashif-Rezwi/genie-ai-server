@@ -6,6 +6,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { AIModule } from './modules/ai/ai.module';
 import { CreditsModule } from './modules/credits/credits.module';
+import { ChatModule } from './modules/chat/chat.module';
 import { databaseConfig } from './config/database.config';
 
 @Module({
@@ -22,6 +23,7 @@ import { databaseConfig } from './config/database.config';
         UsersModule,
         CreditsModule,
         AIModule,
+        ChatModule,
     ],
 })
 export class AppModule { }

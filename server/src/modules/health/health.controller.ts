@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import { Chat, Message } from '../../entities';
 
 @Controller('health')
 export class HealthController {
@@ -22,6 +23,41 @@ export class HealthController {
         return { 
             status: isDbConnected ? 'ready' : 'not ready',
             database: isDbConnected ? 'connected' : 'disconnected'
+        };
+    }
+
+    @Get('detailed')
+    async detailedHealthCheck() {
+        const isDbConnected = this.dataSource.isInitialized;
+
+        // Test database operations
+        let dbOperational = false;
+        let totalChats = 0;
+        let totalMessages = 0;
+
+        try {
+            const chatRepo = this.dataSource.getRepository(Chat);
+            const messageRepo = this.dataSource.getRepository(Message);
+
+            totalChats = await chatRepo.count();
+            totalMessages = await messageRepo.count();
+            dbOperational = true;
+        } catch (error) {
+            console.error('Database operation failed:', error);
+        }
+
+        return {
+            status: isDbConnected && dbOperational ? 'healthy' : 'unhealthy',
+            timestamp: new Date().toISOString(),
+            services: {
+                database: isDbConnected ? 'connected' : 'disconnected',
+                operations: dbOperational ? 'operational' : 'failed',
+            },
+            metrics: {
+                totalChats,
+                totalMessages,
+                uptime: process.uptime(),
+            },
         };
     }
 }

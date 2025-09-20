@@ -1,0 +1,25 @@
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ChatController } from './chat.controller';
+import { ChatService } from './services/chat.service';
+import { MessageService } from './services/message.service';
+import { ChatStreamingService } from './services/chat-streaming.service';
+import { AIModule } from '../ai/ai.module';
+import { CreditsModule } from '../credits/credits.module';
+import { Chat, Message, User } from '../../entities';
+
+@Module({
+    imports: [
+        TypeOrmModule.forFeature([Chat, Message, User]),
+        AIModule,
+        CreditsModule,
+    ],
+    controllers: [ChatController],
+    providers: [
+        ChatService,
+        MessageService,
+        ChatStreamingService,
+    ],
+    exports: [ChatService, MessageService],
+})
+export class ChatModule { }
