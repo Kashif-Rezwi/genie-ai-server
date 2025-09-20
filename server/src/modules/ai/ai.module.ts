@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CreditsModule } from '../credits/credits.module';
 import { AIController } from './ai.controller';
 import { AIService } from './services/ai.service';
 import { CreditService } from './services/credit.service';
@@ -9,7 +10,10 @@ import { GroqProvider } from './providers/groq.provider';
 import { User, CreditTransaction } from '../../entities';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([User, CreditTransaction])],
+    imports: [
+        TypeOrmModule.forFeature([User, CreditTransaction]),
+        CreditsModule
+    ],
     controllers: [AIController],
     providers: [
         AIService,

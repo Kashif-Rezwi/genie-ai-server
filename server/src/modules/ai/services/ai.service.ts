@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/com
 import { AIRequestDto } from '../dto/ai-request.dto';
 import { AIResponseDto } from '../dto/ai-response.dto';
 
-import { CreditService } from './credit.service';
+import { CreditsService } from '../../credits/services/credits.service';
 import { OpenAIProvider } from '../providers/openai.provider';
 import { AnthropicProvider } from '../providers/anthropic.provider';
 import { GroqProvider } from '../providers/groq.provider';
@@ -11,7 +11,7 @@ import { getModelConfig, AIModelConfig } from '../../../config/ai.config';
 @Injectable()
 export class AIService {
     constructor(
-        private readonly creditService: CreditService,
+        private readonly creditsService: CreditsService,
         private readonly openaiProvider: OpenAIProvider,
         private readonly anthropicProvider: AnthropicProvider,
         private readonly groqProvider: GroqProvider,
@@ -26,13 +26,15 @@ export class AIService {
             throw new BadRequestException(`Model ${modelId} not supported`);
         }
 
-        // Pre-check credits for paid models
+        // Check credits for paid models using enhanced service
         if (!modelConfig.isFree) {
             const estimatedCost = this.estimateCredits(request, modelConfig);
-            const hasCredits = await this.creditService.checkSufficientCredits(userId, estimatedCost);
+            const balance = await this.creditsService.getUserBalance(userId);
 
-            if (!hasCredits) {
-                throw new ForbiddenException('Insufficient credits');
+            if (balance < estimatedCost) {
+                throw new ForbiddenException(
+                    `Insufficient credits. Required: ${estimatedCost}, Available: ${balance}`
+                );
             }
         }
 
@@ -47,16 +49,20 @@ export class AIService {
             throw new BadRequestException(`AI generation failed: ${error.message}`);
         }
 
-        // Calculate and deduct credits
-        const creditsUsed = this.calculateCreditsUsed(totalTokens, modelConfig);
+        // Calculate and deduct credits using enhanced service
+        const creditsUsed = this.calculateCreditsUsed(response.usage.totalTokens, modelConfig);
         response.creditsUsed = creditsUsed;
 
         if (!modelConfig.isFree && creditsUsed > 0) {
-            await this.creditService.deductCredits(
+            await this.creditsService.deductCredits(
                 userId,
                 creditsUsed,
                 'AI generation',
-                modelConfig.name
+                {
+                    model: modelConfig.name,
+                    tokens: response.usage.totalTokens,
+                    provider: modelConfig.provider,
+                }
             );
         }
 
@@ -72,13 +78,15 @@ export class AIService {
             throw new BadRequestException(`Model ${modelId} not supported`);
         }
 
-        // Pre-check credits for paid models
+        // Check credits for paid models using enhanced service
         if (!modelConfig.isFree) {
             const estimatedCost = this.estimateCredits(request, modelConfig);
-            const hasCredits = await this.creditService.checkSufficientCredits(userId, estimatedCost);
+            const balance = await this.creditsService.getUserBalance(userId);
 
-            if (!hasCredits) {
-                throw new ForbiddenException('Insufficient credits');
+            if (balance < estimatedCost) {
+                throw new ForbiddenException(
+                    `Insufficient credits. Required: ${estimatedCost}, Available: ${balance}`
+                );
             }
         }
 
@@ -104,11 +112,15 @@ export class AIService {
                         const creditsUsed = this.calculateCreditsUsed(totalTokens, modelConfig);
 
                         try {
-                            await this.creditService.deductCredits(
+                            await this.creditsService.deductCredits(
                                 userId,
                                 creditsUsed,
                                 'AI streaming generation',
-                                modelConfig.name
+                                {
+                                    model: modelConfig.name,
+                                    tokens: totalTokens,
+                                    provider: modelConfig.provider,
+                                }
                             );
 
                             // Send credit info to client
@@ -116,7 +128,7 @@ export class AIService {
                                 id: `credits-${Date.now()}`,
                                 creditsUsed,
                                 totalTokens,
-                                remainingBalance: await this.creditService.getUserBalance(userId),
+                                remainingBalance: await this.creditsService.getUserBalance(userId),
                                 done: true,
                                 type: 'credit_update',
                             };

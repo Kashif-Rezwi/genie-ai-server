@@ -5,6 +5,7 @@ import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { AIModule } from './modules/ai/ai.module';
+import { CreditsModule } from './modules/credits/credits.module';
 import { databaseConfig } from './config/database.config';
 
 @Module({
@@ -19,6 +20,7 @@ import { databaseConfig } from './config/database.config';
         HealthModule,
         AuthModule,
         UsersModule,
+        CreditsModule,
         AIModule,
     ],
 })
