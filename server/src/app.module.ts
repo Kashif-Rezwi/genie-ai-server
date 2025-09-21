@@ -13,6 +13,7 @@ import { SecurityModule } from './modules/security/security.module';
 import { RateLimitGuard } from './modules/security/guards/rate-limit.guard';
 import { SecurityMiddleware } from './modules/security/middleware/security.middleware';
 import { ValidationMiddleware } from './modules/security/middleware/validation.middleware';
+import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { databaseConfig } from './config/database.config';
 
@@ -25,6 +26,7 @@ import { databaseConfig } from './config/database.config';
         TypeOrmModule.forRootAsync({
             useFactory: databaseConfig,
         }),
+        MonitoringModule,
         SecurityModule,
         HealthModule,
         AuthModule,

@@ -6,6 +6,8 @@ import { RateLimitService } from './services/rate-limit.service';
 import { SecurityService } from './services/security.service';
 import { ApiKeyService } from './services/api-key.service';
 import { SecurityController } from './security.controller';
+import { SecurityMiddleware } from './middleware/security.middleware';
+import { ValidationMiddleware } from './middleware/validation.middleware';
 import { User, ApiKey } from '../../entities';
 
 @Global()
@@ -27,6 +29,8 @@ import { User, ApiKey } from '../../entities';
         RateLimitService,
         SecurityService,
         ApiKeyService,
+        SecurityMiddleware,
+        ValidationMiddleware,
     ],
     exports: [
         RedisService,
