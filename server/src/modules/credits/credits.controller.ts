@@ -3,6 +3,7 @@ import { CreditsService } from './services/credits.service';
 import { CreditsAnalyticsService } from './services/credits-analytics.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RateLimit, RateLimitGuard } from '../security/guards/rate-limit.guard';
 import {
     AddCreditsDto,
     TransferCreditsDto,
@@ -12,7 +13,7 @@ import {
 import { getActivePackages } from '../../config/credit-packages.config';
 
 @Controller('credits')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RateLimitGuard)
 export class CreditsController {
     constructor(
         private readonly creditsService: CreditsService,

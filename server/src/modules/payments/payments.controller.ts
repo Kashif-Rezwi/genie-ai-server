@@ -20,6 +20,7 @@ import { WebhookService } from './services/webhook.service';
 import { PaymentHistoryService } from './services/payment-history.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RateLimit, RateLimitGuard } from '../security/guards/rate-limit.guard';
 import {
     CreatePaymentOrderDto,
     VerifyPaymentDto,
@@ -29,6 +30,7 @@ import {
 import { getActivePackages } from '../../config/credit-packages.config';
 
 @Controller('payments')
+@UseGuards(RateLimitGuard)
 export class PaymentsController {
     constructor(
         private readonly paymentsService: PaymentsService,
@@ -48,6 +50,7 @@ export class PaymentsController {
 
     @Post('create-order')
     @UseGuards(JwtAuthGuard)
+    @RateLimit('payment', 5) // 5 payment orders per minute
     async createPaymentOrder(
         @CurrentUser() user: any,
         @Body(ValidationPipe) createOrderDto: CreatePaymentOrderDto
@@ -57,6 +60,7 @@ export class PaymentsController {
 
     @Post('verify')
     @UseGuards(JwtAuthGuard)
+    @RateLimit('payment', 10) // 10 payment verifications per minute
     async verifyPayment(
         @Body(ValidationPipe) verifyDto: VerifyPaymentDto
     ) {

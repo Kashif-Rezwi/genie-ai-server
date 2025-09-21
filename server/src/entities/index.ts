@@ -3,3 +3,4 @@ export { Chat } from './chat.entity';
 export { Message, MessageRole } from './message.entity';
 export { CreditTransaction, TransactionType } from './credit-transaction.entity';
 export { Payment, PaymentStatus, PaymentMethod } from './payment.entity';
+export { ApiKey, ApiKeyStatus, ApiKeyType } from './api-key.entity';

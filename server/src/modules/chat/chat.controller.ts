@@ -20,6 +20,7 @@ import { MessageService } from './services/message.service';
 import { ChatStreamingService } from './services/chat-streaming.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RateLimit, RateLimitGuard } from '../security/guards/rate-limit.guard';
 import {
     CreateChatDto,
     UpdateChatDto,
@@ -28,7 +29,7 @@ import {
 } from './dto/chat.dto';
 
 @Controller('chat')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RateLimitGuard)
 export class ChatController {
     constructor(
         private readonly chatService: ChatService,
@@ -37,6 +38,7 @@ export class ChatController {
     ) { }
 
     @Post()
+    @RateLimit('chat')
     async createChat(
         @CurrentUser() user: any,
         @Body(ValidationPipe) createChatDto: CreateChatDto
@@ -114,6 +116,7 @@ export class ChatController {
     }
 
     @Post(':chatId/message')
+    @RateLimit('ai')
     async sendMessage(
         @CurrentUser() user: any,
         @Param('chatId') chatId: string,
@@ -124,6 +127,7 @@ export class ChatController {
     }
 
     @Post(':chatId/stream')
+    @RateLimit('ai')
     async streamMessage(
         @CurrentUser() user: any,
         @Param('chatId') chatId: string,

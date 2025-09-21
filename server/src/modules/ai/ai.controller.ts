@@ -6,6 +6,7 @@ import { AIRequestDto } from './dto/ai-request.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AI_MODELS, getFreeModels, getPaidModels } from '../../config/ai.config';
+import { RateLimit } from '../security/guards/rate-limit.guard';
 
 @Controller('ai')
 @UseGuards(JwtAuthGuard)
@@ -16,6 +17,7 @@ export class AIController {
     ) { }
 
     @Get('models')
+    @RateLimit('api')
     async getAvailableModels() {
         return {
             all: Object.values(AI_MODELS),
