@@ -21,6 +21,6 @@ import { Payment } from '../../entities/payment.entity';
         WebhookService,
         PaymentHistoryService,
     ],
-    exports: [PaymentsService, RazorpayService],
+    exports: [PaymentsService, RazorpayService, WebhookService],
 })
 export class PaymentsModule { }

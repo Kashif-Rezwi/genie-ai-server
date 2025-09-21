@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { EmailService } from '../jobs/services/email.service';
 
 export interface JwtPayload {
     sub: string;
@@ -23,6 +24,7 @@ export class AuthService {
     constructor(
         private readonly usersService: UsersService,
         private readonly jwtService: JwtService,
+        private readonly emailService: EmailService,
     ) { }
 
     async register(registerDto: RegisterDto): Promise<AuthResponse> {
@@ -40,6 +42,17 @@ export class AuthService {
         // Generate JWT token
         const payload: JwtPayload = { sub: user.id, email: user.email };
         const accessToken = this.jwtService.sign(payload);
+
+        // Send welcome email
+        try {
+            await this.emailService.sendWelcomeEmail(user.email, {
+                name: user.email.split('@')[0], // Use email prefix as name
+                creditsAdded: user.creditsBalance, // Assuming new users get some free credits
+            });
+        } catch (error) {
+            // Log error but don't fail registration
+            console.error('Failed to send welcome email:', error);
+        }
 
         return {
             user: {

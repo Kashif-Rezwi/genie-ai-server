@@ -19,6 +19,9 @@ export class User {
     @Column({ default: true })
     isActive: boolean;
 
+    @Column({ default: 'user' })
+    role: string;
+
     @OneToMany(() => Chat, chat => chat.user)
     chats: Chat[];
 

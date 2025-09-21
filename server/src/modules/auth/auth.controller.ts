@@ -7,23 +7,24 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RateLimit, RateLimitGuard } from '../security/guards/rate-limit.guard';
 
 @Controller('auth')
-@UseGuards(JwtAuthGuard, RateLimitGuard)
 export class AuthController {
     constructor(private readonly authService: AuthService) { }
 
     @Post('register')
+    @UseGuards(RateLimitGuard)
     @RateLimit('api')
     async register(@Body(ValidationPipe) registerDto: RegisterDto) {
         return this.authService.register(registerDto);
     }
 
     @Post('login')
+    @UseGuards(RateLimitGuard)
     @RateLimit('api')
     async login(@Body(ValidationPipe) loginDto: LoginDto) {
         return this.authService.login(loginDto);
     }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RateLimitGuard)
     @Get('profile')
     async getProfile(@CurrentUser() user: any) {
         return {
@@ -33,7 +34,7 @@ export class AuthController {
         };
     }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RateLimitGuard)
     @Post('logout')
     async logout() {
         // JWT tokens are stateless, so logout is handled client-side
