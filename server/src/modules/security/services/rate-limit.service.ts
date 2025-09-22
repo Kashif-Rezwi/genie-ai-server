@@ -1,9 +1,10 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
-import { RedisService } from '../../../config/redis.config';
+import { RedisService } from '../../redis/redis.service';
+import { getRateLimitConfig } from '../../../config';
 
 export interface RateLimitConfig {
-    keyPrefix: string;
+    keyPrefix?: string;
     points: number; // Requests allowed
     duration: number; // Per duration in seconds
     blockDuration?: number; // Block duration in seconds
@@ -205,21 +206,9 @@ export class RateLimitService {
     }
 
     private getConfigForLimiter(limiterName: string): RateLimitConfig {
-        // Return configuration for rate limiter
-        const configs = {
-            'global': { points: 1000, duration: 60 },
-            'free_user': { points: 50, duration: 60 },
-            'basic_user': { points: 200, duration: 60 },
-            'pro_user': { points: 500, duration: 60 },
-            'admin_user': { points: 2000, duration: 60 },
-            'ai_free': { points: 10, duration: 3600 },
-            'ai_paid': { points: 100, duration: 3600 },
-            'chat_creation': { points: 20, duration: 3600 },
-            'payment': { points: 5, duration: 300 },
-        };
-
-        return configs[limiterName] || { points: 100, duration: 60 };
-    }
+        // Use centralized rate limit configuration
+        return getRateLimitConfig(limiterName);
+    }                                         
 
     async resetRateLimit(limiterName: string, key: string): Promise<void> {
         const rateLimiter = this.rateLimiters.get(limiterName);

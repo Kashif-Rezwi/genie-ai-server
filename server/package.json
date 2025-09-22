@@ -1,12 +1,16 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/main.js",
   "scripts": {
     "start": "node dist/main",
     "start:dev": "nodemon src/main.ts",
-    "build": "tsc",
+    "build": "nest build",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "lint": "eslint \"{src,test}/**/*.ts\" --fix",
     "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
     "seed": "ts-node src/database/seeds/user.seed.ts"
   },
   "keywords": [],
@@ -33,7 +37,6 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "cron": "^4.3.3",
-    "crypto": "^1.0.1",
     "eventsource-parser": "^3.0.6",
     "express-rate-limit": "^8.1.0",
     "express-status-monitor": "^1.3.4",
@@ -48,7 +51,6 @@
     "prometheus-api-metrics": "^4.0.0",
     "rate-limiter-flexible": "^7.3.2",
     "razorpay": "^2.9.6",
-    "redis": "^5.8.2",
     "typeorm": "^0.3.26",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
@@ -65,11 +67,18 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "^1.0.38",
     "@types/pg": "^8.15.5",
+    "@types/supertest": "^6.0.2",
+    "eslint": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
     "jest": "^30.1.3",
     "nodemon": "^3.1.10",
+    "prettier": "^3.0.0",
     "supertest": "^7.1.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   },
-  "description": ""
+  "description": "Genie AI Wrapper - A comprehensive AI API wrapper with authentication, monitoring, and payment processing"
 }

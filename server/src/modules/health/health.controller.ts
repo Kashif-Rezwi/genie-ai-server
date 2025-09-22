@@ -1,6 +1,7 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Chat, Message } from '../../entities';
 
 @Controller('health')
@@ -27,6 +28,7 @@ export class HealthController {
     }
 
     @Get('detailed')
+    @UseGuards(JwtAuthGuard)
     async detailedHealthCheck() {
         const isDbConnected = this.dataSource.isInitialized;
 

@@ -10,7 +10,7 @@ import {
     BatchAddCreditsDto,
     TransactionHistoryQueryDto
 } from './dto/credits.dto';
-import { getActivePackages } from '../../config/credit-packages.config';
+import { getActivePackages } from '../../config';
 
 @Controller('credits')
 @UseGuards(JwtAuthGuard, RateLimitGuard)

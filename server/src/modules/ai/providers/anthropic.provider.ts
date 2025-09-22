@@ -74,9 +74,9 @@ export class AnthropicProvider {
                 content: result.text,
                 model: request.model || 'claude-3-haiku-20240307',
                 usage: {
-                    promptTokens: result.usage.inputTokens,
-                    completionTokens: result.usage.outputTokens,
-                    totalTokens: result.usage.totalTokens,
+                    promptTokens: result.usage.inputTokens || 0,
+                    completionTokens: result.usage.outputTokens || 0,
+                    totalTokens: result.usage.totalTokens || 0,
                 },
                 creditsUsed: 0,
                 finishReason: result.finishReason || 'stop',

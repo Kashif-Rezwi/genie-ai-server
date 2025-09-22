@@ -1,7 +1,7 @@
 import { Module, Global } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { RedisService } from '../../config/redis.config';
+import { RedisService } from '../redis/redis.service';
 import { RateLimitService } from './services/rate-limit.service';
 import { SecurityService } from './services/security.service';
 import { ApiKeyService } from './services/api-key.service';
@@ -9,6 +9,9 @@ import { SecurityController } from './security.controller';
 import { SecurityMiddleware } from './middleware/security.middleware';
 import { ValidationMiddleware } from './middleware/validation.middleware';
 import { User, ApiKey } from '../../entities';
+import { securityConfig } from '../../config';
+
+const config = securityConfig();
 
 @Global()
 @Module({
@@ -16,8 +19,8 @@ import { User, ApiKey } from '../../entities';
         TypeOrmModule.forFeature([User, ApiKey]),
         ThrottlerModule.forRoot({
             throttlers: [{
-                ttl: parseInt(process.env.RATE_LIMIT_TTL) || 60,
-                limit: parseInt(process.env.RATE_LIMIT_MAX) || 100,
+                ttl: config.rateLimit.ttl,
+                limit: config.rateLimit.max,
             }]
         }),
     ],

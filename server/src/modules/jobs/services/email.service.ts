@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { JobService } from './job.service';
+import { emailConfig } from '../../../config';
 
 export interface EmailTemplate {
     subject: string;
@@ -11,6 +12,7 @@ export interface EmailTemplate {
 @Injectable()
 export class EmailService {
     private readonly logger = new Logger(EmailService.name);
+    private readonly config = emailConfig();
     private transporter: nodemailer.Transporter;
 
     constructor(private readonly jobService: JobService) {
@@ -19,12 +21,12 @@ export class EmailService {
 
     private initializeTransporter() {
         this.transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT) || 587,
-            secure: process.env.SMTP_SECURE === 'true',
+            host: this.config.smtp.host,
+            port: this.config.smtp.port,
+            secure: this.config.smtp.secure,
             auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASSWORD,
+                user: this.config.smtp.auth.user,
+                pass: this.config.smtp.auth.pass,
             },
         });
 
@@ -47,7 +49,7 @@ export class EmailService {
     ): Promise<any> {
         try {
             const mailOptions = {
-                from: process.env.EMAIL_FROM,
+                from: this.config.from,
                 to: Array.isArray(to) ? to.join(', ') : to,
                 subject,
                 html,
@@ -217,7 +219,7 @@ export class EmailService {
               <li>Track your usage and costs</li>
             </ul>
           </div>
-          <p><a href="${process.env.APP_URL}/dashboard" style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Start Chatting Now</a></p>
+          <p><a href="${this.config.appUrl}/dashboard" style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Start Chatting Now</a></p>
           <p>If you have any questions, feel free to reach out to our support team.</p>
           <p>Best regards,<br>The Genie AI Team</p>
         </div>
@@ -243,7 +245,7 @@ export class EmailService {
           </div>
 
           <p>Your credits are now available and ready to use!</p>
-          <p><a href="${process.env.APP_URL}/dashboard" style="background: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Start Using Your Credits</a></p>
+          <p><a href="${this.config.appUrl}/dashboard" style="background: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Start Using Your Credits</a></p>
           
           <p>Thank you for choosing Genie AI!</p>
         </div>
@@ -275,7 +277,7 @@ export class EmailService {
             <li>Contact our support team for assistance</li>
           </ul>
 
-          <p><a href="${process.env.APP_URL}/credits/packages" style="background: #DC2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Try Again</a></p>
+          <p><a href="${this.config.appUrl}/credits/packages" style="background: #DC2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Try Again</a></p>
           
           <p>If you need help, please contact our support team with the order ID above.</p>
         </div>
@@ -300,7 +302,7 @@ export class EmailService {
           
           ${data.recommendedPackage ? `<p><strong>Recommended:</strong> ${data.recommendedPackage} package for the best value!</p>` : ''}
 
-          <p><a href="${process.env.APP_URL}/credits/packages" style="background: #F59E0B; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Buy Credits Now</a></p>
+          <p><a href="${this.config.appUrl}/credits/packages" style="background: #F59E0B; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Buy Credits Now</a></p>
         </div>
       `,
         };
@@ -330,7 +332,7 @@ export class EmailService {
 
           <p>If this was you, no action is needed. If you don't recognize this activity, please secure your account immediately.</p>
           
-          <p><a href="${process.env.APP_URL}/security" style="background: #DC2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Review Security Settings</a></p>
+          <p><a href="${this.config.appUrl}/security" style="background: #DC2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Review Security Settings</a></p>
         </div>
       `,
         };
@@ -380,7 +382,7 @@ export class EmailService {
           </div>
 
           <p>Keep exploring the power of AI with Genie!</p>
-          <p><a href="${process.env.APP_URL}/analytics" style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">View Detailed Analytics</a></p>
+          <p><a href="${this.config.appUrl}/analytics" style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">View Detailed Analytics</a></p>
         </div>
       `,
         };

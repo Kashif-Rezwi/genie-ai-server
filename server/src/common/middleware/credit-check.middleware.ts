@@ -23,7 +23,7 @@ export class CreditCheckMiddleware implements NestMiddleware {
             const balance = await this.creditsService.getUserBalance(user.id);
 
             // Add credit info to request for downstream use
-            req['creditInfo'] = {
+            (req as any).creditInfo = {
                 balance,
                 userId: user.id,
             };

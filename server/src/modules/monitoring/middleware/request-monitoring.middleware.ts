@@ -31,7 +31,7 @@ export class RequestMonitoringMiddleware implements NestMiddleware {
 
         // Override res.end to capture response data
         const originalEnd = res.end;
-        res.end = function (chunk?: any) {
+        res.end = function (chunk?: any, encoding?: any, cb?: any) {
             const responseTime = Date.now() - startTime;
 
             // Record performance metrics
@@ -57,8 +57,8 @@ export class RequestMonitoringMiddleware implements NestMiddleware {
             // Log request completion
             this.loggingService.logRequest(req, res, responseTime);
 
-            // Call original end method
-            originalEnd.call(res, chunk);
+            // Call original end method and return its result
+            return originalEnd.call(res, chunk, encoding, cb);
         }.bind(this);
 
         next();

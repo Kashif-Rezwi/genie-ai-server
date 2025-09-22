@@ -1,11 +1,14 @@
 import { Injectable, NestMiddleware, BadRequestException } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
+import { securityConfig } from '../../../config';
 
 @Injectable()
 export class ValidationMiddleware implements NestMiddleware {
+    private readonly config = securityConfig();
+
     use(req: Request, res: Response, next: NextFunction) {
         // Check request size
-        const maxSize = parseInt(process.env.MAX_REQUEST_SIZE?.replace('mb', '')) * 1024 * 1024 || 10485760; // 10MB default
+        const maxSize = this.config.request.maxSize;
 
         if (req.headers['content-length'] && parseInt(req.headers['content-length']) > maxSize) {
             throw new BadRequestException('Request entity too large');

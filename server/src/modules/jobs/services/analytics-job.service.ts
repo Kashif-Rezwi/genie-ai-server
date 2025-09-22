@@ -3,12 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { JobService } from './job.service';
-import { RedisService } from '../../../config/redis.config';
+import { RedisService } from '../../redis/redis.service';
 import { User, Chat, Message, Payment, CreditTransaction } from '../../../entities';
+import { monitoringConfig } from '../../../config';
 
 @Injectable()
 export class AnalyticsJobService {
     private readonly logger = new Logger(AnalyticsJobService.name);
+    private readonly config = monitoringConfig();
 
     constructor(
         @InjectRepository(User)
@@ -27,7 +29,7 @@ export class AnalyticsJobService {
 
     @Cron(CronExpression.EVERY_DAY_AT_2AM)
     async scheduleDailyAnalytics() {
-        if (process.env.ENABLE_CRON_JOBS === 'true') {
+        if (this.config.jobs.enabled) {
             await this.jobService.addAnalyticsJob({
                 type: 'daily',
                 metrics: ['users', 'chats', 'messages', 'credits', 'payments'],
@@ -39,7 +41,7 @@ export class AnalyticsJobService {
 
     @Cron(CronExpression.EVERY_DAY_AT_3AM)
     async scheduleWeeklyAnalytics() {
-        if (process.env.ENABLE_CRON_JOBS === 'true') {
+        if (this.config.jobs.enabled) {
             await this.jobService.addAnalyticsJob({
                 type: 'weekly',
                 metrics: ['user_growth', 'revenue', 'model_usage', 'retention'],
@@ -51,7 +53,7 @@ export class AnalyticsJobService {
 
     @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_MIDNIGHT)
     async scheduleMonthlyAnalytics() {
-        if (process.env.ENABLE_CRON_JOBS === 'true') {
+        if (this.config.jobs.enabled) {
             await this.jobService.addAnalyticsJob({
                 type: 'monthly',
                 metrics: ['all'],

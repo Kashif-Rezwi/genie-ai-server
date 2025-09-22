@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, ForbiddenException, NotFoundException 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Between } from 'typeorm';
 import { User, CreditTransaction, TransactionType } from '../../../entities';
-import { getPackageById, calculateTotalCredits } from '../../../config/credit-packages.config';
+import { getPackageById, calculateTotalCredits } from '../../../config';
 
 export interface CreditOperationResult {
     success: boolean;
@@ -62,7 +62,7 @@ export class CreditsService {
             } catch (error) {
                 results.push({
                     success: false,
-                    transaction: null,
+                    transaction: undefined as unknown as CreditTransaction,
                     newBalance: 0,
                 });
             }

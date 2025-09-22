@@ -6,10 +6,12 @@ import { CreditsService } from '../../credits/services/credits.service';
 import { OpenAIProvider } from '../providers/openai.provider';
 import { AnthropicProvider } from '../providers/anthropic.provider';
 import { GroqProvider } from '../providers/groq.provider';
-import { getModelConfig, AIModelConfig } from '../../../config/ai.config';
+import { getModelConfig, AIModelConfig, aiProvidersConfig } from '../../../config';
 
 @Injectable()
 export class AIService {
+    private readonly config = aiProvidersConfig();
+
     constructor(
         private readonly creditsService: CreditsService,
         private readonly openaiProvider: OpenAIProvider,
@@ -19,7 +21,7 @@ export class AIService {
 
     // Non-streaming endpoint (collects stream internally)
     async generateResponse(userId: string, request: AIRequestDto): Promise<AIResponseDto> {
-        const modelId = request.model || process.env.DEFAULT_AI_MODEL || 'llama-3.1-8b-instant';
+        const modelId = request.model || this.config.defaultModel;
         const modelConfig = getModelConfig(modelId);
 
         if (!modelConfig) {
@@ -71,7 +73,7 @@ export class AIService {
 
     // Streaming endpoint with real-time credit deduction
     async *streamResponse(userId: string, request: AIRequestDto): AsyncGenerator<any, void, unknown> {
-        const modelId = request.model || process.env.DEFAULT_AI_MODEL || 'llama-3.1-8b-instant';
+        const modelId = request.model || this.config.defaultModel;
         const modelConfig = getModelConfig(modelId);
 
         if (!modelConfig) {

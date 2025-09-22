@@ -5,7 +5,7 @@ import { CreditService } from './services/credit.service';
 import { AIRequestDto } from './dto/ai-request.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { AI_MODELS, getFreeModels, getPaidModels } from '../../config/ai.config';
+import { AI_MODELS, getFreeModels, getPaidModels } from '../../config';
 import { RateLimit } from '../security/guards/rate-limit.guard';
 
 @Controller('ai')

@@ -79,9 +79,9 @@ export class OpenAIProvider {
                 content: result.text,
                 model: request.model || 'gpt-3.5-turbo',
                 usage: {
-                    promptTokens: result.usage.inputTokens,
-                    completionTokens: result.usage.outputTokens,
-                    totalTokens: result.usage.totalTokens,
+                    promptTokens: result.usage.inputTokens || 0,
+                    completionTokens: result.usage.outputTokens || 0,
+                    totalTokens: result.usage.totalTokens || 0,
                 },
                 creditsUsed: 0, // Will be calculated by credit service
                 finishReason: result.finishReason || 'stop',

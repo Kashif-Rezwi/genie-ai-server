@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { User } from '../../../entities';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
+import { securityConfig } from '../../../config';
 
 export interface SecurityEvent {
     userId?: string;
@@ -16,14 +17,15 @@ export interface SecurityEvent {
 
 @Injectable()
 export class SecurityService {
+    private readonly config = securityConfig();
+
     constructor(
         @InjectRepository(User)
         private readonly userRepository: Repository<User>,
     ) { }
 
     async hashPassword(password: string): Promise<string> {
-        const saltRounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
-        return bcrypt.hash(password, saltRounds);
+        return bcrypt.hash(password, this.config.bcrypt.rounds);
     }
 
     async comparePassword(password: string, hash: string): Promise<boolean> {
