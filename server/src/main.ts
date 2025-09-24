@@ -1,9 +1,6 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { appConfig } from './config';
-import helmet from 'helmet';
 
 async function bootstrap() {
     // Create NestJS app instance (like express())
@@ -19,21 +16,6 @@ async function bootstrap() {
 
     // Add 'api' prefix to all routes (e.g., /users becomes /api/users)
     app.setGlobalPrefix('api');
-
-    // Global validation pipe (validates incoming data)
-    app.useGlobalPipes(new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-        disableErrorMessages: config.nodeEnv === 'production',
-        validationError: {
-            target: false,
-            value: false,
-        },
-    }));
-
-    // Global error handler (catches all unhandled errors)
-    app.useGlobalFilters(new AllExceptionsFilter());
 
     // Start server on configured port
     const port = config.port;
