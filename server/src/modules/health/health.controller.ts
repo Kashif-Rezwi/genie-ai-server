@@ -9,21 +9,15 @@ export class HealthController {
     constructor(@InjectDataSource() private dataSource: DataSource) { }
 
     @Get()
-    check() {
-        return {
-            status: 'ok',
-            timestamp: new Date().toISOString(),
-            service: 'genie-api',
-            version: '1.0.0'
-        };
-    }
-
-    @Get('ready')
-    async ready() {
+    async healthCheck() {
         const isDbConnected = this.dataSource.isInitialized;
-        return { 
-            status: isDbConnected ? 'ready' : 'not ready',
-            database: isDbConnected ? 'connected' : 'disconnected'
+
+        return {
+            service: 'genie-api',
+            apiStatus: 'running',
+            databaseStatus: isDbConnected ? 'connected' : 'disconnected',
+            timestamp: new Date().toISOString(),
+            version: '1.0.0',
         };
     }
 
@@ -49,7 +43,9 @@ export class HealthController {
         }
 
         return {
-            status: isDbConnected && dbOperational ? 'healthy' : 'unhealthy',
+            apiStatus: 'running',
+            databaseStatus: isDbConnected ? 'connected' : 'disconnected',
+            operationsStatus: dbOperational ? 'operational' : 'failed',
             timestamp: new Date().toISOString(),
             services: {
                 database: isDbConnected ? 'connected' : 'disconnected',
