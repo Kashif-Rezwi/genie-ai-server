@@ -4,7 +4,7 @@ import { Job } from 'bullmq';
 import { AnalyticsJobData } from '../interfaces/job.interface';
 import { QUEUE_NAMES } from '../constants/queue-names';
 import { AnalyticsJobService } from '../services/analytics-job.service';
-import { RedisService } from '../../../config/redis.config';
+import { RedisService } from '../../../modules/redis/redis.service';
 
 @Processor(QUEUE_NAMES.ANALYTICS)
 export class AnalyticsJobProcessor extends WorkerHost {

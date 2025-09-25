@@ -6,10 +6,12 @@ import { AIService } from '../../ai/services/ai.service';
 import { CreditsService } from '../../credits/services/credits.service';
 import { SendMessageDto } from '../dto/chat.dto';
 import { StreamingChatResponseDto } from '../dto/message.dto';
-import { getModelConfig } from '../../../config/ai.config';
+import { getModelConfig, aiProvidersConfig } from '../../../config';
 
 @Injectable()
 export class ChatStreamingService {
+    private readonly config = aiProvidersConfig();
+
     constructor(
         private readonly chatService: ChatService,
         private readonly messageService: MessageService,
@@ -45,7 +47,7 @@ export class ChatStreamingService {
             }
 
             // Step 5: Prepare AI request
-            const modelId = model || process.env.DEFAULT_AI_MODEL || 'claude-3-haiku-20240307';
+            const modelId = model || this.config.defaultModel;
             const modelConfig = getModelConfig(modelId);
 
             if (!modelConfig) {
@@ -193,7 +195,7 @@ export class ChatStreamingService {
         // Step 3: Generate AI response (non-streaming)
         const aiRequest = {
             messages: conversationHistory,
-            model: model || process.env.DEFAULT_AI_MODEL || 'claude-3-haiku-20240307',
+            model: model || this.config.defaultModel,
             maxTokens: 1000,
             temperature: 0.7,
         };

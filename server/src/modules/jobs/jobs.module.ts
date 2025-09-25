@@ -18,7 +18,10 @@ import { SecurityModule } from '../security/security.module';
 import { AIModule } from '../ai/ai.module';
 import { ChatModule } from '../chat/chat.module';
 import { User, Chat, Message, Payment, CreditTransaction } from '../../entities';
+import { redisConfig } from '../../config';
 import { QUEUE_NAMES } from './constants/queue-names';
+
+const config = redisConfig();
 
 @Module({
     imports: [
@@ -26,10 +29,10 @@ import { QUEUE_NAMES } from './constants/queue-names';
         TypeOrmModule.forFeature([User, Chat, Message, Payment, CreditTransaction]),
         BullModule.forRoot({
             connection: {
-                host: process.env.REDIS_HOST || 'localhost',
-                port: parseInt(process.env.REDIS_PORT) || 6379,
-                password: process.env.REDIS_PASSWORD || undefined,
-                db: parseInt(process.env.REDIS_JOBS_DB) || 1, // Separate DB for jobs
+                host: config.host,
+                port: config.port,
+                password: config.password,
+                db: config.jobsDb, // Separate DB for jobs
             },
             defaultJobOptions: {
                 removeOnComplete: 50, // Keep last 50 completed jobs

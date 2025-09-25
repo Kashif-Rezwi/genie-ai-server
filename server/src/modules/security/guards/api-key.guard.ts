@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { SetMetadata } from '@nestjs/common';
 import { ApiKeyService } from '../services/api-key.service';
 import { SecurityService } from '../services/security.service';
+import { securityConfig } from '../../../config';
 
 export const API_KEY_REQUIRED = 'apiKeyRequired';
 export const RequireApiKey = (permission?: string) =>
@@ -10,6 +11,8 @@ export const RequireApiKey = (permission?: string) =>
 
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
+    private readonly config = securityConfig();
+
     constructor(
         private readonly apiKeyService: ApiKeyService,
         private readonly securityService: SecurityService,
@@ -27,8 +30,7 @@ export class ApiKeyGuard implements CanActivate {
         }
 
         const request = context.switchToHttp().getRequest();
-        const apiKeyHeader = process.env.API_KEY_HEADER || 'x-api-key';
-        const rawApiKey = request.headers[apiKeyHeader];
+        const rawApiKey = request.headers[this.config.apiKey.header];
 
         if (!rawApiKey) {
             throw new UnauthorizedException('API key required');

@@ -6,7 +6,6 @@ yarn-error.log*
 
 # Build outputs
 dist/
-build/
 *.tsbuildinfo
 
 # Environment variables
@@ -19,14 +18,6 @@ build/
 logs/
 *.log
 server.log
-error.log
-access.log
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
 
 # Coverage directory used by tools like istanbul
 coverage/
@@ -35,20 +26,11 @@ coverage/
 # nyc test coverage
 .nyc_output
 
-# Dependency directories
-jspm_packages/
-
 # Optional npm cache directory
 .npm
 
 # Optional eslint cache
 .eslintcache
-
-# Microbundle cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
 
 # Optional REPL history
 .node_repl_history
@@ -59,35 +41,9 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# Next.js build output
-.next
-
-# Nuxt.js build / generate output
-.nuxt
-
-# Gatsby files
-.cache/
-public
-
-# Storybook build outputs
-.out
-.storybook-out
-
 # Temporary folders
 tmp/
 temp/
-
-# Test files
-test-*.js
-test-*.ts
-*.test.js
-*.test.ts
-*.spec.js
-*.spec.ts
 
 # OS generated files
 .DS_Store
@@ -107,7 +63,6 @@ Thumbs.db
 
 # Docker
 docker-compose.override.yml
-.dockerignore
 
 # Database
 *.sqlite

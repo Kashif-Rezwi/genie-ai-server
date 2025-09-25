@@ -2,6 +2,7 @@ import { Injectable, LoggerService as NestLoggerService } from '@nestjs/common';
 import * as winston from 'winston';
 import * as DailyRotateFile from 'winston-daily-rotate-file';
 import { Request, Response } from 'express';
+import { loggingConfig } from '../../../config';
 
 export interface LogContext {
     userId?: string;
@@ -28,6 +29,7 @@ export class LoggingService implements NestLoggerService {
     private readonly requestLogger: winston.Logger;
     private readonly errorLogger: winston.Logger;
     private readonly securityLogger: winston.Logger;
+    private readonly config = loggingConfig();
 
     constructor() {
         this.logger = this.createLogger('app');
@@ -47,7 +49,7 @@ export class LoggingService implements NestLoggerService {
                     level,
                     category,
                     message,
-                    ...(stack && { stack }),
+                    ...(stack ? { stack } : {}),
                     ...meta,
                 };
                 return JSON.stringify(logEntry);
@@ -67,26 +69,26 @@ export class LoggingService implements NestLoggerService {
         const transports: winston.transport[] = [];
 
         // Console transport
-        if (process.env.LOG_CONSOLE_ENABLED === 'true') {
+        if (this.config.console.enabled) {
             transports.push(
                 new winston.transports.Console({
-                    level: process.env.LOG_LEVEL || 'info',
+                    level: this.config.level,
                     format: consoleFormat,
                 })
             );
         }
 
         // File transports
-        if (process.env.LOG_FILE_ENABLED === 'true') {
+        if (this.config.file.enabled) {
             // General logs
             transports.push(
                 new DailyRotateFile({
-                    filename: `${process.env.LOG_FILE_PATH}/${category}-%DATE%.log`,
-                    datePattern: process.env.LOG_DATE_PATTERN || 'YYYY-MM-DD',
-                    maxSize: process.env.LOG_MAX_SIZE || '20m',
-                    maxFiles: process.env.LOG_MAX_FILES || '14d',
+                    filename: `${this.config.file.path}/${category}-%DATE%.log`,
+                    datePattern: this.config.file.datePattern,
+                    maxSize: this.config.file.maxSize,
+                    maxFiles: this.config.file.maxFiles,
                     format: logFormat,
-                    level: process.env.LOG_LEVEL || 'info',
+                    level: this.config.level,
                 })
             );
 
@@ -94,10 +96,10 @@ export class LoggingService implements NestLoggerService {
             if (category === 'errors' || category === 'app') {
                 transports.push(
                     new DailyRotateFile({
-                        filename: `${process.env.LOG_FILE_PATH}/error-%DATE%.log`,
-                        datePattern: process.env.LOG_DATE_PATTERN || 'YYYY-MM-DD',
-                        maxSize: process.env.LOG_MAX_SIZE || '20m',
-                        maxFiles: process.env.LOG_MAX_FILES || '14d',
+                        filename: `${this.config.file.path}/error-%DATE%.log`,
+                        datePattern: this.config.file.datePattern,
+                        maxSize: this.config.file.maxSize,
+                        maxFiles: this.config.file.maxFiles,
                         format: logFormat,
                         level: 'error',
                     })
@@ -106,17 +108,17 @@ export class LoggingService implements NestLoggerService {
         }
 
         return winston.createLogger({
-            level: process.env.LOG_LEVEL || 'info',
+            level: this.config.level,
             format: logFormat,
             transports,
             exceptionHandlers: [
                 new winston.transports.File({
-                    filename: `${process.env.LOG_FILE_PATH}/exceptions.log`,
+                    filename: `${this.config.file.path}/exceptions.log`,
                 }),
             ],
             rejectionHandlers: [
                 new winston.transports.File({
-                    filename: `${process.env.LOG_FILE_PATH}/rejections.log`,
+                    filename: `${this.config.file.path}/rejections.log`,
                 }),
             ],
         });
@@ -216,7 +218,7 @@ export class LoggingService implements NestLoggerService {
 
     // Database query logging
     logSlowQuery(query: string, duration: number, parameters?: any[]) {
-        if (duration > parseInt(process.env.SLOW_QUERY_THRESHOLD || '1000')) {
+        if (duration > this.config.slowQueryThreshold) {
             this.logger.warn(`SLOW QUERY: ${duration}ms`, {
                 query: query.substring(0, 500), // Truncate long queries
                 duration,

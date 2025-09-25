@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { LoggingService } from './logging.service';
 import { MetricsService } from './metrics.service';
+import { monitoringConfig } from '../../../config';
 
 export interface PerformanceMetrics {
     requests: {
@@ -41,6 +42,8 @@ export interface PerformanceMetrics {
 
 @Injectable()
 export class PerformanceService {
+    private readonly config = monitoringConfig();
+
     private requestMetrics: Array<{
         timestamp: Date;
         responseTime: number;
@@ -105,7 +108,7 @@ export class PerformanceService {
         });
 
         // Log slow requests
-        if (data.responseTime > parseInt(process.env.REQUEST_TIMEOUT_THRESHOLD || '30000')) {
+        if (data.responseTime > this.config.performance.requestTimeoutThreshold) {
             this.loggingService.logPerformance(
                 `Slow request: ${data.method} ${data.url}`,
                 data.responseTime,
@@ -327,7 +330,7 @@ export class PerformanceService {
         this.metricsService.recordGauge('memory_usage_percentage', memoryUsagePercentage);
 
         // Alert on high memory usage
-        if (memoryUsagePercentage > parseInt(process.env.MEMORY_USAGE_THRESHOLD || '80')) {
+        if (memoryUsagePercentage > this.config.performance.memoryUsageThreshold) {
             this.loggingService.logWarning(`High memory usage: ${memoryUsagePercentage.toFixed(2)}%`, {
                 memoryUsage: memoryUsage,
             });

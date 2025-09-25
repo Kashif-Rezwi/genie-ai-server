@@ -11,8 +11,9 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { LoggingService, LogContext } from './logging.service';
-import { RedisService } from '../../../config/redis.config';
+import { RedisService } from '../../redis/redis.service';
 import { User } from '../../../entities';
+import { appConfig, emailConfig, redisConfig, monitoringConfig } from '../../../config';
 
 export interface HealthStatus {
     status: 'ok' | 'error';
@@ -49,6 +50,11 @@ export interface ServiceHealth {
 
 @Injectable()
 export class HealthService implements OnModuleDestroy {
+    private readonly appConfig = appConfig();
+    private readonly emailConfig = emailConfig();
+    private readonly redisConfig = redisConfig();
+    private readonly monitoringConfig = monitoringConfig();
+
     private lastHealthCheck: HealthStatus | null = null;
     private healthCheckInterval: NodeJS.Timeout | null = null;
 
@@ -151,8 +157,8 @@ export class HealthService implements OnModuleDestroy {
                 ]),
                 timestamp: new Date(),
                 uptime: process.uptime(),
-                version: process.env.npm_package_version || '1.0.0',
-                environment: process.env.NODE_ENV || 'development',
+                version: this.appConfig.version,
+                environment: this.appConfig.nodeEnv,
                 services: {
                     database: databaseHealth,
                     redis: redisHealth,
@@ -305,7 +311,7 @@ export class HealthService implements OnModuleDestroy {
 
         try {
             // Check if SMTP configuration is available
-            if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+            if (!this.emailConfig.smtp.host || !this.emailConfig.smtp.auth.user || !this.emailConfig.smtp.auth.pass) {
                 return {
                     status: 'degraded',
                     responseTime: Date.now() - startTime,
@@ -321,12 +327,12 @@ export class HealthService implements OnModuleDestroy {
             // Test SMTP connection with timeout
             const nodemailer = require('nodemailer');
             const transporter = nodemailer.createTransport({
-                host: process.env.SMTP_HOST,
-                port: parseInt(process.env.SMTP_PORT) || 587,
-                secure: process.env.SMTP_SECURE === 'true',
+                host: this.emailConfig.smtp.host,
+                port: this.emailConfig.smtp.port,
+                secure: this.emailConfig.smtp.secure,
                 auth: {
-                    user: process.env.SMTP_USER,
-                    pass: process.env.SMTP_PASSWORD,
+                    user: this.emailConfig.smtp.auth.user,
+                    pass: this.emailConfig.smtp.auth.pass,
                 },
                 connectionTimeout: 3000, // Reduced timeout
                 greetingTimeout: 3000,
@@ -346,7 +352,7 @@ export class HealthService implements OnModuleDestroy {
                 responseTime,
                 lastChecked: new Date(),
                 details: {
-                    smtpHost: process.env.SMTP_HOST,
+                    smtpHost: this.emailConfig.smtp.host,
                     responseTimeMs: responseTime,
                     configured: true
                 },
@@ -358,7 +364,7 @@ export class HealthService implements OnModuleDestroy {
                 lastChecked: new Date(),
                 error: error.message,
                 details: {
-                    configured: !!process.env.SMTP_HOST,
+                    configured: !!this.emailConfig.smtp.host,
                     reason: 'SMTP connection failed'
                 }
             };
@@ -375,10 +381,10 @@ export class HealthService implements OnModuleDestroy {
             // Create a separate Redis client for the jobs database
             const Redis = require('ioredis');
             const jobsRedis = new Redis({
-                host: process.env.REDIS_HOST || 'localhost',
-                port: parseInt(process.env.REDIS_PORT) || 6379,
-                password: process.env.REDIS_PASSWORD || undefined,
-                db: parseInt(process.env.REDIS_JOBS_DB) || 1, // Use jobs database
+                host: this.redisConfig.host,
+                port: this.redisConfig.port,
+                password: this.redisConfig.password,
+                db: this.redisConfig.jobsDb, // Use jobs database
             });
 
             // Check for any Bull queue keys in the jobs database
@@ -429,7 +435,7 @@ export class HealthService implements OnModuleDestroy {
                     hasInfrastructure: hasQueueInfrastructure,
                     responseTimeMs: responseTime,
                     patterns: queuePatterns,
-                    database: parseInt(process.env.REDIS_JOBS_DB) || 1
+                    database: this.redisConfig.jobsDb
                 },
             };
         } catch (error) {
@@ -582,10 +588,10 @@ export class HealthService implements OnModuleDestroy {
                 // Create a separate Redis client for the jobs database
                 const Redis = require('ioredis');
                 const jobsRedis = new Redis({
-                    host: process.env.REDIS_HOST || 'localhost',
-                    port: parseInt(process.env.REDIS_PORT) || 6379,
-                    password: process.env.REDIS_PASSWORD || undefined,
-                    db: parseInt(process.env.REDIS_JOBS_DB) || 1, // Use jobs database
+                    host: this.redisConfig.host,
+                    port: this.redisConfig.port,
+                    password: this.redisConfig.password,
+                    db: this.redisConfig.jobsDb, // Use jobs database
                 });
 
                 for (const queueName of queueNames) {
@@ -638,12 +644,12 @@ export class HealthService implements OnModuleDestroy {
     }
 
     private startHealthMonitoring() {
-        if (process.env.HEALTH_CHECK_INTERVAL) {
-            const interval = parseInt(process.env.HEALTH_CHECK_INTERVAL);
+        if (this.monitoringConfig.health.checkInterval) {
+            const interval = this.monitoringConfig.health.checkInterval;
 
             if (isNaN(interval) || interval < 1000) {
                 this.loggingService.logWarning('Invalid health check interval, using default 30 seconds', {
-                    provided: process.env.HEALTH_CHECK_INTERVAL,
+                    provided: this.monitoringConfig.health.checkInterval,
                     default: 30000,
                 });
                 return;
@@ -682,7 +688,7 @@ export class HealthService implements OnModuleDestroy {
 
     async getServiceHealth(serviceName: string): Promise<ServiceHealth | null> {
         const health = await this.getDetailedHealth();
-        return health.services[serviceName] || null;
+        return (health.services as any)[serviceName] || null;
     }
 
     async getCachedHealthStatus(maxAgeMs: number = 30000): Promise<HealthStatus | null> {
@@ -724,4 +730,4 @@ export class HealthService implements OnModuleDestroy {
             };
         }
     }
-}
+}   

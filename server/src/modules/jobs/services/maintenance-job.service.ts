@@ -3,12 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { JobService } from './job.service';
-import { RedisService } from '../../../config/redis.config';
+import { RedisService } from '../../redis/redis.service';
 import { User, Chat, Message, Payment, CreditTransaction } from '../../../entities';
+import { monitoringConfig } from '../../../config';
 
 @Injectable()
 export class MaintenanceJobService {
     private readonly logger = new Logger(MaintenanceJobService.name);
+    private readonly config = monitoringConfig();
 
     constructor(
         @InjectRepository(User)
@@ -28,7 +30,7 @@ export class MaintenanceJobService {
 
     @Cron(CronExpression.EVERY_DAY_AT_3AM)
     async scheduleDataCleanup() {
-        if (process.env.ENABLE_CRON_JOBS === 'true') {
+        if (this.config.jobs.enabled) {
             await this.jobService.addMaintenanceJob({
                 task: 'cleanup',
                 targetTable: 'all',
@@ -40,7 +42,7 @@ export class MaintenanceJobService {
 
     @Cron(CronExpression.EVERY_DAY_AT_2AM)
     async scheduleWeeklyBackup() {
-        if (process.env.ENABLE_CRON_JOBS === 'true') {
+        if (this.config.jobs.enabled) {
             await this.jobService.addMaintenanceJob({
                 task: 'backup',
                 batchSize: 10000,
@@ -51,7 +53,7 @@ export class MaintenanceJobService {
 
     @Cron(CronExpression.EVERY_DAY_AT_1AM)
     async scheduleCreditReconciliation() {
-        if (process.env.ENABLE_CRON_JOBS === 'true') {
+        if (this.config.jobs.enabled) {
             await this.jobService.addMaintenanceJob({
                 task: 'reconcile',
                 targetTable: 'credit_transactions',
@@ -63,7 +65,7 @@ export class MaintenanceJobService {
 
     @Cron(CronExpression.EVERY_DAY_AT_4AM)
     async schedulePerformanceOptimization() {
-        if (process.env.ENABLE_CRON_JOBS === 'true') {
+        if (this.config.jobs.enabled) {
             await this.jobService.addMaintenanceJob({
                 task: 'optimize',
                 targetTable: 'all',

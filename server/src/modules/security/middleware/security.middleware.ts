@@ -1,9 +1,12 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { SecurityService } from '../services/security.service';
+import { appConfig } from '../../../config';
 
 @Injectable()
 export class SecurityMiddleware implements NestMiddleware {
+    private readonly config = appConfig();
+
     constructor(private readonly securityService: SecurityService) { }
 
     use(req: Request, res: Response, next: NextFunction) {
@@ -29,7 +32,7 @@ export class SecurityMiddleware implements NestMiddleware {
         res.removeHeader('X-Powered-By');
 
         // HSTS (only in production with HTTPS)
-        if (process.env.NODE_ENV === 'production') {
+        if (this.config.nodeEnv === 'production') {
             res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 

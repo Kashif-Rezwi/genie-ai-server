@@ -4,7 +4,8 @@ import { Repository, DataSource } from 'typeorm';
 import { Payment, PaymentStatus, PaymentMethod, User } from '../../../entities';
 import { RazorpayService } from './razorpay.service';
 import { CreditsService } from '../../credits/services/credits.service';
-import { getPackageById, calculateTotalCredits } from '../../../config/credit-packages.config';
+import { getPackageById, calculateTotalCredits } from '../../../config';
+import { paymentConfig } from '../../../config';
 import {
     CreatePaymentOrderDto,
     VerifyPaymentDto,
@@ -16,6 +17,8 @@ import {
 
 @Injectable()
 export class PaymentsService {
+    private readonly config = paymentConfig();
+
     constructor(
         @InjectRepository(Payment)
         private readonly paymentRepository: Repository<Payment>,
@@ -95,7 +98,7 @@ export class PaymentsService {
                 bonusCredits,
                 totalCredits,
             },
-            razorpayKeyId: process.env.RAZORPAY_KEY_ID,
+            razorpayKeyId: this.config.razorpay.keyId || '',
             user: {
                 id: user.id,
                 email: user.email,

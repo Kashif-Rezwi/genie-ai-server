@@ -197,8 +197,8 @@ export class CreditsAnalyticsService {
         });
 
         // Aggregate by model name
-        const aggregated = modelStats.reduce((acc, curr) => {
-            const existing = acc.find(item => item.model === curr.model);
+        const aggregated = modelStats.reduce<Array<{ model: string; totalUsage: number; uniqueUsers: number }>>((acc, curr) => {
+            const existing = acc.find((item) => item.model === curr.model);
             if (existing) {
                 existing.totalUsage += curr.totalUsage;
                 existing.uniqueUsers += curr.uniqueUsers;

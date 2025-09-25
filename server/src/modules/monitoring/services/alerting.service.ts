@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { LoggingService } from './logging.service';
 import { EmailService } from '../../jobs/services/email.service';
+import { monitoringConfig } from '../../../config';
 
 export interface Alert {
     id: string;
@@ -29,6 +30,8 @@ export interface AlertRule {
 
 @Injectable()
 export class AlertingService {
+    private readonly config = monitoringConfig();
+
     private alerts: Map<string, Alert> = new Map();
     private alertRules: Map<string, AlertRule> = new Map();
     private lastAlertTimes: Map<string, Date> = new Map();
@@ -298,7 +301,7 @@ export class AlertingService {
             return;
         }
 
-        const recipients = process.env.ERROR_NOTIFICATION_EMAIL?.split(',') || [];
+        const recipients = this.config.notifications.errorEmail;
         if (recipients.length === 0) {
             this.loggingService.logWarning('No email recipients configured for alerts');
             return;
@@ -315,7 +318,7 @@ export class AlertingService {
     }
 
     private async sendSlackAlert(alert: Alert) {
-        const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+        const webhookUrl = this.config.notifications.slackWebhook;
         if (!webhookUrl) {
             this.loggingService.logWarning('Slack webhook URL not configured');
             return;
@@ -342,7 +345,7 @@ export class AlertingService {
     }
 
     private async sendDiscordAlert(alert: Alert) {
-        const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+        const webhookUrl = this.config.notifications.discordWebhook;
         if (!webhookUrl) {
             this.loggingService.logWarning('Discord webhook URL not configured');
             return;
@@ -370,7 +373,7 @@ export class AlertingService {
     }
 
     private async sendWebhookAlert(alert: Alert) {
-        const webhookUrl = process.env.CRITICAL_ERROR_WEBHOOK;
+        const webhookUrl = this.config.notifications.criticalErrorWebhook;
         if (!webhookUrl) return;
 
         const fetch = require('node-fetch');

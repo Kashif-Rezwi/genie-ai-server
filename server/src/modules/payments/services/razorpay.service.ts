@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 const Razorpay = require('razorpay');
 import * as crypto from 'crypto';
+import { paymentConfig } from '../../../config';
 
 export interface RazorpayOrder {
     id: string;
@@ -18,16 +19,18 @@ export interface RazorpayPaymentVerification {
 
 @Injectable()
 export class RazorpayService {
+    private readonly config = paymentConfig();
     private razorpay: InstanceType<typeof Razorpay>;
 
     constructor() {
-        if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+        if (!this.config.razorpay.keyId || !this.config.razorpay.keySecret || !this.config.razorpay.webhookSecret) {
             throw new Error('Razorpay credentials not configured');
         }
 
         this.razorpay = new Razorpay({
-            key_id: process.env.RAZORPAY_KEY_ID,
-            key_secret: process.env.RAZORPAY_KEY_SECRET,
+            key_id: this.config.razorpay.keyId,
+            key_secret: this.config.razorpay.keySecret,
+            webhook_secret: this.config.razorpay.webhookSecret,
         });
     }
 
@@ -77,7 +80,7 @@ export class RazorpayService {
 
             const body = razorpay_order_id + '|' + razorpay_payment_id;
             const expectedSignature = crypto
-                .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+                .createHmac('sha256', this.config.razorpay.keySecret!)
                 .update(body.toString())
                 .digest('hex');
 
@@ -91,7 +94,7 @@ export class RazorpayService {
     verifyWebhookSignature(body: string, signature: string): boolean {
         try {
             const expectedSignature = crypto
-                .createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET)
+                .createHmac('sha256', this.config.razorpay.webhookSecret!)
                 .update(body)
                 .digest('hex');
 

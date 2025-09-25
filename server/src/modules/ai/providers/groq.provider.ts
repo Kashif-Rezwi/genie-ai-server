@@ -77,9 +77,9 @@ export class GroqProvider {
                 content: result.text,
                 model: request.model || 'llama-3.1-8b-instant',
                 usage: {
-                    promptTokens: result.usage.inputTokens,
-                    completionTokens: result.usage.outputTokens,
-                    totalTokens: result.usage.totalTokens,
+                    promptTokens: result.usage.inputTokens || 0,
+                    completionTokens: result.usage.outputTokens || 0,
+                    totalTokens: result.usage.totalTokens || 0,
                 },
                 creditsUsed: 0, // Will be calculated by credit service
                 finishReason: result.finishReason || 'stop',

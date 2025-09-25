@@ -27,11 +27,13 @@ import {
     PaymentHistoryQueryDto,
     RefundPaymentDto
 } from './dto/payment.dto';
-import { getActivePackages } from '../../config/credit-packages.config';
+import { getActivePackages, paymentConfig } from '../../config';
 
 @Controller('payments')
 @UseGuards(RateLimitGuard)
 export class PaymentsController {
+    private readonly config = paymentConfig();
+
     constructor(
         private readonly paymentsService: PaymentsService,
         private readonly webhookService: WebhookService,
@@ -43,8 +45,8 @@ export class PaymentsController {
     async getPaymentPackages() {
         return {
             packages: getActivePackages(),
-            currency: process.env.PAYMENT_CURRENCY || 'INR',
-            razorpayKeyId: process.env.RAZORPAY_KEY_ID,
+            currency: this.config.currency,
+            razorpayKeyId: this.config.razorpay.keyId,
         };
     }
 

@@ -3,9 +3,9 @@ import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
     catch(exception: unknown, host: ArgumentsHost) {
-        const ctx = host.switchToHttp();
-        const response = ctx.getResponse();
-        const request = ctx.getRequest();
+        const context = host.switchToHttp();
+        const request = context.getRequest();
+        const response = context.getResponse();
 
         const status = exception instanceof HttpException
             ? exception.getStatus()

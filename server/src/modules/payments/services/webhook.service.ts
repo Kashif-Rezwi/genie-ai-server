@@ -196,7 +196,7 @@ export class WebhookService {
             // Payment was actually successful, update our records
             await this.dataSource.transaction(async (manager) => {
                 payment.status = PaymentStatus.COMPLETED;
-                payment.failureReason = null;
+                payment.failureReason = '';
                 await manager.save(payment);
 
                 // Add credits if not already added
