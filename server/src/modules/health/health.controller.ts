@@ -22,7 +22,7 @@ export class HealthController {
     }
 
     @Get('detailed')
-    @UseGuards(JwtAuthGuard)
+    // @UseGuards(JwtAuthGuard)
     async detailedHealthCheck() {
         const isDbConnected = this.dataSource.isInitialized;
 
