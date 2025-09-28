@@ -16,11 +16,11 @@ export class WebhookService {
         private readonly razorpayService: RazorpayService,
         private readonly creditsService: CreditsService,
         private readonly dataSource: DataSource,
-    ) { }
+    ) {}
 
     async handleRazorpayWebhook(
         body: string,
-        signature: string
+        signature: string,
     ): Promise<{ success: boolean; message: string }> {
         try {
             // Verify webhook signature
@@ -54,10 +54,12 @@ export class WebhookService {
         }
     }
 
-    private async handlePaymentCaptured(event: RazorpayWebhookEvent): Promise<{ success: boolean; message: string }> {
+    private async handlePaymentCaptured(
+        event: RazorpayWebhookEvent,
+    ): Promise<{ success: boolean; message: string }> {
         const paymentEntity = event.payload.payment.entity;
 
-        return this.dataSource.transaction(async (manager) => {
+        return this.dataSource.transaction(async manager => {
             // Find payment record
             const payment = await manager.findOne(Payment, {
                 where: { razorpayOrderId: paymentEntity.order_id },
@@ -99,20 +101,24 @@ export class WebhookService {
                     payment.creditsAmount,
                     `Package purchase: ${payment.packageName} (Webhook)`,
                     paymentEntity.id,
-                    payment.packageId
+                    payment.packageId,
                 );
 
                 payment.creditTransactionId = creditResult.transaction.id;
                 await manager.save(payment);
 
-                this.logger.log(`Credits added for payment: ${payment.id}, amount: ${payment.creditsAmount}`);
+                this.logger.log(
+                    `Credits added for payment: ${payment.id}, amount: ${payment.creditsAmount}`,
+                );
             }
 
             return { success: true, message: 'Payment captured and credits added successfully' };
         });
     }
 
-    private async handlePaymentFailed(event: RazorpayWebhookEvent): Promise<{ success: boolean; message: string }> {
+    private async handlePaymentFailed(
+        event: RazorpayWebhookEvent,
+    ): Promise<{ success: boolean; message: string }> {
         const paymentEntity = event.payload.payment.entity;
 
         const payment = await this.paymentRepository.findOne({
@@ -141,11 +147,15 @@ export class WebhookService {
 
         await this.paymentRepository.save(payment);
 
-        this.logger.log(`Payment marked as failed: ${payment.id}, reason: ${payment.failureReason}`);
+        this.logger.log(
+            `Payment marked as failed: ${payment.id}, reason: ${payment.failureReason}`,
+        );
         return { success: true, message: 'Payment failure recorded' };
     }
 
-    private async handleOrderPaid(event: RazorpayWebhookEvent): Promise<{ success: boolean; message: string }> {
+    private async handleOrderPaid(
+        event: RazorpayWebhookEvent,
+    ): Promise<{ success: boolean; message: string }> {
         // This event is fired when an order is completely paid
         // We can use this for additional validation or business logic
 
@@ -194,7 +204,7 @@ export class WebhookService {
 
         if (razorpayPayment.status === 'captured') {
             // Payment was actually successful, update our records
-            await this.dataSource.transaction(async (manager) => {
+            await this.dataSource.transaction(async manager => {
                 payment.status = PaymentStatus.COMPLETED;
                 payment.failureReason = '';
                 await manager.save(payment);
@@ -206,7 +216,7 @@ export class WebhookService {
                         payment.creditsAmount,
                         `Package purchase: ${payment.packageName} (Retry)`,
                         payment.razorpayPaymentId,
-                        payment.packageId
+                        payment.packageId,
                     );
 
                     payment.creditTransactionId = creditResult.transaction.id;
@@ -216,7 +226,9 @@ export class WebhookService {
 
             this.logger.log(`Payment retry successful: ${payment.id}`);
         } else {
-            this.logger.log(`Payment still failed after retry: ${payment.id}, status: ${razorpayPayment.status}`);
+            this.logger.log(
+                `Payment still failed after retry: ${payment.id}, status: ${razorpayPayment.status}`,
+            );
         }
     }
 }

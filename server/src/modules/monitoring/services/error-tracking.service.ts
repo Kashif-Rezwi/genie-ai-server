@@ -108,7 +108,7 @@ export class ErrorTrackingService {
     captureException(
         message: string,
         level: 'error' | 'warning' | 'critical' = 'error',
-        context: any = {}
+        context: any = {},
     ): string {
         const error = new Error(message);
         error.name = 'CaptureException';
@@ -121,7 +121,7 @@ export class ErrorTrackingService {
         const recentErrors = this.errorHistory.filter(e => e.lastSeen >= since);
 
         // Calculate error rate (errors per hour)
-        const errorRate = (recentErrors.length / (timeRange / 3600000));
+        const errorRate = recentErrors.length / (timeRange / 3600000);
 
         // Top errors by count
         const errorCounts = new Map<string, { message: string; count: number; lastSeen: Date }>();
@@ -178,20 +178,20 @@ export class ErrorTrackingService {
     }
 
     getErrorsByUser(userId: string, limit: number = 20): ErrorEvent[] {
-        return this.errorHistory
-            .filter(error => error.context.userId === userId)
-            .slice(0, limit);
+        return this.errorHistory.filter(error => error.context.userId === userId).slice(0, limit);
     }
 
     searchErrors(query: string, limit: number = 50): ErrorEvent[] {
         const lowerQuery = query.toLowerCase();
         return this.errorHistory
-            .filter(error =>
-                error.message.toLowerCase().includes(lowerQuery) ||
-                error.stack?.toLowerCase().includes(lowerQuery) ||
-                Object.values(error.context).some(value =>
-                    typeof value === 'string' && value.toLowerCase().includes(lowerQuery)
-                )
+            .filter(
+                error =>
+                    error.message.toLowerCase().includes(lowerQuery) ||
+                    error.stack?.toLowerCase().includes(lowerQuery) ||
+                    Object.values(error.context).some(
+                        value =>
+                            typeof value === 'string' && value.toLowerCase().includes(lowerQuery),
+                    ),
             )
             .slice(0, limit);
     }
@@ -268,7 +268,8 @@ export class ErrorTrackingService {
         const timeSinceFirst = Date.now() - errorEvent.firstSeen.getTime();
         const frequency = errorEvent.count / (timeSinceFirst / 60000); // errors per minute
 
-        if (frequency > 10) { // More than 10 errors per minute
+        if (frequency > 10) {
+            // More than 10 errors per minute
             this.alertingService.sendAlert('high_frequency_error', {
                 message: error.message,
                 fingerprint,

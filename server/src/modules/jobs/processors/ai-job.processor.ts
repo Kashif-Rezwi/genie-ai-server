@@ -48,7 +48,6 @@ export class AIJobProcessor extends WorkerHost {
                 creditsUsed: aiResponse.creditsUsed || 0,
                 model: modelId,
             };
-
         } catch (error) {
             this.logger.error(`AI job failed: ${job.data.jobId}`, error);
             throw error;

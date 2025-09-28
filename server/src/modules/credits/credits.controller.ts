@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Query, Param, UseGuards, ValidationPipe } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Post,
+    Body,
+    Query,
+    Param,
+    UseGuards,
+    ValidationPipe,
+} from '@nestjs/common';
 import { CreditsService } from './services/credits.service';
 import { CreditsAnalyticsService } from './services/credits-analytics.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -8,7 +17,7 @@ import {
     AddCreditsDto,
     TransferCreditsDto,
     BatchAddCreditsDto,
-    TransactionHistoryQueryDto
+    TransactionHistoryQueryDto,
 } from './dto/credits.dto';
 import { getActivePackages } from '../../config';
 
@@ -18,7 +27,7 @@ export class CreditsController {
     constructor(
         private readonly creditsService: CreditsService,
         private readonly analyticsService: CreditsAnalyticsService,
-    ) { }
+    ) {}
 
     @Get('balance')
     async getBalance(@CurrentUser() user: any) {

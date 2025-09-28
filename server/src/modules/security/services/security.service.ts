@@ -22,7 +22,7 @@ export class SecurityService {
     constructor(
         @InjectRepository(User)
         private readonly userRepository: Repository<User>,
-    ) { }
+    ) {}
 
     async hashPassword(password: string): Promise<string> {
         return bcrypt.hash(password, this.config.bcrypt.rounds);
@@ -90,7 +90,7 @@ export class SecurityService {
 
     checkPasswordStrength(password: string): {
         score: number;
-        level: 'weak' | 'fair' | 'good' | 'strong' | 'very_strong'
+        level: 'weak' | 'fair' | 'good' | 'strong' | 'very_strong';
     } {
         let score = 0;
 
@@ -109,7 +109,17 @@ export class SecurityService {
         if (!/(.)\1{2,}/.test(password)) score += 1; // No repeating characters
         if (!/123|abc|qwe|password|admin/i.test(password)) score += 1; // No common patterns
 
-        const levels = ['weak', 'weak', 'fair', 'fair', 'good', 'good', 'strong', 'strong', 'very_strong'];
+        const levels = [
+            'weak',
+            'weak',
+            'fair',
+            'fair',
+            'good',
+            'good',
+            'strong',
+            'strong',
+            'very_strong',
+        ];
 
         return {
             score,
@@ -120,7 +130,7 @@ export class SecurityService {
     detectSuspiciousActivity(events: SecurityEvent[]): boolean {
         // Check for suspicious patterns
         const recentEvents = events.filter(
-            event => Date.now() - event.timestamp.getTime() < 300000 // 5 minutes
+            event => Date.now() - event.timestamp.getTime() < 300000, // 5 minutes
         );
 
         // Too many failed login attempts
@@ -167,11 +177,13 @@ export class SecurityService {
     }
 
     extractIPFromRequest(req: any): string {
-        return req.ip ||
+        return (
+            req.ip ||
             req.connection?.remoteAddress ||
             req.socket?.remoteAddress ||
             req.headers['x-forwarded-for']?.split(',')[0] ||
-            'unknown';
+            'unknown'
+        );
     }
 
     extractUserAgentFromRequest(req: any): string {

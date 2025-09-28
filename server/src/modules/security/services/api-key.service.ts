@@ -24,9 +24,12 @@ export class ApiKeyService {
         @InjectRepository(User)
         private readonly userRepository: Repository<User>,
         private readonly securityService: SecurityService,
-    ) { }
+    ) {}
 
-    async createApiKey(userId: string, createDto: CreateApiKeyDto): Promise<{
+    async createApiKey(
+        userId: string,
+        createDto: CreateApiKeyDto,
+    ): Promise<{
         apiKey: string;
         keyId: string;
         expiresAt: Date | null;
@@ -143,16 +146,18 @@ export class ApiKeyService {
         await this.apiKeyRepository.save(apiKey);
     }
 
-    async getUserApiKeys(userId: string): Promise<Array<{
-        id: string;
-        name: string;
-        type: string;
-        status: string;
-        lastUsedAt: Date | null;
-        usageCount: number;
-        expiresAt: Date | null;
-        createdAt: Date;
-    }>> {
+    async getUserApiKeys(userId: string): Promise<
+        Array<{
+            id: string;
+            name: string;
+            type: string;
+            status: string;
+            lastUsedAt: Date | null;
+            usageCount: number;
+            expiresAt: Date | null;
+            createdAt: Date;
+        }>
+    > {
         const apiKeys = await this.apiKeyRepository.find({
             where: { userId },
             order: { createdAt: 'DESC' },
@@ -205,8 +210,10 @@ export class ApiKeyService {
         if (!apiKey.permissions) return false;
 
         // Check exact permission or wildcard
-        return apiKey.permissions.includes(permission) ||
+        return (
+            apiKey.permissions.includes(permission) ||
             apiKey.permissions.includes('*') ||
-            apiKey.permissions.some(p => p.endsWith('*') && permission.startsWith(p.slice(0, -1)));
+            apiKey.permissions.some(p => p.endsWith('*') && permission.startsWith(p.slice(0, -1)))
+        );
     }
 }

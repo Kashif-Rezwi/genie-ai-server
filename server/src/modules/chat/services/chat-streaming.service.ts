@@ -17,13 +17,13 @@ export class ChatStreamingService {
         private readonly messageService: MessageService,
         private readonly aiService: AIService,
         private readonly creditsService: CreditsService,
-    ) { }
+    ) {}
 
     async streamChatResponse(
         chatId: string,
         userId: string,
         sendMessageDto: SendMessageDto,
-        response: Response
+        response: Response,
     ): Promise<void> {
         const { content, model, systemPrompt } = sendMessageDto;
 
@@ -35,7 +35,10 @@ export class ChatStreamingService {
             const userMessage = await this.messageService.addUserMessage(chatId, userId, content);
 
             // Step 3: Get conversation history
-            const conversationHistory = await this.messageService.getConversationHistory(chatId, userId);
+            const conversationHistory = await this.messageService.getConversationHistory(
+                chatId,
+                userId,
+            );
 
             // Step 4: Use system prompt from request or chat
             const effectiveSystemPrompt = systemPrompt || chat.systemPrompt;
@@ -122,7 +125,7 @@ export class ChatStreamingService {
                         userId,
                         fullContent,
                         modelId,
-                        creditsUsed
+                        creditsUsed,
                     );
 
                     messageId = assistantMessage.id;
@@ -143,7 +146,6 @@ export class ChatStreamingService {
             }
 
             response.end();
-
         } catch (error) {
             console.error('Streaming error:', error);
 
@@ -178,7 +180,7 @@ export class ChatStreamingService {
     async handleQuickResponse(
         chatId: string,
         userId: string,
-        sendMessageDto: SendMessageDto
+        sendMessageDto: SendMessageDto,
     ): Promise<{
         userMessage: any;
         assistantMessage: any;
@@ -190,7 +192,10 @@ export class ChatStreamingService {
         const userMessage = await this.messageService.addUserMessage(chatId, userId, content);
 
         // Step 2: Get conversation history
-        const conversationHistory = await this.messageService.getConversationHistory(chatId, userId);
+        const conversationHistory = await this.messageService.getConversationHistory(
+            chatId,
+            userId,
+        );
 
         // Step 3: Generate AI response (non-streaming)
         const aiRequest = {
@@ -208,7 +213,7 @@ export class ChatStreamingService {
             userId,
             aiResponse.content,
             aiResponse.model,
-            aiResponse.creditsUsed
+            aiResponse.creditsUsed,
         );
 
         return {

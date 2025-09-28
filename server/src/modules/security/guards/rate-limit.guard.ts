@@ -14,20 +14,16 @@ export class RateLimitGuard implements CanActivate {
         private readonly rateLimitService: RateLimitService,
         private readonly securityService: SecurityService,
         private readonly reflector: Reflector,
-    ) { }
+    ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const rateLimitConfig = this.reflector.getAllAndOverride<{
             operation: string;
             customLimit?: number;
-        }>(RATE_LIMIT_KEY, [
-            context.getHandler(),
-            context.getClass(),
-        ]);
+        }>(RATE_LIMIT_KEY, [context.getHandler(), context.getClass()]);
 
         // If no specific rate limit config, apply default global rate limiting
         const operation = rateLimitConfig?.operation || 'api';
-
 
         const request = context.switchToHttp().getRequest();
         const response = context.switchToHttp().getResponse();
@@ -37,10 +33,7 @@ export class RateLimitGuard implements CanActivate {
         try {
             // Check user-specific rate limit if authenticated
             if (user) {
-                const result = await this.rateLimitService.checkUserRateLimit(
-                    user.id,
-                    operation
-                );
+                const result = await this.rateLimitService.checkUserRateLimit(user.id, operation);
 
                 // Add rate limit headers
                 response.setHeader('X-RateLimit-Limit', result.consumedPoints);

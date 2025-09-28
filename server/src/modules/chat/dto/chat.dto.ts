@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsUUID, IsArray, ValidateNested, MinLength, MaxLength } from 'class-validator';
+import {
+    IsString,
+    IsOptional,
+    IsUUID,
+    IsArray,
+    ValidateNested,
+    MinLength,
+    MaxLength,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateChatDto {

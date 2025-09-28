@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, JoinColumn } from 'typeorm';
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    ManyToOne,
+    CreateDateColumn,
+    UpdateDateColumn,
+    JoinColumn,
+} from 'typeorm';
 import { User } from './user.entity';
 
 export enum PaymentStatus {
@@ -6,13 +14,13 @@ export enum PaymentStatus {
     COMPLETED = 'completed',
     FAILED = 'failed',
     REFUNDED = 'refunded',
-    CANCELLED = 'cancelled'
+    CANCELLED = 'cancelled',
 }
 
 export enum PaymentMethod {
     RAZORPAY = 'razorpay',
     BANK_TRANSFER = 'bank_transfer',
-    ADMIN_CREDIT = 'admin_credit'
+    ADMIN_CREDIT = 'admin_credit',
 }
 
 @Entity('payments')

@@ -85,12 +85,7 @@ export class PerformanceService {
         }, 3600000);
     }
 
-    recordRequest(data: {
-        responseTime: number;
-        statusCode: number;
-        method: string;
-        url: string;
-    }) {
+    recordRequest(data: { responseTime: number; statusCode: number; method: string; url: string }) {
         this.requestMetrics.push({
             timestamp: new Date(),
             ...data,
@@ -116,7 +111,7 @@ export class PerformanceService {
                     method: data.method,
                     url: data.url,
                     statusCode: data.statusCode,
-                }
+                },
             );
         }
 
@@ -197,18 +192,20 @@ export class PerformanceService {
                 total: recentRequests.length,
                 successful: successfulRequests,
                 failed: failedRequests,
-                averageResponseTime: responseTimes.length > 0
-                    ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
-                    : 0,
+                averageResponseTime:
+                    responseTimes.length > 0
+                        ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
+                        : 0,
                 p95ResponseTime: sortedResponseTimes[p95Index] || 0,
                 p99ResponseTime: sortedResponseTimes[p99Index] || 0,
             },
             database: {
                 activeConnections: 0, // Would need database connection pool info
                 queryCount: recentQueries.length,
-                averageQueryTime: queryDurations.length > 0
-                    ? queryDurations.reduce((a, b) => a + b, 0) / queryDurations.length
-                    : 0,
+                averageQueryTime:
+                    queryDurations.length > 0
+                        ? queryDurations.reduce((a, b) => a + b, 0) / queryDurations.length
+                        : 0,
                 slowQueries,
             },
             memory: {
@@ -271,23 +268,28 @@ export class PerformanceService {
         return { buckets, percentiles };
     }
 
-    async getTopSlowEndpoints(limit: number = 10): Promise<Array<{
-        endpoint: string;
-        method: string;
-        averageResponseTime: number;
-        requestCount: number;
-        errorRate: number;
-    }>> {
+    async getTopSlowEndpoints(limit: number = 10): Promise<
+        Array<{
+            endpoint: string;
+            method: string;
+            averageResponseTime: number;
+            requestCount: number;
+            errorRate: number;
+        }>
+    > {
         const recentRequests = this.requestMetrics.filter(
-            m => m.timestamp >= new Date(Date.now() - 3600000)
+            m => m.timestamp >= new Date(Date.now() - 3600000),
         );
 
         // Group by endpoint
-        const endpointStats = new Map<string, {
-            responseTimes: number[];
-            errorCount: number;
-            totalCount: number;
-        }>();
+        const endpointStats = new Map<
+            string,
+            {
+                responseTimes: number[];
+                errorCount: number;
+                totalCount: number;
+            }
+        >();
 
         recentRequests.forEach(request => {
             const key = `${request.method} ${request.url}`;
@@ -310,7 +312,8 @@ export class PerformanceService {
                 return {
                     endpoint: url,
                     method,
-                    averageResponseTime: stats.responseTimes.reduce((a, b) => a + b, 0) / stats.responseTimes.length,
+                    averageResponseTime:
+                        stats.responseTimes.reduce((a, b) => a + b, 0) / stats.responseTimes.length,
                     requestCount: stats.totalCount,
                     errorRate: (stats.errorCount / stats.totalCount) * 100,
                 };
@@ -331,9 +334,12 @@ export class PerformanceService {
 
         // Alert on high memory usage
         if (memoryUsagePercentage > this.config.performance.memoryUsageThreshold) {
-            this.loggingService.logWarning(`High memory usage: ${memoryUsagePercentage.toFixed(2)}%`, {
-                memoryUsage: memoryUsage,
-            });
+            this.loggingService.logWarning(
+                `High memory usage: ${memoryUsagePercentage.toFixed(2)}%`,
+                {
+                    memoryUsage: memoryUsage,
+                },
+            );
         }
 
         // Record CPU metrics

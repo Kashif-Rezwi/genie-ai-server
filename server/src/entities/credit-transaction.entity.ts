@@ -1,10 +1,17 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinColumn } from 'typeorm';
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    ManyToOne,
+    CreateDateColumn,
+    JoinColumn,
+} from 'typeorm';
 import { User } from './user.entity';
 
 export enum TransactionType {
     PURCHASE = 'purchase',
     USAGE = 'usage',
-    REFUND = 'refund'
+    REFUND = 'refund',
 }
 
 @Entity('credit_transactions')

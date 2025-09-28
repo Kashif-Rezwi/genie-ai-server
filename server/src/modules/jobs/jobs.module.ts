@@ -36,11 +36,11 @@ const config = redisConfig();
             },
             defaultJobOptions: {
                 removeOnComplete: 50, // Keep last 50 completed jobs
-                removeOnFail: 20,     // Keep last 20 failed jobs
-                attempts: 3,          // Retry failed jobs 3 times
+                removeOnFail: 20, // Keep last 20 failed jobs
+                attempts: 3, // Retry failed jobs 3 times
                 backoff: {
                     type: 'exponential',
-                    delay: 2000,        // Start with 2s delay
+                    delay: 2000, // Start with 2s delay
                 },
             },
         }),
@@ -69,11 +69,6 @@ const config = redisConfig();
         AnalyticsJobProcessor,
         MaintenanceJobProcessor,
     ],
-    exports: [
-        JobService,
-        EmailService,
-        AnalyticsJobService,
-        MaintenanceJobService,
-    ],
+    exports: [JobService, EmailService, AnalyticsJobService, MaintenanceJobService],
 })
-export class JobsModule { }
+export class JobsModule {}

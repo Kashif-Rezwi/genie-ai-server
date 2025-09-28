@@ -62,10 +62,7 @@ export class ValidationMiddleware implements NestMiddleware {
         }
 
         // Check for bot-like behavior
-        const botPatterns = [
-            /bot|crawler|spider|scraper/i,
-            /curl|wget|httpie/i,
-        ];
+        const botPatterns = [/bot|crawler|spider|scraper/i, /curl|wget|httpie/i];
 
         const isBot = botPatterns.some(pattern => pattern.test(userAgent));
 

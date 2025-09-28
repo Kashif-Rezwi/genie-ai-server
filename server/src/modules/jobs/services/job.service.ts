@@ -7,7 +7,7 @@ import {
     EmailJobData,
     AnalyticsJobData,
     MaintenanceJobData,
-    JobPriority
+    JobPriority,
 } from '../interfaces/job.interface';
 import { QUEUE_NAMES } from '../constants/queue-names';
 
@@ -30,12 +30,12 @@ export class JobService {
 
         @InjectQueue(QUEUE_NAMES.MAINTENANCE)
         private readonly maintenanceQueue: Queue<MaintenanceJobData>,
-    ) { }
+    ) {}
 
     // AI Processing Jobs
     async addAIProcessingJob(
         data: Omit<AIJobData, 'jobId' | 'createdAt'>,
-        options: Partial<JobsOptions> = {}
+        options: Partial<JobsOptions> = {},
     ): Promise<Job<AIJobData>> {
         const jobData: AIJobData = {
             ...data,
@@ -62,7 +62,7 @@ export class JobService {
 
     async addLongRunningAIJob(
         data: Omit<AIJobData, 'jobId' | 'createdAt'>,
-        estimatedDuration: number = 60000 // 1 minute default
+        estimatedDuration: number = 60000, // 1 minute default
     ): Promise<Job<AIJobData>> {
         return this.addAIProcessingJob(data, {
             priority: JobPriority.HIGH,
@@ -79,7 +79,7 @@ export class JobService {
     // Payment Processing Jobs
     async addPaymentProcessingJob(
         data: Omit<PaymentJobData, 'jobId' | 'createdAt'>,
-        options: Partial<JobsOptions> = {}
+        options: Partial<JobsOptions> = {},
     ): Promise<Job<PaymentJobData>> {
         const jobData: PaymentJobData = {
             ...data,
@@ -106,25 +106,28 @@ export class JobService {
     async addPaymentRetryJob(
         paymentId: string,
         userId: string,
-        retryCount: number = 1
+        retryCount: number = 1,
     ): Promise<Job<PaymentJobData>> {
         const delay = Math.min(Math.pow(2, retryCount) * 1000, 300000); // Max 5 minutes
 
-        return this.addPaymentProcessingJob({
-            paymentId,
-            userId,
-            action: 'retry',
-            metadata: { retryCount },
-        }, {
-            delay,
-            priority: JobPriority.HIGH,
-        });
+        return this.addPaymentProcessingJob(
+            {
+                paymentId,
+                userId,
+                action: 'retry',
+                metadata: { retryCount },
+            },
+            {
+                delay,
+                priority: JobPriority.HIGH,
+            },
+        );
     }
 
     // Email Jobs
     async addEmailJob(
         data: Omit<EmailJobData, 'jobId' | 'createdAt'>,
-        options: Partial<JobsOptions> = {}
+        options: Partial<JobsOptions> = {},
     ): Promise<Job<EmailJobData>> {
         const jobData: EmailJobData = {
             ...data,
@@ -151,7 +154,7 @@ export class JobService {
 
     async addBulkEmailJob(
         emails: Array<Omit<EmailJobData, 'jobId' | 'createdAt'>>,
-        batchSize: number = 10
+        batchSize: number = 10,
     ): Promise<Job<EmailJobData>[]> {
         const jobs: Job<EmailJobData>[] = [];
 
@@ -172,7 +175,7 @@ export class JobService {
     // Analytics Jobs
     async addAnalyticsJob(
         data: Omit<AnalyticsJobData, 'jobId' | 'createdAt'>,
-        options: Partial<JobsOptions> = {}
+        options: Partial<JobsOptions> = {},
     ): Promise<Job<AnalyticsJobData>> {
         const jobData: AnalyticsJobData = {
             ...data,
@@ -195,7 +198,7 @@ export class JobService {
     // Maintenance Jobs
     async addMaintenanceJob(
         data: Omit<MaintenanceJobData, 'jobId' | 'createdAt'>,
-        options: Partial<JobsOptions> = {}
+        options: Partial<JobsOptions> = {},
     ): Promise<Job<MaintenanceJobData>> {
         const jobData: MaintenanceJobData = {
             ...data,
@@ -296,7 +299,7 @@ export class JobService {
         queueName: string,
         jobName: string,
         data: any,
-        cronExpression: string
+        cronExpression: string,
     ): Promise<Job> {
         const queue = this.getQueueByName(queueName);
 

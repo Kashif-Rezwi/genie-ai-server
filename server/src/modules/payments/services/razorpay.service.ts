@@ -23,7 +23,11 @@ export class RazorpayService {
     private razorpay: InstanceType<typeof Razorpay>;
 
     constructor() {
-        if (!this.config.razorpay.keyId || !this.config.razorpay.keySecret || !this.config.razorpay.webhookSecret) {
+        if (
+            !this.config.razorpay.keyId ||
+            !this.config.razorpay.keySecret ||
+            !this.config.razorpay.webhookSecret
+        ) {
             throw new Error('Razorpay credentials not configured');
         }
 
@@ -38,7 +42,7 @@ export class RazorpayService {
         amount: number,
         currency: string = 'INR',
         receipt: string,
-        notes: Record<string, any> = {}
+        notes: Record<string, any> = {},
     ): Promise<RazorpayOrder> {
         try {
             const options = {
@@ -58,7 +62,7 @@ export class RazorpayService {
 
     async fetchOrder(orderId: string): Promise<any> {
         try {
-            return await this.razorpay.orders.fetch(orderId) as RazorpayOrder;
+            return (await this.razorpay.orders.fetch(orderId)) as RazorpayOrder;
         } catch (error) {
             console.error('Failed to fetch Razorpay order:', error);
             throw new BadRequestException('Invalid order ID');
@@ -108,7 +112,7 @@ export class RazorpayService {
     async refundPayment(
         paymentId: string,
         amount?: number,
-        notes: Record<string, any> = {}
+        notes: Record<string, any> = {},
     ): Promise<any> {
         try {
             const refundData: any = { notes };
@@ -135,7 +139,7 @@ export class RazorpayService {
                 wallet: true,
                 upi: true,
                 emi: true,
-                paylater: true
+                paylater: true,
             };
         } catch (error) {
             console.error('Failed to fetch payment methods:', error);

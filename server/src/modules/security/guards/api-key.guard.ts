@@ -17,13 +17,13 @@ export class ApiKeyGuard implements CanActivate {
         private readonly apiKeyService: ApiKeyService,
         private readonly securityService: SecurityService,
         private readonly reflector: Reflector,
-    ) { }
+    ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
-        const requiredPermission = this.reflector.getAllAndOverride<string>(
-            API_KEY_REQUIRED,
-            [context.getHandler(), context.getClass()],
-        );
+        const requiredPermission = this.reflector.getAllAndOverride<string>(API_KEY_REQUIRED, [
+            context.getHandler(),
+            context.getClass(),
+        ]);
 
         if (!requiredPermission) {
             return true;
@@ -45,7 +45,7 @@ export class ApiKeyGuard implements CanActivate {
         // Check permission
         const hasPermission = await this.apiKeyService.hasPermission(
             validation.apiKey,
-            requiredPermission
+            requiredPermission,
         );
 
         if (!hasPermission) {

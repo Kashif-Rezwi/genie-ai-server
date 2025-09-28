@@ -13,7 +13,12 @@ export { jwtConfig } from './jwt.config';
 export { databaseConfig } from './database.config';
 export { getActivePackages, getPackageById, calculateTotalCredits } from './credit-packages.config';
 export { getModelConfig, AI_MODELS, getFreeModels, getPaidModels } from './ai.config';
-export { getRateLimitConfig, getAllRateLimitConfigs, hasRateLimitConfig, RATE_LIMIT_CONFIGS } from './rate-limiting.config';
+export {
+    getRateLimitConfig,
+    getAllRateLimitConfigs,
+    hasRateLimitConfig,
+    RATE_LIMIT_CONFIGS,
+} from './rate-limiting.config';
 
 // Re-export types for convenience
 export type { AIModelConfig } from './ai.config';
