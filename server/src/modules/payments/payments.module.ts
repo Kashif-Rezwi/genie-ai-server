@@ -10,17 +10,9 @@ import { User, CreditTransaction } from '../../entities';
 import { Payment } from '../../entities/payment.entity';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([User, CreditTransaction, Payment]),
-        CreditsModule,
-    ],
+    imports: [TypeOrmModule.forFeature([User, CreditTransaction, Payment]), CreditsModule],
     controllers: [PaymentsController],
-    providers: [
-        PaymentsService,
-        RazorpayService,
-        WebhookService,
-        PaymentHistoryService,
-    ],
+    providers: [PaymentsService, RazorpayService, WebhookService, PaymentHistoryService],
     exports: [PaymentsService, RazorpayService, WebhookService],
 })
-export class PaymentsModule { }
+export class PaymentsModule {}

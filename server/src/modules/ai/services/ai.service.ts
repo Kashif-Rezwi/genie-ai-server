@@ -17,7 +17,7 @@ export class AIService {
         private readonly openaiProvider: OpenAIProvider,
         private readonly anthropicProvider: AnthropicProvider,
         private readonly groqProvider: GroqProvider,
-    ) { }
+    ) {}
 
     // Non-streaming endpoint (collects stream internally)
     async generateResponse(userId: string, request: AIRequestDto): Promise<AIResponseDto> {
@@ -35,7 +35,7 @@ export class AIService {
 
             if (balance < estimatedCost) {
                 throw new ForbiddenException(
-                    `Insufficient credits. Required: ${estimatedCost}, Available: ${balance}`
+                    `Insufficient credits. Required: ${estimatedCost}, Available: ${balance}`,
                 );
             }
         }
@@ -45,7 +45,10 @@ export class AIService {
         let totalTokens = 0;
 
         try {
-            response = await this.getProviderResponse(modelConfig.provider, { ...request, model: modelId });
+            response = await this.getProviderResponse(modelConfig.provider, {
+                ...request,
+                model: modelId,
+            });
             totalTokens = response.usage.totalTokens;
         } catch (error) {
             throw new BadRequestException(`AI generation failed: ${error.message}`);
@@ -56,23 +59,21 @@ export class AIService {
         response.creditsUsed = creditsUsed;
 
         if (!modelConfig.isFree && creditsUsed > 0) {
-            await this.creditsService.deductCredits(
-                userId,
-                creditsUsed,
-                'AI generation',
-                {
-                    model: modelConfig.name,
-                    tokens: response.usage.totalTokens,
-                    provider: modelConfig.provider,
-                }
-            );
+            await this.creditsService.deductCredits(userId, creditsUsed, 'AI generation', {
+                model: modelConfig.name,
+                tokens: response.usage.totalTokens,
+                provider: modelConfig.provider,
+            });
         }
 
         return response;
     }
 
     // Streaming endpoint with real-time credit deduction
-    async *streamResponse(userId: string, request: AIRequestDto): AsyncGenerator<any, void, unknown> {
+    async *streamResponse(
+        userId: string,
+        request: AIRequestDto,
+    ): AsyncGenerator<any, void, unknown> {
         const modelId = request.model || this.config.defaultModel;
         const modelConfig = getModelConfig(modelId);
 
@@ -87,14 +88,17 @@ export class AIService {
 
             if (balance < estimatedCost) {
                 throw new ForbiddenException(
-                    `Insufficient credits. Required: ${estimatedCost}, Available: ${balance}`
+                    `Insufficient credits. Required: ${estimatedCost}, Available: ${balance}`,
                 );
             }
         }
 
         // Stream response
         try {
-            const stream = this.getProviderStream(modelConfig.provider, { ...request, model: modelId });
+            const stream = this.getProviderStream(modelConfig.provider, {
+                ...request,
+                model: modelId,
+            });
             let totalTokens = 0;
             let creditsDeducted = false;
 
@@ -122,7 +126,7 @@ export class AIService {
                                     model: modelConfig.name,
                                     tokens: totalTokens,
                                     provider: modelConfig.provider,
-                                }
+                                },
                             );
 
                             // Send credit info to client
@@ -158,7 +162,10 @@ export class AIService {
         }
     }
 
-    private async getProviderResponse(provider: string, request: AIRequestDto): Promise<AIResponseDto> {
+    private async getProviderResponse(
+        provider: string,
+        request: AIRequestDto,
+    ): Promise<AIResponseDto> {
         switch (provider) {
             case 'openai':
                 return this.openaiProvider.generateResponse(request);

@@ -53,7 +53,6 @@ export class PaymentJobProcessor extends WorkerHost {
                 results,
                 timestamp: new Date().toISOString(),
             };
-
         } catch (error) {
             this.logger.error(`Payment job failed: ${job.data.jobId}`, error);
             throw error;

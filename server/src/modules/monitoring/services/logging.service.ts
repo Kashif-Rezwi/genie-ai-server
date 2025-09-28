@@ -53,7 +53,7 @@ export class LoggingService implements NestLoggerService {
                     ...meta,
                 };
                 return JSON.stringify(logEntry);
-            })
+            }),
         );
 
         const consoleFormat = winston.format.combine(
@@ -61,9 +61,10 @@ export class LoggingService implements NestLoggerService {
             winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
             winston.format.printf(({ timestamp, level, message, category: cat, ...meta }) => {
                 const metaStr = Object.keys(meta).length ? JSON.stringify(meta, null, 2) : '';
-                const catStr = typeof cat === 'string' ? cat.toUpperCase() : String(cat ?? '').toUpperCase();
+                const catStr =
+                    typeof cat === 'string' ? cat.toUpperCase() : String(cat ?? '').toUpperCase();
                 return `${timestamp} [${catStr}] ${level}: ${message} ${metaStr}`;
-            })
+            }),
         );
 
         const transports: winston.transport[] = [];
@@ -74,7 +75,7 @@ export class LoggingService implements NestLoggerService {
                 new winston.transports.Console({
                     level: this.config.level,
                     format: consoleFormat,
-                })
+                }),
             );
         }
 
@@ -89,7 +90,7 @@ export class LoggingService implements NestLoggerService {
                     maxFiles: this.config.file.maxFiles,
                     format: logFormat,
                     level: this.config.level,
-                })
+                }),
             );
 
             // Error logs
@@ -102,7 +103,7 @@ export class LoggingService implements NestLoggerService {
                         maxFiles: this.config.file.maxFiles,
                         format: logFormat,
                         level: 'error',
-                    })
+                    }),
                 );
             }
         }
@@ -228,14 +229,17 @@ export class LoggingService implements NestLoggerService {
     }
 
     // AI-specific logging
-    logAIInteraction(event: string, data: {
-        userId: string;
-        model: string;
-        tokensUsed: number;
-        creditsUsed: number;
-        responseTime: number;
-        success: boolean;
-    }) {
+    logAIInteraction(
+        event: string,
+        data: {
+            userId: string;
+            model: string;
+            tokensUsed: number;
+            creditsUsed: number;
+            responseTime: number;
+            success: boolean;
+        },
+    ) {
         this.logger.info(`AI: ${event}`, {
             event,
             ...data,
@@ -244,13 +248,16 @@ export class LoggingService implements NestLoggerService {
     }
 
     // Payment logging
-    logPaymentEvent(event: string, data: {
-        userId: string;
-        paymentId: string;
-        amount: number;
-        status: string;
-        method?: string;
-    }) {
+    logPaymentEvent(
+        event: string,
+        data: {
+            userId: string;
+            paymentId: string;
+            amount: number;
+            status: string;
+            method?: string;
+        },
+    ) {
         this.logger.info(`PAYMENT: ${event}`, {
             event,
             ...data,
@@ -259,13 +266,16 @@ export class LoggingService implements NestLoggerService {
     }
 
     // Credit operations logging
-    logCreditOperation(event: string, data: {
-        userId: string;
-        amount: number;
-        type: string;
-        balance: number;
-        description: string;
-    }) {
+    logCreditOperation(
+        event: string,
+        data: {
+            userId: string;
+            amount: number;
+            type: string;
+            balance: number;
+            description: string;
+        },
+    ) {
         this.logger.info(`CREDITS: ${event}`, {
             event,
             ...data,

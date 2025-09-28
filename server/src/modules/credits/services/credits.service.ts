@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+    Injectable,
+    BadRequestException,
+    ForbiddenException,
+    NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Between } from 'typeorm';
 import { User, CreditTransaction, TransactionType } from '../../../entities';
@@ -27,13 +32,13 @@ export class CreditsService {
         @InjectRepository(CreditTransaction)
         private readonly transactionRepository: Repository<CreditTransaction>,
         private readonly dataSource: DataSource,
-    ) { }
+    ) {}
 
     // Enhanced balance checking with caching potential
     async getUserBalance(userId: string): Promise<number> {
         const user = await this.userRepository.findOne({
             where: { id: userId },
-            select: ['id', 'creditsBalance']
+            select: ['id', 'creditsBalance'],
         });
 
         if (!user) {
@@ -44,11 +49,13 @@ export class CreditsService {
     }
 
     // Batch credit operations for admin
-    async batchAddCredits(operations: Array<{
-        userId: string;
-        amount: number;
-        description: string;
-    }>): Promise<CreditOperationResult[]> {
+    async batchAddCredits(
+        operations: Array<{
+            userId: string;
+            amount: number;
+            description: string;
+        }>,
+    ): Promise<CreditOperationResult[]> {
         const results: CreditOperationResult[] = [];
 
         for (const operation of operations) {
@@ -56,7 +63,7 @@ export class CreditsService {
                 const result = await this.addCredits(
                     operation.userId,
                     operation.amount,
-                    operation.description
+                    operation.description,
                 );
                 results.push(result);
             } catch (error) {
@@ -77,12 +84,12 @@ export class CreditsService {
         amount: number,
         description: string,
         razorpayPaymentId?: string,
-        packageId?: string
+        packageId?: string,
     ): Promise<CreditOperationResult> {
-        return this.dataSource.transaction(async (manager) => {
+        return this.dataSource.transaction(async manager => {
             const user = await manager.findOne(User, {
                 where: { id: userId },
-                lock: { mode: 'pessimistic_write' }
+                lock: { mode: 'pessimistic_write' },
             });
 
             if (!user) {
@@ -130,12 +137,12 @@ export class CreditsService {
         userId: string,
         amount: number,
         description: string,
-        metadata?: Record<string, any>
+        metadata?: Record<string, any>,
     ): Promise<CreditOperationResult> {
-        return this.dataSource.transaction(async (manager) => {
+        return this.dataSource.transaction(async manager => {
             const user = await manager.findOne(User, {
                 where: { id: userId },
-                lock: { mode: 'pessimistic_write' }
+                lock: { mode: 'pessimistic_write' },
             });
 
             if (!user) {
@@ -143,7 +150,9 @@ export class CreditsService {
             }
 
             if (user.creditsBalance < amount) {
-                throw new ForbiddenException(`Insufficient credits. Required: ${amount}, Available: ${user.creditsBalance}`);
+                throw new ForbiddenException(
+                    `Insufficient credits. Required: ${amount}, Available: ${user.creditsBalance}`,
+                );
             }
 
             // Update user balance
@@ -174,21 +183,21 @@ export class CreditsService {
         fromUserId: string,
         toUserId: string,
         amount: number,
-        description?: string
+        description?: string,
     ): Promise<{ fromResult: CreditOperationResult; toResult: CreditOperationResult }> {
-        return this.dataSource.transaction(async (manager) => {
+        return this.dataSource.transaction(async manager => {
             // Deduct from sender
             const fromResult = await this.deductCredits(
                 fromUserId,
                 amount,
-                `Transfer to user ${toUserId.substring(0, 8)}... - ${description || 'Credit transfer'}`
+                `Transfer to user ${toUserId.substring(0, 8)}... - ${description || 'Credit transfer'}`,
             );
 
             // Add to receiver
             const toResult = await this.addCredits(
                 toUserId,
                 amount,
-                `Transfer from user ${fromUserId.substring(0, 8)}... - ${description || 'Credit transfer'}`
+                `Transfer from user ${fromUserId.substring(0, 8)}... - ${description || 'Credit transfer'}`,
             );
 
             return { fromResult, toResult };
@@ -204,11 +213,12 @@ export class CreditsService {
             type?: TransactionType;
             startDate?: Date;
             endDate?: Date;
-        } = {}
+        } = {},
     ): Promise<{ transactions: CreditTransaction[]; total: number }> {
         const { limit = 50, offset = 0, type, startDate, endDate } = options;
 
-        const queryBuilder = this.transactionRepository.createQueryBuilder('transaction')
+        const queryBuilder = this.transactionRepository
+            .createQueryBuilder('transaction')
             .where('transaction.userId = :userId', { userId })
             .orderBy('transaction.createdAt', 'DESC');
 
@@ -223,10 +233,7 @@ export class CreditsService {
             });
         }
 
-        const [transactions, total] = await queryBuilder
-            .skip(offset)
-            .take(limit)
-            .getManyAndCount();
+        const [transactions, total] = await queryBuilder.skip(offset).take(limit).getManyAndCount();
 
         return { transactions, total };
     }
@@ -247,9 +254,11 @@ export class CreditsService {
             .filter(t => t.type === TransactionType.PURCHASE)
             .reduce((sum, t) => sum + t.amount, 0);
 
-        const totalUsed = Math.abs(transactions
-            .filter(t => t.type === TransactionType.USAGE)
-            .reduce((sum, t) => sum + t.amount, 0));
+        const totalUsed = Math.abs(
+            transactions
+                .filter(t => t.type === TransactionType.USAGE)
+                .reduce((sum, t) => sum + t.amount, 0),
+        );
 
         const lastTransaction = transactions[0] || null;
 

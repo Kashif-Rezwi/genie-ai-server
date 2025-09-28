@@ -44,4 +44,4 @@ import { User, Chat, Message, Payment } from '../../entities';
         ErrorMonitoringMiddleware,
     ],
 })
-export class MonitoringModule { }
+export class MonitoringModule {}

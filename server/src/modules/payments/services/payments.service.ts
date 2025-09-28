@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+    ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Payment, PaymentStatus, PaymentMethod, User } from '../../../entities';
@@ -12,7 +17,7 @@ import {
     PaymentOrderResponse,
     PaymentVerificationResponse,
     PaymentHistoryQueryDto,
-    PaymentHistoryResponse
+    PaymentHistoryResponse,
 } from '../dto/payment.dto';
 
 @Injectable()
@@ -27,11 +32,11 @@ export class PaymentsService {
         private readonly razorpayService: RazorpayService,
         private readonly creditsService: CreditsService,
         private readonly dataSource: DataSource,
-    ) { }
+    ) {}
 
     async createPaymentOrder(
         userId: string,
-        createOrderDto: CreatePaymentOrderDto
+        createOrderDto: CreatePaymentOrderDto,
     ): Promise<PaymentOrderResponse> {
         const { packageId, notes } = createOrderDto;
 
@@ -63,7 +68,7 @@ export class PaymentsService {
             package_.price,
             package_.currency,
             receipt,
-            razorpayNotes
+            razorpayNotes,
         );
 
         // Save payment record
@@ -107,11 +112,11 @@ export class PaymentsService {
     }
 
     async verifyAndCompletePayment(
-        verifyDto: VerifyPaymentDto
+        verifyDto: VerifyPaymentDto,
     ): Promise<PaymentVerificationResponse> {
         const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = verifyDto;
 
-        return this.dataSource.transaction(async (manager) => {
+        return this.dataSource.transaction(async manager => {
             // Find payment record
             const payment = await manager.findOne(Payment, {
                 where: { razorpayOrderId },
@@ -173,7 +178,7 @@ export class PaymentsService {
                 payment.creditsAmount,
                 `Package purchase: ${payment.packageName}`,
                 razorpayPaymentId,
-                payment.packageId
+                payment.packageId,
             );
 
             // Update payment with credit transaction ID
@@ -197,7 +202,7 @@ export class PaymentsService {
 
     async getPaymentHistory(
         userId: string,
-        query: PaymentHistoryQueryDto
+        query: PaymentHistoryQueryDto,
     ): Promise<{ payments: PaymentHistoryResponse[]; total: number }> {
         const { limit = 20, offset = 0, status } = query;
 
@@ -210,10 +215,7 @@ export class PaymentsService {
             queryBuilder.andWhere('payment.status = :status', { status });
         }
 
-        const [payments, total] = await queryBuilder
-            .skip(offset)
-            .take(limit)
-            .getManyAndCount();
+        const [payments, total] = await queryBuilder.skip(offset).take(limit).getManyAndCount();
 
         const paymentResponses: PaymentHistoryResponse[] = payments.map(payment => ({
             id: payment.id,

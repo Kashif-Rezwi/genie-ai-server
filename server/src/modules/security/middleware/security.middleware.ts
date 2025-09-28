@@ -7,7 +7,7 @@ import { appConfig } from '../../../config';
 export class SecurityMiddleware implements NestMiddleware {
     private readonly config = appConfig();
 
-    constructor(private readonly securityService: SecurityService) { }
+    constructor(private readonly securityService: SecurityService) {}
 
     use(req: Request, res: Response, next: NextFunction) {
         // Add security headers
@@ -39,7 +39,7 @@ export class SecurityMiddleware implements NestMiddleware {
         // Content Security Policy
         res.setHeader(
             'Content-Security-Policy',
-            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
         );
 
         // Referrer Policy

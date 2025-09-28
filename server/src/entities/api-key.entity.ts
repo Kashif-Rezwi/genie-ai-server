@@ -1,16 +1,24 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, JoinColumn } from 'typeorm';
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    ManyToOne,
+    CreateDateColumn,
+    UpdateDateColumn,
+    JoinColumn,
+} from 'typeorm';
 import { User } from './user.entity';
 
 export enum ApiKeyStatus {
     ACTIVE = 'active',
     INACTIVE = 'inactive',
-    REVOKED = 'revoked'
+    REVOKED = 'revoked',
 }
 
 export enum ApiKeyType {
     USER = 'user',
     ADMIN = 'admin',
-    SYSTEM = 'system'
+    SYSTEM = 'system',
 }
 
 @Entity('api_keys')

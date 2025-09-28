@@ -12,7 +12,7 @@ import {
     Res,
     HttpCode,
     HttpStatus,
-    BadRequestException
+    BadRequestException,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ChatService } from './services/chat.service';
@@ -21,12 +21,7 @@ import { ChatStreamingService } from './services/chat-streaming.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RateLimit, RateLimitGuard } from '../security/guards/rate-limit.guard';
-import {
-    CreateChatDto,
-    UpdateChatDto,
-    SendMessageDto,
-    ChatListQueryDto
-} from './dto/chat.dto';
+import { CreateChatDto, UpdateChatDto, SendMessageDto, ChatListQueryDto } from './dto/chat.dto';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard, RateLimitGuard)
@@ -35,14 +30,11 @@ export class ChatController {
         private readonly chatService: ChatService,
         private readonly messageService: MessageService,
         private readonly streamingService: ChatStreamingService,
-    ) { }
+    ) {}
 
     @Post()
     @RateLimit('chat')
-    async createChat(
-        @CurrentUser() user: any,
-        @Body(ValidationPipe) createChatDto: CreateChatDto
-    ) {
+    async createChat(@CurrentUser() user: any, @Body(ValidationPipe) createChatDto: CreateChatDto) {
         const chat = await this.chatService.createChat(user.id, createChatDto);
         return {
             id: chat.id,
@@ -53,10 +45,7 @@ export class ChatController {
     }
 
     @Get()
-    async getUserChats(
-        @CurrentUser() user: any,
-        @Query(ValidationPipe) query: ChatListQueryDto
-    ) {
+    async getUserChats(@CurrentUser() user: any, @Query(ValidationPipe) query: ChatListQueryDto) {
         return this.chatService.getUserChats(user.id, query);
     }
 
@@ -66,10 +55,7 @@ export class ChatController {
     }
 
     @Get(':chatId')
-    async getChatById(
-        @CurrentUser() user: any,
-        @Param('chatId') chatId: string
-    ) {
+    async getChatById(@CurrentUser() user: any, @Param('chatId') chatId: string) {
         return this.chatService.getChatById(chatId, user.id);
     }
 
@@ -77,7 +63,7 @@ export class ChatController {
     async updateChat(
         @CurrentUser() user: any,
         @Param('chatId') chatId: string,
-        @Body(ValidationPipe) updateChatDto: UpdateChatDto
+        @Body(ValidationPipe) updateChatDto: UpdateChatDto,
     ) {
         const chat = await this.chatService.updateChat(chatId, user.id, updateChatDto);
         return {
@@ -90,10 +76,7 @@ export class ChatController {
 
     @Delete(':chatId')
     @HttpCode(HttpStatus.NO_CONTENT)
-    async deleteChat(
-        @CurrentUser() user: any,
-        @Param('chatId') chatId: string
-    ) {
+    async deleteChat(@CurrentUser() user: any, @Param('chatId') chatId: string) {
         await this.chatService.deleteChat(chatId, user.id);
     }
 
@@ -102,16 +85,13 @@ export class ChatController {
         @CurrentUser() user: any,
         @Param('chatId') chatId: string,
         @Query('limit') limit: number = 50,
-        @Query('offset') offset: number = 0
+        @Query('offset') offset: number = 0,
     ) {
         return this.messageService.getChatMessages(chatId, user.id, limit, offset);
     }
 
     @Get(':chatId/cost-analysis')
-    async getChatCostAnalysis(
-        @CurrentUser() user: any,
-        @Param('chatId') chatId: string
-    ) {
+    async getChatCostAnalysis(@CurrentUser() user: any, @Param('chatId') chatId: string) {
         return this.messageService.getMessageCostAnalysis(chatId, user.id);
     }
 
@@ -120,7 +100,7 @@ export class ChatController {
     async sendMessage(
         @CurrentUser() user: any,
         @Param('chatId') chatId: string,
-        @Body(ValidationPipe) sendMessageDto: SendMessageDto
+        @Body(ValidationPipe) sendMessageDto: SendMessageDto,
     ) {
         // Non-streaming quick response
         return this.streamingService.handleQuickResponse(chatId, user.id, sendMessageDto);
@@ -132,7 +112,7 @@ export class ChatController {
         @CurrentUser() user: any,
         @Param('chatId') chatId: string,
         @Body(ValidationPipe) sendMessageDto: SendMessageDto,
-        @Res() response: Response
+        @Res() response: Response,
     ) {
         // Set SSE headers
         response.setHeader('Content-Type', 'text/event-stream');
@@ -150,7 +130,7 @@ export class ChatController {
     async deleteMessage(
         @CurrentUser() user: any,
         @Param('chatId') chatId: string,
-        @Param('messageId') messageId: string
+        @Param('messageId') messageId: string,
     ) {
         await this.messageService.deleteMessage(messageId, user.id);
     }
@@ -158,7 +138,7 @@ export class ChatController {
     @Post('quick-start')
     async quickStartChat(
         @CurrentUser() user: any,
-        @Body(ValidationPipe) sendMessageDto: SendMessageDto
+        @Body(ValidationPipe) sendMessageDto: SendMessageDto,
     ) {
         // Create a new chat with auto-generated title and send first message
         const title = await this.chatService.generateChatTitle(sendMessageDto.content);
@@ -175,7 +155,7 @@ export class ChatController {
         const result = await this.streamingService.handleQuickResponse(
             chat.id,
             user.id,
-            sendMessageDto
+            sendMessageDto,
         );
 
         return {
@@ -192,7 +172,7 @@ export class ChatController {
     async regenerateLastResponse(
         @CurrentUser() user: any,
         @Param('chatId') chatId: string,
-        @Body() options: { model?: string }
+        @Body() options: { model?: string },
     ) {
         // Get the last user message to regenerate response
         const { messages } = await this.messageService.getChatMessages(chatId, user.id, 2);
@@ -209,22 +189,23 @@ export class ChatController {
 
         return this.streamingService.handleQuickResponse(chatId, user.id, sendMessageDto);
     }
-    
+
     @Get('analytics/usage')
     async getChatAnalytics(@CurrentUser() user: any) {
         const stats = await this.chatService.getChatStats(user.id);
-    
+
         // Get model usage distribution
         const modelUsage = await this.messageService.getUserModelUsage(user.id);
-    
+
         // Get recent activity
         const recentActivity = await this.messageService.getRecentActivity(user.id, 7);
-    
+
         return {
             ...stats,
             modelUsage,
             recentActivity,
-            averageCostPerMessage: stats.totalMessages > 0 ? stats.totalCreditsUsed / stats.totalMessages : 0,
+            averageCostPerMessage:
+                stats.totalMessages > 0 ? stats.totalCreditsUsed / stats.totalMessages : 0,
         };
     }
 }

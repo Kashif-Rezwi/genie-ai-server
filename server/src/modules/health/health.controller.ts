@@ -6,7 +6,7 @@ import { Chat, Message } from '../../entities';
 
 @Controller('health')
 export class HealthController {
-    constructor(@InjectDataSource() private dataSource: DataSource) { }
+    constructor(@InjectDataSource() private dataSource: DataSource) {}
 
     @Get()
     async healthCheck() {

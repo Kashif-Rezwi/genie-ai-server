@@ -1,10 +1,17 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinColumn } from 'typeorm';
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    ManyToOne,
+    CreateDateColumn,
+    JoinColumn,
+} from 'typeorm';
 import { Chat } from './chat.entity';
 
 export enum MessageRole {
     USER = 'user',
     ASSISTANT = 'assistant',
-    SYSTEM = 'system'
+    SYSTEM = 'system',
 }
 
 @Entity('messages')

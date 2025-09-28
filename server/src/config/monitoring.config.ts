@@ -4,7 +4,9 @@ export const monitoringConfig = () => ({
         memoryUsageThreshold: parseInt(process.env.MEMORY_USAGE_THRESHOLD || '80', 10),
     },
     health: {
-        checkInterval: process.env.HEALTH_CHECK_INTERVAL ? parseInt(process.env.HEALTH_CHECK_INTERVAL, 10) : undefined,
+        checkInterval: process.env.HEALTH_CHECK_INTERVAL
+            ? parseInt(process.env.HEALTH_CHECK_INTERVAL, 10)
+            : undefined,
     },
     notifications: {
         errorEmail: process.env.ERROR_NOTIFICATION_EMAIL?.split(',') || [],

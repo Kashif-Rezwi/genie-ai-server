@@ -28,7 +28,7 @@ export class MaintenanceJobProcessor extends WorkerHost {
                     results = await this.maintenanceJobService.cleanupOldRecords(
                         targetTable || 'messages',
                         90,
-                        1000
+                        1000,
                     );
                     break;
                 case 'backup':
@@ -55,7 +55,6 @@ export class MaintenanceJobProcessor extends WorkerHost {
                 results,
                 timestamp: new Date().toISOString(),
             };
-
         } catch (error) {
             this.logger.error(`Maintenance job failed: ${job.data.jobId}`, error);
             throw error;

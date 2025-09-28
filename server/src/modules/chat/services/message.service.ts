@@ -12,13 +12,9 @@ export class MessageService {
         @InjectRepository(Chat)
         private readonly chatRepository: Repository<Chat>,
         private readonly dataSource: DataSource,
-    ) { }
+    ) {}
 
-    async addUserMessage(
-        chatId: string,
-        userId: string,
-        content: string
-    ): Promise<Message> {
+    async addUserMessage(chatId: string, userId: string, content: string): Promise<Message> {
         // Verify chat belongs to user
         const chat = await this.chatRepository.findOne({
             where: { id: chatId, userId },
@@ -43,7 +39,7 @@ export class MessageService {
         userId: string,
         content: string,
         model: string,
-        creditsUsed: number
+        creditsUsed: number,
     ): Promise<Message> {
         // Verify chat belongs to user
         const chat = await this.chatRepository.findOne({
@@ -69,7 +65,7 @@ export class MessageService {
         chatId: string,
         userId: string,
         limit: number = 50,
-        offset: number = 0
+        offset: number = 0,
     ): Promise<{ messages: MessageResponseDto[]; total: number }> {
         // Verify chat belongs to user
         const chat = await this.chatRepository.findOne({
@@ -99,10 +95,15 @@ export class MessageService {
         return { messages: messageResponses, total };
     }
 
-    async getConversationHistory(chatId: string, userId: string): Promise<Array<{
-        role: 'user' | 'assistant' | 'system';
-        content: string;
-    }>> {
+    async getConversationHistory(
+        chatId: string,
+        userId: string,
+    ): Promise<
+        Array<{
+            role: 'user' | 'assistant' | 'system';
+            content: string;
+        }>
+    > {
         // Verify chat belongs to user
         const chat = await this.chatRepository.findOne({
             where: { id: chatId, userId },
@@ -139,7 +140,10 @@ export class MessageService {
         await this.messageRepository.remove(message);
     }
 
-    async getMessageCostAnalysis(chatId: string, userId: string): Promise<{
+    async getMessageCostAnalysis(
+        chatId: string,
+        userId: string,
+    ): Promise<{
         totalCost: number;
         messagesByModel: Array<{
             model: string;
@@ -159,12 +163,12 @@ export class MessageService {
         const result = await this.messageRepository
             .createQueryBuilder('message')
             .select([
-                'COALESCE(message.model, \'user\') as model',
+                "COALESCE(message.model, 'user') as model",
                 'COUNT(*) as count',
-                'SUM(message.creditsUsed) as totalCost'
+                'SUM(message.creditsUsed) as totalCost',
             ])
             .where('message.chatId = :chatId', { chatId })
-            .groupBy('COALESCE(message.model, \'user\')')
+            .groupBy("COALESCE(message.model, 'user')")
             .getRawMany();
 
         const messagesByModel = result.map(row => ({
@@ -181,18 +185,20 @@ export class MessageService {
         };
     }
 
-    async getUserModelUsage(userId: string): Promise<Array<{
-        model: string;
-        messageCount: number;
-        totalCreditsUsed: number;
-    }>> {
+    async getUserModelUsage(userId: string): Promise<
+        Array<{
+            model: string;
+            messageCount: number;
+            totalCreditsUsed: number;
+        }>
+    > {
         const result = await this.messageRepository
             .createQueryBuilder('message')
             .innerJoin('message.chat', 'chat')
             .select([
-                'COALESCE(message.model, \'user\') as model',
+                "COALESCE(message.model, 'user') as model",
                 'COUNT(*) as messageCount',
-                'SUM(message.creditsUsed) as totalCreditsUsed'
+                'SUM(message.creditsUsed) as totalCreditsUsed',
             ])
             .where('chat.userId = :userId', { userId })
             .andWhere('message.model IS NOT NULL')
@@ -207,11 +213,16 @@ export class MessageService {
         }));
     }
 
-    async getRecentActivity(userId: string, days: number = 7): Promise<Array<{
-        date: string;
-        messageCount: number;
-        creditsUsed: number;
-    }>> {
+    async getRecentActivity(
+        userId: string,
+        days: number = 7,
+    ): Promise<
+        Array<{
+            date: string;
+            messageCount: number;
+            creditsUsed: number;
+        }>
+    > {
         const endDate = new Date();
         const startDate = new Date();
         startDate.setDate(endDate.getDate() - days);
@@ -222,7 +233,7 @@ export class MessageService {
             .select([
                 'DATE(message.createdAt) as date',
                 'COUNT(*) as messageCount',
-                'SUM(message.creditsUsed) as creditsUsed'
+                'SUM(message.creditsUsed) as creditsUsed',
             ])
             .where('chat.userId = :userId', { userId })
             .andWhere('message.createdAt >= :startDate', { startDate })

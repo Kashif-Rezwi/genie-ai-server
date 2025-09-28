@@ -1,12 +1,12 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { 
-    HealthCheckService, 
-    HealthCheck, 
-    HealthCheckResult, 
+import {
+    HealthCheckService,
+    HealthCheck,
+    HealthCheckResult,
     HealthIndicatorResult,
-    TypeOrmHealthIndicator, 
-    MemoryHealthIndicator, 
-    DiskHealthIndicator 
+    TypeOrmHealthIndicator,
+    MemoryHealthIndicator,
+    DiskHealthIndicator,
 } from '@nestjs/terminus';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -93,7 +93,7 @@ export class HealthService implements OnModuleDestroy {
                 queueResult,
                 filesystemResult,
                 memoryResult,
-                metricsResult
+                metricsResult,
             ] = await Promise.allSettled([
                 this.checkDatabaseHealth(),
                 this.checkRedisHealth(),
@@ -104,47 +104,68 @@ export class HealthService implements OnModuleDestroy {
                 this.getHealthMetrics(),
             ]);
 
-            const databaseHealth = databaseResult.status === 'fulfilled' ? databaseResult.value : {
-                status: 'unhealthy' as const,
-                lastChecked: new Date(),
-                error: databaseResult.reason?.message || 'Database check failed',
-            };
+            const databaseHealth =
+                databaseResult.status === 'fulfilled'
+                    ? databaseResult.value
+                    : {
+                          status: 'unhealthy' as const,
+                          lastChecked: new Date(),
+                          error: databaseResult.reason?.message || 'Database check failed',
+                      };
 
-            const redisHealth = redisResult.status === 'fulfilled' ? redisResult.value : {
-                status: 'unhealthy' as const,
-                lastChecked: new Date(),
-                error: redisResult.reason?.message || 'Redis check failed',
-            };
+            const redisHealth =
+                redisResult.status === 'fulfilled'
+                    ? redisResult.value
+                    : {
+                          status: 'unhealthy' as const,
+                          lastChecked: new Date(),
+                          error: redisResult.reason?.message || 'Redis check failed',
+                      };
 
-            const emailHealth = emailResult.status === 'fulfilled' ? emailResult.value : {
-                status: 'unhealthy' as const,
-                lastChecked: new Date(),
-                error: emailResult.reason?.message || 'Email check failed',
-            };
+            const emailHealth =
+                emailResult.status === 'fulfilled'
+                    ? emailResult.value
+                    : {
+                          status: 'unhealthy' as const,
+                          lastChecked: new Date(),
+                          error: emailResult.reason?.message || 'Email check failed',
+                      };
 
-            const queueHealth = queueResult.status === 'fulfilled' ? queueResult.value : {
-                status: 'unhealthy' as const,
-                lastChecked: new Date(),
-                error: queueResult.reason?.message || 'Queue check failed',
-            };
+            const queueHealth =
+                queueResult.status === 'fulfilled'
+                    ? queueResult.value
+                    : {
+                          status: 'unhealthy' as const,
+                          lastChecked: new Date(),
+                          error: queueResult.reason?.message || 'Queue check failed',
+                      };
 
-            const filesystemHealth = filesystemResult.status === 'fulfilled' ? filesystemResult.value : {
-                status: 'unhealthy' as const,
-                lastChecked: new Date(),
-                error: filesystemResult.reason?.message || 'Filesystem check failed',
-            };
+            const filesystemHealth =
+                filesystemResult.status === 'fulfilled'
+                    ? filesystemResult.value
+                    : {
+                          status: 'unhealthy' as const,
+                          lastChecked: new Date(),
+                          error: filesystemResult.reason?.message || 'Filesystem check failed',
+                      };
 
-            const memoryHealth = memoryResult.status === 'fulfilled' ? memoryResult.value : {
-                status: 'unhealthy' as const,
-                lastChecked: new Date(),
-                error: memoryResult.reason?.message || 'Memory check failed',
-            };
+            const memoryHealth =
+                memoryResult.status === 'fulfilled'
+                    ? memoryResult.value
+                    : {
+                          status: 'unhealthy' as const,
+                          lastChecked: new Date(),
+                          error: memoryResult.reason?.message || 'Memory check failed',
+                      };
 
-            const metrics = metricsResult.status === 'fulfilled' ? metricsResult.value : {
-                totalUsers: 0,
-                activeConnections: 0,
-                queueJobs: { active: 0, waiting: 0, failed: 0 },
-            };
+            const metrics =
+                metricsResult.status === 'fulfilled'
+                    ? metricsResult.value
+                    : {
+                          totalUsers: 0,
+                          activeConnections: 0,
+                          queueJobs: { active: 0, waiting: 0, failed: 0 },
+                      };
 
             const status: HealthStatus = {
                 status: this.determineOverallStatus([
@@ -311,7 +332,11 @@ export class HealthService implements OnModuleDestroy {
 
         try {
             // Check if SMTP configuration is available
-            if (!this.emailConfig.smtp.host || !this.emailConfig.smtp.auth.user || !this.emailConfig.smtp.auth.pass) {
+            if (
+                !this.emailConfig.smtp.host ||
+                !this.emailConfig.smtp.auth.user ||
+                !this.emailConfig.smtp.auth.pass
+            ) {
                 return {
                     status: 'degraded',
                     responseTime: Date.now() - startTime,
@@ -319,8 +344,8 @@ export class HealthService implements OnModuleDestroy {
                     error: 'SMTP configuration missing - email service disabled',
                     details: {
                         configured: false,
-                        reason: 'Environment variables not set'
-                    }
+                        reason: 'Environment variables not set',
+                    },
                 };
             }
 
@@ -340,8 +365,8 @@ export class HealthService implements OnModuleDestroy {
 
             // Add timeout wrapper
             const verifyPromise = transporter.verify();
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('SMTP verification timeout')), 5000)
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('SMTP verification timeout')), 5000),
             );
 
             await Promise.race([verifyPromise, timeoutPromise]);
@@ -354,7 +379,7 @@ export class HealthService implements OnModuleDestroy {
                 details: {
                     smtpHost: this.emailConfig.smtp.host,
                     responseTimeMs: responseTime,
-                    configured: true
+                    configured: true,
                 },
             };
         } catch (error) {
@@ -365,8 +390,8 @@ export class HealthService implements OnModuleDestroy {
                 error: error.message,
                 details: {
                     configured: !!this.emailConfig.smtp.host,
-                    reason: 'SMTP connection failed'
-                }
+                    reason: 'SMTP connection failed',
+                },
             };
         }
     }
@@ -377,7 +402,7 @@ export class HealthService implements OnModuleDestroy {
         try {
             // Check if Redis is available for queues
             await this.redisService.getClient().ping();
-            
+
             // Create a separate Redis client for the jobs database
             const Redis = require('ioredis');
             const jobsRedis = new Redis({
@@ -390,13 +415,13 @@ export class HealthService implements OnModuleDestroy {
             // Check for any Bull queue keys in the jobs database
             const queuePatterns = [
                 'bull:*:waiting',
-                'bull:*:active', 
+                'bull:*:active',
                 'bull:*:completed',
-                'bull:*:failed'
+                'bull:*:failed',
             ];
 
             const queueChecks = await Promise.allSettled(
-                queuePatterns.map(pattern => jobsRedis.keys(pattern))
+                queuePatterns.map(pattern => jobsRedis.keys(pattern)),
             );
 
             const allKeys = queueChecks
@@ -407,16 +432,14 @@ export class HealthService implements OnModuleDestroy {
 
             // Check if we have any queue infrastructure
             const hasQueueInfrastructure = allKeys.length > 0;
-            
+
             // Check for specific queue types
             const queueTypes = new Set(
-                allKeys
-                    .map(key => key.match(/bull:([^:]+):/)?.[1])
-                    .filter(Boolean)
+                allKeys.map(key => key.match(/bull:([^:]+):/)?.[1]).filter(Boolean),
             );
 
             let status: 'healthy' | 'unhealthy' | 'degraded' = 'healthy';
-            
+
             if (!hasQueueInfrastructure) {
                 status = 'degraded'; // No queues detected, but Redis is working
             } else if (queueTypes.size === 0) {
@@ -435,7 +458,7 @@ export class HealthService implements OnModuleDestroy {
                     hasInfrastructure: hasQueueInfrastructure,
                     responseTimeMs: responseTime,
                     patterns: queuePatterns,
-                    database: this.redisConfig.jobsDb
+                    database: this.redisConfig.jobsDb,
                 },
             };
         } catch (error) {
@@ -445,8 +468,8 @@ export class HealthService implements OnModuleDestroy {
                 lastChecked: new Date(),
                 error: error.message,
                 details: {
-                    reason: 'Redis connection failed or queue check error'
-                }
+                    reason: 'Redis connection failed or queue check error',
+                },
             };
         }
     }
@@ -473,7 +496,7 @@ export class HealthService implements OnModuleDestroy {
             }
 
             // Check available disk space
-            const stats = await fs.statvfs ? await fs.statvfs(tempDir) : null;
+            const stats = (await fs.statvfs) ? await fs.statvfs(tempDir) : null;
             const responseTime = Date.now() - startTime;
 
             return {
@@ -502,11 +525,13 @@ export class HealthService implements OnModuleDestroy {
         const rssGB = memoryUsage.rss / (1024 * 1024 * 1024);
 
         let status: 'healthy' | 'unhealthy' | 'degraded' = 'healthy';
-        
+
         // More realistic thresholds for Node.js applications
-        if (memoryUsagePercentage > 95 || rssGB > 1.5) { // 1.5GB RSS limit
+        if (memoryUsagePercentage > 95 || rssGB > 1.5) {
+            // 1.5GB RSS limit
             status = 'unhealthy';
-        } else if (memoryUsagePercentage > 85 || rssGB > 1.0) { // 1GB RSS warning
+        } else if (memoryUsagePercentage > 85 || rssGB > 1.0) {
+            // 1GB RSS warning
             status = 'degraded';
         }
 
@@ -518,8 +543,8 @@ export class HealthService implements OnModuleDestroy {
                     heapTotal: memoryUsage.heapTotal,
                     heapUsed: memoryUsage.heapUsed,
                     external: memoryUsage.external,
-                    arrayBuffers: memoryUsage.arrayBuffers
-                }
+                    arrayBuffers: memoryUsage.arrayBuffers,
+                },
             });
         }
 
@@ -535,8 +560,8 @@ export class HealthService implements OnModuleDestroy {
                 rssGB: Math.round(rssGB * 100) / 100,
                 thresholds: {
                     unhealthy: { heap: '95%', rss: '1.5GB' },
-                    degraded: { heap: '85%', rss: '1.0GB' }
-                }
+                    degraded: { heap: '85%', rss: '1.0GB' },
+                },
             },
         };
     }
@@ -558,7 +583,7 @@ export class HealthService implements OnModuleDestroy {
                 queueJobs: queueStats,
             };
         } catch (error) {
-            this.loggingService.logError('Failed to get health metrics', { 
+            this.loggingService.logError('Failed to get health metrics', {
                 error,
                 additionalInfo: {
                     context: 'health_metrics',
@@ -574,7 +599,13 @@ export class HealthService implements OnModuleDestroy {
 
     private async getQueueStats(): Promise<{ active: number; waiting: number; failed: number }> {
         try {
-            const queueNames = ['ai-processing', 'payment-processing', 'email-notifications', 'analytics', 'maintenance'];
+            const queueNames = [
+                'ai-processing',
+                'payment-processing',
+                'email-notifications',
+                'analytics',
+                'maintenance',
+            ];
             let totalActive = 0;
             let totalWaiting = 0;
             let totalFailed = 0;
@@ -628,7 +659,7 @@ export class HealthService implements OnModuleDestroy {
 
             return await Promise.race([statsPromise, timeoutPromise]);
         } catch (error) {
-            this.loggingService.logError('Failed to get queue stats', { 
+            this.loggingService.logError('Failed to get queue stats', {
                 error,
                 additionalInfo: {
                     context: 'queue_stats',
@@ -648,10 +679,13 @@ export class HealthService implements OnModuleDestroy {
             const interval = this.monitoringConfig.health.checkInterval;
 
             if (isNaN(interval) || interval < 1000) {
-                this.loggingService.logWarning('Invalid health check interval, using default 30 seconds', {
-                    provided: this.monitoringConfig.health.checkInterval,
-                    default: 30000,
-                });
+                this.loggingService.logWarning(
+                    'Invalid health check interval, using default 30 seconds',
+                    {
+                        provided: this.monitoringConfig.health.checkInterval,
+                        default: 30000,
+                    },
+                );
                 return;
             }
 
@@ -659,7 +693,7 @@ export class HealthService implements OnModuleDestroy {
                 try {
                     await this.getDetailedHealth();
                 } catch (error) {
-                    this.loggingService.logError('Scheduled health check failed', { 
+                    this.loggingService.logError('Scheduled health check failed', {
                         error,
                         additionalInfo: {
                             context: 'scheduled_health_check',
@@ -698,7 +732,7 @@ export class HealthService implements OnModuleDestroy {
 
         const now = Date.now();
         const lastCheckTime = this.lastHealthCheck.timestamp.getTime();
-        
+
         if (now - lastCheckTime > maxAgeMs) {
             return null; // Cache expired
         }
@@ -714,9 +748,10 @@ export class HealthService implements OnModuleDestroy {
                 this.checkRedisHealth(),
             ]);
 
-            const hasUnhealthy = [databaseResult, redisResult].some(result => 
-                result.status === 'rejected' || 
-                (result.status === 'fulfilled' && result.value.status === 'unhealthy')
+            const hasUnhealthy = [databaseResult, redisResult].some(
+                result =>
+                    result.status === 'rejected' ||
+                    (result.status === 'fulfilled' && result.value.status === 'unhealthy'),
             );
 
             return {
@@ -730,4 +765,4 @@ export class HealthService implements OnModuleDestroy {
             };
         }
     }
-}   
+}

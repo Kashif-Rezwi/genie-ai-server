@@ -25,7 +25,8 @@ export const seedSampleChats = async (dataSource: DataSource) => {
     // Create sample chat
     const sampleChat = chatRepo.create({
         title: 'Welcome to Genie AI',
-        systemPrompt: 'You are a helpful AI assistant. Be friendly and provide accurate information.',
+        systemPrompt:
+            'You are a helpful AI assistant. Be friendly and provide accurate information.',
         userId: adminUser.id,
     });
 
@@ -35,7 +36,8 @@ export const seedSampleChats = async (dataSource: DataSource) => {
     const sampleMessages = [
         {
             role: MessageRole.SYSTEM,
-            content: 'You are a helpful AI assistant. Be friendly and provide accurate information.',
+            content:
+                'You are a helpful AI assistant. Be friendly and provide accurate information.',
             creditsUsed: 0,
         },
         {
@@ -45,7 +47,8 @@ export const seedSampleChats = async (dataSource: DataSource) => {
         },
         {
             role: MessageRole.ASSISTANT,
-            content: 'Hello! I\'d be happy to help you understand this AI chat system. This is Genie AI, a multi-model AI platform that allows you to interact with different AI models through a credit-based system. You can create multiple chat sessions, each with its own context and system prompts. The system supports both quick responses and streaming for a real-time chat experience. Would you like to know more about any specific features?',
+            content:
+                "Hello! I'd be happy to help you understand this AI chat system. This is Genie AI, a multi-model AI platform that allows you to interact with different AI models through a credit-based system. You can create multiple chat sessions, each with its own context and system prompts. The system supports both quick responses and streaming for a real-time chat experience. Would you like to know more about any specific features?",
             model: 'claude-3-haiku-20240307',
             creditsUsed: 0,
         },

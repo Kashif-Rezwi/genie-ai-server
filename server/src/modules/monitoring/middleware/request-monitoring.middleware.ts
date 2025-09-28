@@ -10,7 +10,7 @@ export class RequestMonitoringMiddleware implements NestMiddleware {
         private readonly loggingService: LoggingService,
         private readonly performanceService: PerformanceService,
         private readonly metricsService: MetricsService,
-    ) { }
+    ) {}
 
     use(req: Request, res: Response, next: NextFunction) {
         const startTime = Date.now();
