@@ -7,7 +7,8 @@ export const securityConfig = () => ({
         max: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
     },
     request: {
-        maxSize: parseInt(process.env.MAX_REQUEST_SIZE?.replace('mb', '') || '10', 10) * 1024 * 1024,
+        maxSize:
+            parseInt(process.env.MAX_REQUEST_SIZE?.replace('mb', '') || '10', 10) * 1024 * 1024,
     },
     apiKey: {
         header: process.env.API_KEY_HEADER || 'x-api-key',

@@ -7,7 +7,12 @@ import { AIResponseDto } from '../dto/ai-response.dto';
 @Injectable()
 export class AnthropicProvider {
     async *streamResponse(request: AIRequestDto): AsyncGenerator<any, void, unknown> {
-        const { messages, model = 'claude-3-haiku-20240307', maxTokens = 1000, temperature = 0.7 } = request;
+        const {
+            messages,
+            model = 'claude-3-haiku-20240307',
+            maxTokens = 1000,
+            temperature = 0.7,
+        } = request;
 
         try {
             const result = streamText({
@@ -56,7 +61,12 @@ export class AnthropicProvider {
     }
 
     async generateResponse(request: AIRequestDto): Promise<AIResponseDto> {
-        const { messages, model = 'claude-3-haiku-20240307', maxTokens = 1000, temperature = 0.7 } = request;
+        const {
+            messages,
+            model = 'claude-3-haiku-20240307',
+            maxTokens = 1000,
+            temperature = 0.7,
+        } = request;
 
         try {
             const result = await generateText({

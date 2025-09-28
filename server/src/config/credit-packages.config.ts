@@ -11,7 +11,7 @@ export interface CreditPackage {
 }
 
 export const CREDIT_PACKAGES: Record<string, CreditPackage> = {
-    'starter': {
+    starter: {
         id: 'starter',
         name: 'Starter Pack',
         credits: 100,
@@ -22,7 +22,7 @@ export const CREDIT_PACKAGES: Record<string, CreditPackage> = {
         isPopular: false,
         isActive: true,
     },
-    'basic': {
+    basic: {
         id: 'basic',
         name: 'Basic Pack',
         credits: 500,
@@ -33,7 +33,7 @@ export const CREDIT_PACKAGES: Record<string, CreditPackage> = {
         isPopular: true,
         isActive: true,
     },
-    'pro': {
+    pro: {
         id: 'pro',
         name: 'Pro Pack',
         credits: 1000,
@@ -44,7 +44,7 @@ export const CREDIT_PACKAGES: Record<string, CreditPackage> = {
         isPopular: false,
         isActive: true,
     },
-    'enterprise': {
+    enterprise: {
         id: 'enterprise',
         name: 'Enterprise Pack',
         credits: 5000,

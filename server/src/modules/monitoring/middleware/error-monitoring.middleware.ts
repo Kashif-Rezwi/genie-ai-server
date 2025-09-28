@@ -8,7 +8,7 @@ export class ErrorMonitoringMiddleware implements NestMiddleware {
     constructor(
         private readonly errorTrackingService: ErrorTrackingService,
         private readonly loggingService: LoggingService,
-    ) { }
+    ) {}
 
     use(req: Request, res: Response, next: NextFunction) {
         // Wrap the next function to catch any errors

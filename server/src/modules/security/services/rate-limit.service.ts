@@ -115,7 +115,7 @@ export class RateLimitService {
     async checkRateLimit(
         limiterName: string,
         key: string,
-        points: number = 1
+        points: number = 1,
     ): Promise<RateLimiterRes> {
         const rateLimiter = this.rateLimiters.get(limiterName);
 
@@ -129,7 +129,7 @@ export class RateLimitService {
             if (rateLimitRes instanceof RateLimiterRes) {
                 const timeToReset = Math.round(rateLimitRes.msBeforeNext / 1000) || 1;
                 throw new BadRequestException(
-                    `Rate limit exceeded. Try again in ${timeToReset} seconds`
+                    `Rate limit exceeded. Try again in ${timeToReset} seconds`,
                 );
             }
             throw rateLimitRes;
@@ -176,7 +176,10 @@ export class RateLimitService {
         }
     }
 
-    async getRateLimitStatus(limiterName: string, key: string): Promise<{
+    async getRateLimitStatus(
+        limiterName: string,
+        key: string,
+    ): Promise<{
         remainingPoints: number;
         msBeforeNext: number;
         totalHits: number;
@@ -208,7 +211,7 @@ export class RateLimitService {
     private getConfigForLimiter(limiterName: string): RateLimitConfig {
         // Use centralized rate limit configuration
         return getRateLimitConfig(limiterName);
-    }                                         
+    }
 
     async resetRateLimit(limiterName: string, key: string): Promise<void> {
         const rateLimiter = this.rateLimiters.get(limiterName);
@@ -218,7 +221,11 @@ export class RateLimitService {
         }
     }
 
-    async incrementCustomCounter(key: string, increment: number = 1, ttl: number = 3600): Promise<number> {
+    async incrementCustomCounter(
+        key: string,
+        increment: number = 1,
+        ttl: number = 3600,
+    ): Promise<number> {
         const currentValue = await this.redisService.incr(key);
 
         if (currentValue === 1) {

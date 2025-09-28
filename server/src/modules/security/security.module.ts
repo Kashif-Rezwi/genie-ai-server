@@ -18,15 +18,15 @@ const config = securityConfig();
     imports: [
         TypeOrmModule.forFeature([User, ApiKey]),
         ThrottlerModule.forRoot({
-            throttlers: [{
-                ttl: config.rateLimit.ttl,
-                limit: config.rateLimit.max,
-            }]
+            throttlers: [
+                {
+                    ttl: config.rateLimit.ttl,
+                    limit: config.rateLimit.max,
+                },
+            ],
         }),
     ],
-    controllers: [
-        SecurityController
-    ],
+    controllers: [SecurityController],
     providers: [
         RedisService,
         RateLimitService,
@@ -35,11 +35,6 @@ const config = securityConfig();
         SecurityMiddleware,
         ValidationMiddleware,
     ],
-    exports: [
-        RedisService,
-        RateLimitService,
-        SecurityService,
-        ApiKeyService,
-    ],
+    exports: [RedisService, RateLimitService, SecurityService, ApiKeyService],
 })
-export class SecurityModule { }
+export class SecurityModule {}

@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsEnum, IsBoolean, IsNumber, IsArray, IsDateString } from 'class-validator';
+import {
+    IsString,
+    IsOptional,
+    IsEnum,
+    IsBoolean,
+    IsNumber,
+    IsArray,
+    IsDateString,
+} from 'class-validator';
 
 export class TriggerAnalyticsDto {
     @IsEnum(['daily', 'weekly', 'monthly', 'custom'])

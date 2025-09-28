@@ -10,18 +10,9 @@ import { GroqProvider } from './providers/groq.provider';
 import { User, CreditTransaction } from '../../entities';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([User, CreditTransaction]),
-        CreditsModule
-    ],
+    imports: [TypeOrmModule.forFeature([User, CreditTransaction]), CreditsModule],
     controllers: [AIController],
-    providers: [
-        AIService,
-        CreditService,
-        OpenAIProvider,
-        AnthropicProvider,
-        GroqProvider,
-    ],
+    providers: [AIService, CreditService, OpenAIProvider, AnthropicProvider, GroqProvider],
     exports: [AIService, CreditService],
 })
-export class AIModule { }
+export class AIModule {}

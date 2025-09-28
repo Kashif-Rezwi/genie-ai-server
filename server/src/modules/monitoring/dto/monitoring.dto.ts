@@ -1,4 +1,13 @@
-import { IsString, IsOptional, IsEnum, IsNumber, IsArray, IsBoolean, Min, Max } from 'class-validator';
+import {
+    IsString,
+    IsOptional,
+    IsEnum,
+    IsNumber,
+    IsArray,
+    IsBoolean,
+    Min,
+    Max,
+} from 'class-validator';
 
 export class LogTestDto {
     @IsEnum(['info', 'warn', 'error', 'debug'])
@@ -90,12 +99,15 @@ export interface HealthStatusResponse {
     uptime: number;
     version: string;
     environment: string;
-    services: Record<string, {
-        status: 'healthy' | 'unhealthy' | 'degraded';
-        responseTime?: number;
-        lastChecked: Date;
-        error?: string;
-    }>;
+    services: Record<
+        string,
+        {
+            status: 'healthy' | 'unhealthy' | 'degraded';
+            responseTime?: number;
+            lastChecked: Date;
+            error?: string;
+        }
+    >;
 }
 
 export interface PerformanceMetricsResponse {

@@ -7,13 +7,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
         const request = context.getRequest();
         const response = context.getResponse();
 
-        const status = exception instanceof HttpException
-            ? exception.getStatus()
-            : HttpStatus.INTERNAL_SERVER_ERROR;
+        const status =
+            exception instanceof HttpException
+                ? exception.getStatus()
+                : HttpStatus.INTERNAL_SERVER_ERROR;
 
-        const message = exception instanceof HttpException
-            ? exception.getResponse()
-            : 'Internal server error';
+        const message =
+            exception instanceof HttpException ? exception.getResponse() : 'Internal server error';
 
         response.status(status).json({
             statusCode: status,

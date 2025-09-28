@@ -16,7 +16,9 @@ export class EmailJobProcessor extends WorkerHost {
     async process(job: Job<EmailJobData>): Promise<any> {
         const { to, subject, template, templateData, attachments } = job.data;
 
-        this.logger.log(`Sending email: ${job.data.jobId} to ${Array.isArray(to) ? to.join(', ') : to}`);
+        this.logger.log(
+            `Sending email: ${job.data.jobId} to ${Array.isArray(to) ? to.join(', ') : to}`,
+        );
 
         try {
             await job.updateProgress(10);
@@ -32,7 +34,7 @@ export class EmailJobProcessor extends WorkerHost {
                 subject || emailTemplate.subject,
                 emailTemplate.html,
                 emailTemplate.text,
-                attachments
+                attachments,
             );
 
             await job.updateProgress(100);
@@ -42,7 +44,6 @@ export class EmailJobProcessor extends WorkerHost {
                 messageId: result.messageId,
                 recipients: Array.isArray(to) ? to : [to],
             };
-
         } catch (error) {
             this.logger.error(`Email sending failed: ${job.data.jobId}`, error);
             throw error;

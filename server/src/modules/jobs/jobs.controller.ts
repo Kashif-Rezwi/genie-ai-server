@@ -7,7 +7,7 @@ import {
     Query,
     Body,
     UseGuards,
-    ValidationPipe
+    ValidationPipe,
 } from '@nestjs/common';
 import { JobService } from './services/job.service';
 import { AnalyticsJobService } from './services/analytics-job.service';
@@ -23,7 +23,7 @@ export class JobsController {
         private readonly jobService: JobService,
         private readonly analyticsJobService: AnalyticsJobService,
         private readonly maintenanceJobService: MaintenanceJobService,
-    ) { }
+    ) {}
 
     @Get('stats')
     async getJobStats() {
@@ -31,10 +31,7 @@ export class JobsController {
     }
 
     @Get('status/:queueName/:jobId')
-    async getJobStatus(
-        @Param('queueName') queueName: string,
-        @Param('jobId') jobId: string
-    ) {
+    async getJobStatus(@Param('queueName') queueName: string, @Param('jobId') jobId: string) {
         return this.jobService.getJobStatus(queueName, jobId);
     }
 
@@ -47,9 +44,7 @@ export class JobsController {
     @Post('analytics/trigger')
     @UseGuards(RolesGuard)
     @Roles(UserRole.ADMIN)
-    async triggerAnalytics(
-        @Body() body: { type: 'daily' | 'weekly' | 'monthly' }
-    ) {
+    async triggerAnalytics(@Body() body: { type: 'daily' | 'weekly' | 'monthly' }) {
         const { type } = body;
 
         switch (type) {
@@ -68,11 +63,12 @@ export class JobsController {
     @UseGuards(RolesGuard)
     @Roles(UserRole.ADMIN)
     async triggerMaintenance(
-        @Body() body: {
+        @Body()
+        body: {
             task: 'cleanup' | 'backup' | 'reconcile' | 'optimize' | 'security_scan';
             targetTable?: string;
             dryRun?: boolean;
-        }
+        },
     ) {
         return this.jobService.addMaintenanceJob({
             task: body.task,
@@ -102,7 +98,7 @@ export class JobsController {
     @Roles(UserRole.ADMIN)
     async retryFailedJobs(
         @Param('queueName') queueName: string,
-        @Query('limit') limit: number = 10
+        @Query('limit') limit: number = 10,
     ) {
         const retriedCount = await this.jobService.retryFailedJobs(queueName, limit);
         return { message: `Retried ${retriedCount} jobs` };

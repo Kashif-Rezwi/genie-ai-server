@@ -46,13 +46,13 @@ export class CreditsAnalyticsService {
         private readonly userRepository: Repository<User>,
         @InjectRepository(CreditTransaction)
         private readonly transactionRepository: Repository<CreditTransaction>,
-    ) { }
+    ) {}
 
     async getOverallAnalytics(): Promise<CreditAnalytics> {
         // Get basic user stats
         const totalUsers = await this.userRepository.count();
         const activeUsers = await this.userRepository.count({
-            where: { creditsBalance: { $gt: 0 } as any }
+            where: { creditsBalance: { $gt: 0 } as any },
         });
 
         // Calculate total credits in circulation
@@ -102,23 +102,29 @@ export class CreditsAnalyticsService {
         };
     }
 
-    async getTopSpenders(limit: number = 10): Promise<Array<{
-        userId: string;
-        email: string;
-        totalSpent: number;
-        totalUsed: number;
-        currentBalance: number;
-    }>> {
+    async getTopSpenders(limit: number = 10): Promise<
+        Array<{
+            userId: string;
+            email: string;
+            totalSpent: number;
+            totalUsed: number;
+            currentBalance: number;
+        }>
+    > {
         const result = await this.userRepository
             .createQueryBuilder('user')
-            .leftJoin('user.creditTransactions', 'purchase', 'purchase.type = :purchaseType', { purchaseType: TransactionType.PURCHASE })
-            .leftJoin('user.creditTransactions', 'usage', 'usage.type = :usageType', { usageType: TransactionType.USAGE })
+            .leftJoin('user.creditTransactions', 'purchase', 'purchase.type = :purchaseType', {
+                purchaseType: TransactionType.PURCHASE,
+            })
+            .leftJoin('user.creditTransactions', 'usage', 'usage.type = :usageType', {
+                usageType: TransactionType.USAGE,
+            })
             .select([
                 'user.id as userId',
                 'user.email as email',
                 'user.creditsBalance as currentBalance',
                 'COALESCE(SUM(purchase.amount), 0) as totalSpent',
-                'COALESCE(SUM(ABS(usage.amount)), 0) as totalUsed'
+                'COALESCE(SUM(ABS(usage.amount)), 0) as totalUsed',
             ])
             .groupBy('user.id, user.email, user.creditsBalance')
             .orderBy('totalSpent', 'DESC')
@@ -134,11 +140,13 @@ export class CreditsAnalyticsService {
         }));
     }
 
-    async getDailyUsage(days: number = 30): Promise<Array<{
-        date: string;
-        creditsUsed: number;
-        uniqueUsers: number;
-    }>> {
+    async getDailyUsage(days: number = 30): Promise<
+        Array<{
+            date: string;
+            creditsUsed: number;
+            uniqueUsers: number;
+        }>
+    > {
         const endDate = new Date();
         const startDate = new Date();
         startDate.setDate(endDate.getDate() - days);
@@ -148,7 +156,7 @@ export class CreditsAnalyticsService {
             .select([
                 'DATE(transaction.createdAt) as date',
                 'SUM(ABS(transaction.amount)) as creditsUsed',
-                'COUNT(DISTINCT transaction.userId) as uniqueUsers'
+                'COUNT(DISTINCT transaction.userId) as uniqueUsers',
             ])
             .where('transaction.type = :type', { type: TransactionType.USAGE })
             .andWhere('transaction.createdAt >= :startDate', { startDate })
@@ -164,18 +172,20 @@ export class CreditsAnalyticsService {
         }));
     }
 
-    async getModelUsageStats(): Promise<Array<{
-        model: string;
-        totalUsage: number;
-        uniqueUsers: number;
-    }>> {
+    async getModelUsageStats(): Promise<
+        Array<{
+            model: string;
+            totalUsage: number;
+            uniqueUsers: number;
+        }>
+    > {
         // Extract model names from transaction descriptions
         const result = await this.transactionRepository
             .createQueryBuilder('transaction')
             .select([
                 'transaction.description',
                 'SUM(ABS(transaction.amount)) as totalUsage',
-                'COUNT(DISTINCT transaction.userId) as uniqueUsers'
+                'COUNT(DISTINCT transaction.userId) as uniqueUsers',
             ])
             .where('transaction.type = :type', { type: TransactionType.USAGE })
             .andWhere('transaction.description LIKE :pattern', { pattern: '%(%' })
@@ -197,8 +207,10 @@ export class CreditsAnalyticsService {
         });
 
         // Aggregate by model name
-        const aggregated = modelStats.reduce<Array<{ model: string; totalUsage: number; uniqueUsers: number }>>((acc, curr) => {
-            const existing = acc.find((item) => item.model === curr.model);
+        const aggregated = modelStats.reduce<
+            Array<{ model: string; totalUsage: number; uniqueUsers: number }>
+        >((acc, curr) => {
+            const existing = acc.find(item => item.model === curr.model);
             if (existing) {
                 existing.totalUsage += curr.totalUsage;
                 existing.uniqueUsers += curr.uniqueUsers;

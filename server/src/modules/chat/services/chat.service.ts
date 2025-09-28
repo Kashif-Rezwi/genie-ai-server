@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    ForbiddenException,
+    BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Chat, Message, MessageRole, User } from '../../../entities';
@@ -15,7 +20,7 @@ export class ChatService {
         @InjectRepository(User)
         private readonly userRepository: Repository<User>,
         private readonly dataSource: DataSource,
-    ) { }
+    ) {}
 
     async createChat(userId: string, createChatDto: CreateChatDto): Promise<Chat> {
         // Verify user exists
@@ -45,7 +50,10 @@ export class ChatService {
         return savedChat;
     }
 
-    async getUserChats(userId: string, query: ChatListQueryDto): Promise<{ chats: ChatResponseDto[]; total: number }> {
+    async getUserChats(
+        userId: string,
+        query: ChatListQueryDto,
+    ): Promise<{ chats: ChatResponseDto[]; total: number }> {
         const { limit = 20, offset = 0, search } = query;
 
         const queryBuilder = this.chatRepository
@@ -59,7 +67,7 @@ export class ChatService {
                 'chat.createdAt',
                 'chat.updatedAt',
                 'COUNT(message.id) as messageCount',
-                'MAX(message.createdAt) as lastMessageAt'
+                'MAX(message.createdAt) as lastMessageAt',
             ])
             .groupBy('chat.id, chat.title, chat.systemPrompt, chat.createdAt, chat.updatedAt')
             .orderBy('COALESCE(MAX(message.createdAt), chat.createdAt)', 'DESC');
@@ -178,7 +186,7 @@ export class ChatService {
             .select([
                 'COUNT(DISTINCT chat.id) as totalChats',
                 'COUNT(message.id) as totalMessages',
-                'COALESCE(SUM(message.creditsUsed), 0) as totalCreditsUsed'
+                'COALESCE(SUM(message.creditsUsed), 0) as totalCreditsUsed',
             ])
             .getRawOne();
 

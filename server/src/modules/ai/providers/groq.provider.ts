@@ -7,7 +7,12 @@ import { AIResponseDto } from '../dto/ai-response.dto';
 @Injectable()
 export class GroqProvider {
     async *streamResponse(request: AIRequestDto): AsyncGenerator<any, void, unknown> {
-        const { messages, model = 'llama-3.1-8b-instant', maxTokens = 1000, temperature = 0.7 } = request;
+        const {
+            messages,
+            model = 'llama-3.1-8b-instant',
+            maxTokens = 1000,
+            temperature = 0.7,
+        } = request;
 
         try {
             const result = streamText({
@@ -59,7 +64,12 @@ export class GroqProvider {
 
     // Non-streaming method using generateText
     async generateResponse(request: AIRequestDto): Promise<AIResponseDto> {
-        const { messages, model = 'llama-3.1-8b-instant', maxTokens = 1000, temperature = 0.7 } = request;
+        const {
+            messages,
+            model = 'llama-3.1-8b-instant',
+            maxTokens = 1000,
+            temperature = 0.7,
+        } = request;
 
         try {
             const result = await generateText({

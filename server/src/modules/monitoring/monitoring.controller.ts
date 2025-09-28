@@ -9,7 +9,7 @@ import {
     Body,
     UseGuards,
     ValidationPipe,
-    Header
+    Header,
 } from '@nestjs/common';
 import { LoggingService } from './services/logging.service';
 import { MetricsService } from './services/metrics.service';
@@ -30,7 +30,7 @@ export class MonitoringController {
         private readonly performanceService: PerformanceService,
         private readonly errorTrackingService: ErrorTrackingService,
         private readonly alertingService: AlertingService,
-    ) { }
+    ) {}
 
     // Health endpoints (public)
     @Get('health')
@@ -134,10 +134,7 @@ export class MonitoringController {
     @Get('errors/search')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.ADMIN)
-    async searchErrors(
-        @Query('q') query: string,
-        @Query('limit') limit?: string
-    ) {
+    async searchErrors(@Query('q') query: string, @Query('limit') limit?: string) {
         const limitNum = limit ? parseInt(limit) : 50;
         return this.errorTrackingService.searchErrors(query, limitNum);
     }
@@ -163,7 +160,7 @@ export class MonitoringController {
     async getUserErrors(
         @Param('userId') userId: string,
         @CurrentUser() user: any,
-        @Query('limit') limit?: string
+        @Query('limit') limit?: string,
     ) {
         // Users can only see their own errors, admins can see any user's errors
         if (user.role !== UserRole.ADMIN && user.id !== userId) {
@@ -208,17 +205,20 @@ export class MonitoringController {
     @Post('alerts/custom')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.ADMIN)
-    async sendCustomAlert(@Body(ValidationPipe) body: {
-        title: string;
-        message: string;
-        severity?: 'low' | 'medium' | 'high' | 'critical';
-        channels?: string[];
-    }) {
+    async sendCustomAlert(
+        @Body(ValidationPipe)
+        body: {
+            title: string;
+            message: string;
+            severity?: 'low' | 'medium' | 'high' | 'critical';
+            channels?: string[];
+        },
+    ) {
         await this.alertingService.sendCustomAlert(
             body.title,
             body.message,
             body.severity,
-            body.channels
+            body.channels,
         );
         return { success: true };
     }
@@ -226,10 +226,7 @@ export class MonitoringController {
     @Put('alerts/rules/:ruleId')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.ADMIN)
-    async updateAlertRule(
-        @Param('ruleId') ruleId: string,
-        @Body(ValidationPipe) updates: any
-    ) {
+    async updateAlertRule(@Param('ruleId') ruleId: string, @Body(ValidationPipe) updates: any) {
         const updated = this.alertingService.updateAlertRule(ruleId, updates);
         return { updated, ruleId };
     }
@@ -259,7 +256,7 @@ export class MonitoringController {
             case 'error':
                 this.loggingService.logError(message, {
                     error: new Error('Test error'),
-                    context: { test: true }
+                    context: { test: true },
                 });
                 break;
             default:
@@ -274,13 +271,7 @@ export class MonitoringController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.ADMIN)
     async getDashboardData() {
-        const [
-            health,
-            performance,
-            errors,
-            alerts,
-            metrics
-        ] = await Promise.all([
+        const [health, performance, errors, alerts, metrics] = await Promise.all([
             this.healthService.getDetailedHealth(),
             this.performanceService.getPerformanceMetrics(),
             this.errorTrackingService.getErrorSummary(),

@@ -10,7 +10,7 @@ export interface CreditCheckOptions {
 
 @Injectable()
 export class CreditCheckMiddleware implements NestMiddleware {
-    constructor(private readonly creditsService: CreditsService) { }
+    constructor(private readonly creditsService: CreditsService) {}
 
     async use(req: Request, res: Response, next: NextFunction) {
         const user = req.user as any;
@@ -49,7 +49,9 @@ export const RequireCredits = (minimumAmount: number) => {
             const req = args.find(arg => arg && arg.user);
             if (req && req.creditInfo) {
                 if (req.creditInfo.balance < minimumAmount) {
-                    throw new ForbiddenException(`Insufficient credits. Required: ${minimumAmount}, Available: ${req.creditInfo.balance}`);
+                    throw new ForbiddenException(
+                        `Insufficient credits. Required: ${minimumAmount}, Available: ${req.creditInfo.balance}`,
+                    );
                 }
             }
 

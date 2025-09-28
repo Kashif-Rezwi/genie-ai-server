@@ -6,7 +6,7 @@ export enum UserRole {
     USER = 'user',
     ADMIN = 'admin',
     MODERATOR = 'moderator',
-    SYSTEM = 'system'
+    SYSTEM = 'system',
 }
 
 export const ROLES_KEY = 'roles';
@@ -14,7 +14,7 @@ export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES_KEY, roles);
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-    constructor(private reflector: Reflector) { }
+    constructor(private reflector: Reflector) {}
 
     canActivate(context: ExecutionContext): boolean {
         const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(ROLES_KEY, [

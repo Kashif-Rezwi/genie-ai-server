@@ -9,17 +9,9 @@ import { CreditsModule } from '../credits/credits.module';
 import { Chat, Message, User } from '../../entities';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([Chat, Message, User]),
-        AIModule,
-        CreditsModule,
-    ],
+    imports: [TypeOrmModule.forFeature([Chat, Message, User]), AIModule, CreditsModule],
     controllers: [ChatController],
-    providers: [
-        ChatService,
-        MessageService,
-        ChatStreamingService,
-    ],
+    providers: [ChatService, MessageService, ChatStreamingService],
     exports: [ChatService, MessageService],
 })
-export class ChatModule { }
+export class ChatModule {}
