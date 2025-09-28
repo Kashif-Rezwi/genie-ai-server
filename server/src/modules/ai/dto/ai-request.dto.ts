@@ -1,4 +1,13 @@
-import { IsString, IsOptional, IsArray, ValidateNested, IsIn, IsNumber, Min, Max } from 'class-validator';
+import {
+    IsString,
+    IsOptional,
+    IsArray,
+    ValidateNested,
+    IsIn,
+    IsNumber,
+    Min,
+    Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class MessageDto {

@@ -55,7 +55,6 @@ export class AnalyticsJobProcessor extends WorkerHost {
                 metrics,
                 timestamp: new Date().toISOString(),
             };
-
         } catch (error) {
             this.logger.error(`Analytics job failed: ${job.data.jobId}`, error);
             throw error;

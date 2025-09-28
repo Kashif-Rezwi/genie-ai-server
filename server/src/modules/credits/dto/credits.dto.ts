@@ -1,4 +1,14 @@
-import { IsNumber, IsString, IsOptional, IsEnum, IsUUID, Min, Max, IsArray, ValidateNested } from 'class-validator';
+import {
+    IsNumber,
+    IsString,
+    IsOptional,
+    IsEnum,
+    IsUUID,
+    Min,
+    Max,
+    IsArray,
+    ValidateNested,
+} from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { TransactionType } from '../../../entities';
 

@@ -31,7 +31,7 @@ export class PaymentHistoryService {
     constructor(
         @InjectRepository(Payment)
         private readonly paymentRepository: Repository<Payment>,
-    ) { }
+    ) {}
 
     async getPaymentAnalytics(days: number = 30): Promise<PaymentAnalytics> {
         const endDate = new Date();
@@ -56,7 +56,8 @@ export class PaymentHistoryService {
         const totalRevenue = parseFloat(basicStats.totalRevenue) || 0;
         const totalSuccessfulPayments = parseInt(basicStats.totalSuccessfulPayments) || 0;
         const totalFailedPayments = parseInt(basicStats.totalFailedPayments) || 0;
-        const averageOrderValue = totalSuccessfulPayments > 0 ? totalRevenue / totalSuccessfulPayments : 0;
+        const averageOrderValue =
+            totalSuccessfulPayments > 0 ? totalRevenue / totalSuccessfulPayments : 0;
 
         // Top packages
         const topPackages = await this.paymentRepository
@@ -78,26 +79,22 @@ export class PaymentHistoryService {
         const monthlyRevenue = await this.paymentRepository
             .createQueryBuilder('payment')
             .select([
-                'DATE_TRUNC(\'month\', payment.createdAt) as month',
+                "DATE_TRUNC('month', payment.createdAt) as month",
                 'SUM(payment.amount) as revenue',
                 'COUNT(*) as payments',
             ])
             .where('payment.status = :status', { status: PaymentStatus.COMPLETED })
             .andWhere('payment.createdAt >= :startDate', {
-                startDate: new Date(new Date().setFullYear(new Date().getFullYear() - 1))
+                startDate: new Date(new Date().setFullYear(new Date().getFullYear() - 1)),
             })
-            .groupBy('DATE_TRUNC(\'month\', payment.createdAt)')
+            .groupBy("DATE_TRUNC('month', payment.createdAt)")
             .orderBy('month', 'ASC')
             .getRawMany();
 
         // Payment method distribution
         const paymentMethodDistribution = await this.paymentRepository
             .createQueryBuilder('payment')
-            .select([
-                'payment.method',
-                'COUNT(*) as count',
-                'SUM(payment.amount) as revenue',
-            ])
+            .select(['payment.method', 'COUNT(*) as count', 'SUM(payment.amount) as revenue'])
             .where('payment.status = :status', { status: PaymentStatus.COMPLETED })
             .andWhere('payment.createdAt >= :startDate', { startDate })
             .groupBy('payment.method')

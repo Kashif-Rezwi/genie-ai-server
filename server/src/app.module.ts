@@ -16,18 +16,18 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 @Module({
     imports: [
         // Environment variables configuration
-        ConfigModule.forRoot({ 
+        ConfigModule.forRoot({
             isGlobal: true,
             envFilePath: ['.env.local', '.env'],
             cache: true,
             expandVariables: true,
         }),
-        
+
         // Database configuration (like mongoose.connect)
         TypeOrmModule.forRootAsync({
             useFactory: databaseConfig,
         }),
-        
+
         // Feature Modules (dependency order)
         HealthModule,
         AuthModule,
@@ -42,18 +42,18 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
         {
             // Global validation pipe (validates incoming data)
             provide: APP_PIPE,
-            useFactory: () => new ValidationPipe({
-                whitelist: true,
-                forbidNonWhitelisted: true,
-                transform: true,
-                disableErrorMessages: appConfig().nodeEnv === 'production',
-                validationError: {
-                    target: false,
-                    value: false,
-                }
-            }),
-        }
+            useFactory: () =>
+                new ValidationPipe({
+                    whitelist: true,
+                    forbidNonWhitelisted: true,
+                    transform: true,
+                    disableErrorMessages: appConfig().nodeEnv === 'production',
+                    validationError: {
+                        target: false,
+                        value: false,
+                    },
+                }),
+        },
     ],
 })
-
 export class AppModule {}

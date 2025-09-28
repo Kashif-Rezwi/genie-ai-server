@@ -12,7 +12,7 @@ import {
     Req,
     HttpCode,
     HttpStatus,
-    BadRequestException
+    BadRequestException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { PaymentsService } from './services/payments.service';
@@ -25,7 +25,7 @@ import {
     CreatePaymentOrderDto,
     VerifyPaymentDto,
     PaymentHistoryQueryDto,
-    RefundPaymentDto
+    RefundPaymentDto,
 } from './dto/payment.dto';
 import { getActivePackages, paymentConfig } from '../../config';
 
@@ -38,7 +38,7 @@ export class PaymentsController {
         private readonly paymentsService: PaymentsService,
         private readonly webhookService: WebhookService,
         private readonly historyService: PaymentHistoryService,
-    ) { }
+    ) {}
 
     @Get('packages')
     @UseGuards(JwtAuthGuard)
@@ -55,7 +55,7 @@ export class PaymentsController {
     @RateLimit('payment', 5) // 5 payment orders per minute
     async createPaymentOrder(
         @CurrentUser() user: any,
-        @Body(ValidationPipe) createOrderDto: CreatePaymentOrderDto
+        @Body(ValidationPipe) createOrderDto: CreatePaymentOrderDto,
     ) {
         return this.paymentsService.createPaymentOrder(user.id, createOrderDto);
     }
@@ -63,9 +63,7 @@ export class PaymentsController {
     @Post('verify')
     @UseGuards(JwtAuthGuard)
     @RateLimit('payment', 10) // 10 payment verifications per minute
-    async verifyPayment(
-        @Body(ValidationPipe) verifyDto: VerifyPaymentDto
-    ) {
+    async verifyPayment(@Body(ValidationPipe) verifyDto: VerifyPaymentDto) {
         return this.paymentsService.verifyAndCompletePayment(verifyDto);
     }
 
@@ -73,7 +71,7 @@ export class PaymentsController {
     @UseGuards(JwtAuthGuard)
     async getPaymentHistory(
         @CurrentUser() user: any,
-        @Query(ValidationPipe) query: PaymentHistoryQueryDto
+        @Query(ValidationPipe) query: PaymentHistoryQueryDto,
     ) {
         return this.paymentsService.getPaymentHistory(user.id, query);
     }
@@ -94,20 +92,14 @@ export class PaymentsController {
 
     @Get(':paymentId')
     @UseGuards(JwtAuthGuard)
-    async getPaymentDetails(
-        @CurrentUser() user: any,
-        @Param('paymentId') paymentId: string
-    ) {
+    async getPaymentDetails(@CurrentUser() user: any, @Param('paymentId') paymentId: string) {
         return this.paymentsService.getPaymentById(paymentId, user.id);
     }
 
     @Post(':paymentId/cancel')
     @UseGuards(JwtAuthGuard)
     @HttpCode(HttpStatus.NO_CONTENT)
-    async cancelPayment(
-        @CurrentUser() user: any,
-        @Param('paymentId') paymentId: string
-    ) {
+    async cancelPayment(@CurrentUser() user: any, @Param('paymentId') paymentId: string) {
         await this.paymentsService.cancelPayment(paymentId, user.id);
     }
 
@@ -116,7 +108,7 @@ export class PaymentsController {
     @HttpCode(HttpStatus.OK)
     async handleRazorpayWebhook(
         @Req() req: RawBodyRequest<Request>,
-        @Headers('x-razorpay-signature') signature: string
+        @Headers('x-razorpay-signature') signature: string,
     ) {
         const body = req.rawBody?.toString() || '';
 

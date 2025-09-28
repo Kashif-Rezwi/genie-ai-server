@@ -11,7 +11,7 @@ export class CreditService {
         @InjectRepository(CreditTransaction)
         private readonly transactionRepository: Repository<CreditTransaction>,
         private readonly dataSource: DataSource,
-    ) { }
+    ) {}
 
     async getUserBalance(userId: string): Promise<number> {
         const user = await this.userRepository.findOne({ where: { id: userId } });
@@ -30,13 +30,13 @@ export class CreditService {
         userId: string,
         amount: number,
         description: string,
-        model?: string
+        model?: string,
     ): Promise<CreditTransaction> {
-        return this.dataSource.transaction(async (manager) => {
+        return this.dataSource.transaction(async manager => {
             // Lock user row for update to prevent race conditions
             const user = await manager.findOne(User, {
                 where: { id: userId },
-                lock: { mode: 'pessimistic_write' }
+                lock: { mode: 'pessimistic_write' },
             });
 
             if (!user) {
@@ -68,12 +68,12 @@ export class CreditService {
         userId: string,
         amount: number,
         description: string,
-        razorpayPaymentId?: string
+        razorpayPaymentId?: string,
     ): Promise<CreditTransaction> {
-        return this.dataSource.transaction(async (manager) => {
+        return this.dataSource.transaction(async manager => {
             const user = await manager.findOne(User, {
                 where: { id: userId },
-                lock: { mode: 'pessimistic_write' }
+                lock: { mode: 'pessimistic_write' },
             });
 
             if (!user) {

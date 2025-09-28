@@ -25,7 +25,7 @@ export class AuthService {
         private readonly usersService: UsersService,
         private readonly jwtService: JwtService,
         private readonly emailService: EmailService,
-    ) { }
+    ) {}
 
     async register(registerDto: RegisterDto): Promise<AuthResponse> {
         const { email, password } = registerDto;
@@ -44,14 +44,16 @@ export class AuthService {
         const accessToken = this.jwtService.sign(payload);
 
         // Queue welcome email asynchronously (don't wait for it)
-        this.emailService.sendWelcomeEmail(user.email, {
-            name: user.email.split('@')[0],
-            creditsAdded: user.creditsBalance,
-        }).catch(error => {
-            // Log error and potentially retry later
-            console.error('Failed to send welcome email:', error);
-            // Could also update user status or queue for retry
-        });
+        this.emailService
+            .sendWelcomeEmail(user.email, {
+                name: user.email.split('@')[0],
+                creditsAdded: user.creditsBalance,
+            })
+            .catch(error => {
+                // Log error and potentially retry later
+                console.error('Failed to send welcome email:', error);
+                // Could also update user status or queue for retry
+            });
 
         return {
             user: {

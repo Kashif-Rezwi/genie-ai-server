@@ -22,7 +22,8 @@ export class MetricsService {
     private metrics: Map<string, MetricData[]> = new Map();
     private counters: Map<string, { value: number; labels: Record<string, string> }> = new Map();
     private gauges: Map<string, { value: number; labels: Record<string, string> }> = new Map();
-    private histograms: Map<string, { values: number[]; labels: Record<string, string> }> = new Map();
+    private histograms: Map<string, { values: number[]; labels: Record<string, string> }> =
+        new Map();
 
     private customMetrics: Map<string, CustomMetric> = new Map();
 
@@ -209,10 +210,14 @@ export class MetricsService {
     }
 
     recordCreditUsage(userId: string, model: string, amount: number) {
-        this.incrementCounter('credits_used_total', {
-            user_id: userId,
-            model,
-        }, amount);
+        this.incrementCounter(
+            'credits_used_total',
+            {
+                user_id: userId,
+                model,
+            },
+            amount,
+        );
     }
 
     recordPayment(packageId: string, amount: number, status: string) {
@@ -243,7 +248,10 @@ export class MetricsService {
         return this.gauges.get(key)?.value || 0;
     }
 
-    getHistogramStats(name: string, labels: Record<string, string> = {}): {
+    getHistogramStats(
+        name: string,
+        labels: Record<string, string> = {},
+    ): {
         count: number;
         sum: number;
         avg: number;

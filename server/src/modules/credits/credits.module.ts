@@ -11,4 +11,4 @@ import { User, CreditTransaction } from '../../entities';
     providers: [CreditsService, CreditsAnalyticsService],
     exports: [CreditsService, CreditsAnalyticsService],
 })
-export class CreditsModule { }
+export class CreditsModule {}

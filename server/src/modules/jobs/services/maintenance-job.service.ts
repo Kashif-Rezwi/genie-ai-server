@@ -26,7 +26,7 @@ export class MaintenanceJobService {
         private readonly jobService: JobService,
         private readonly redisService: RedisService,
         private readonly dataSource: DataSource,
-    ) { }
+    ) {}
 
     @Cron(CronExpression.EVERY_DAY_AT_3AM)
     async scheduleDataCleanup() {
@@ -74,7 +74,11 @@ export class MaintenanceJobService {
         }
     }
 
-    async cleanupOldRecords(tableName: string, daysOld: number = 90, batchSize: number = 1000): Promise<{
+    async cleanupOldRecords(
+        tableName: string,
+        daysOld: number = 90,
+        batchSize: number = 1000,
+    ): Promise<{
         deletedCount: number;
         tableName: string;
     }> {
@@ -128,12 +132,13 @@ export class MaintenanceJobService {
 
             // Check for discrepancy
             const discrepancy = Math.abs(user.creditsBalance - calculatedBalance);
-            if (discrepancy > 0.01) { // Allow for small floating point differences
+            if (discrepancy > 0.01) {
+                // Allow for small floating point differences
                 discrepanciesFound++;
 
                 this.logger.warn(
                     `Credit discrepancy found for user ${user.id}: ` +
-                    `stored=${user.creditsBalance}, calculated=${calculatedBalance}`
+                        `stored=${user.creditsBalance}, calculated=${calculatedBalance}`,
                 );
 
                 // Fix the discrepancy
@@ -145,7 +150,7 @@ export class MaintenanceJobService {
 
         this.logger.log(
             `Credit reconciliation completed: ${usersChecked} users checked, ` +
-            `${discrepanciesFound} discrepancies found, ${fixedCount} fixed`
+                `${discrepanciesFound} discrepancies found, ${fixedCount} fixed`,
         );
 
         return { usersChecked, discrepanciesFound, fixedCount };
@@ -161,7 +166,9 @@ export class MaintenanceJobService {
 
         try {
             // Analyze and optimize tables
-            await this.dataSource.query('ANALYZE users, chats, messages, payments, credit_transactions');
+            await this.dataSource.query(
+                'ANALYZE users, chats, messages, payments, credit_transactions',
+            );
             tablesOptimized.push('users', 'chats', 'messages', 'payments', 'credit_transactions');
 
             // Create missing indexes if they don't exist
@@ -182,7 +189,9 @@ export class MaintenanceJobService {
                 }
             }
 
-            this.logger.log(`Database optimization completed: ${tablesOptimized.length} tables, ${indexesCreated} indexes`);
+            this.logger.log(
+                `Database optimization completed: ${tablesOptimized.length} tables, ${indexesCreated} indexes`,
+            );
 
             return {
                 tablesOptimized,
@@ -209,13 +218,15 @@ export class MaintenanceJobService {
             .createQueryBuilder('user')
             .where('user.creditsBalance > :threshold', { threshold: 1000 })
             .andWhere('user.updatedAt < :cutoff', {
-                cutoff: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+                cutoff: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
             })
             .getCount();
 
         if (highBalanceInactiveUsers > 0) {
             vulnerabilitiesFound++;
-            recommendations.push(`${highBalanceInactiveUsers} inactive users with high credit balances found`);
+            recommendations.push(
+                `${highBalanceInactiveUsers} inactive users with high credit balances found`,
+            );
         }
 
         // Check for orphaned records
@@ -235,7 +246,7 @@ export class MaintenanceJobService {
             .createQueryBuilder('payment')
             .where('payment.status = :status', { status: 'pending' })
             .andWhere('payment.createdAt < :cutoff', {
-                cutoff: new Date(Date.now() - 24 * 60 * 60 * 1000) // 24 hours old
+                cutoff: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 hours old
             })
             .getCount();
 
@@ -336,7 +347,8 @@ export class MaintenanceJobService {
 
             for (const key of batch) {
                 const ttl = await this.redisService.getClient().ttl(key);
-                if (ttl === -1) { // No expiration set
+                if (ttl === -1) {
+                    // No expiration set
                     await this.redisService.del(key);
                     deletedCount++;
                 }

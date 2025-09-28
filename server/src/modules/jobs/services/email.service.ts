@@ -45,7 +45,7 @@ export class EmailService {
         subject: string,
         html: string,
         text?: string,
-        attachments?: any[]
+        attachments?: any[],
     ): Promise<any> {
         try {
             const mailOptions = {
@@ -67,7 +67,10 @@ export class EmailService {
     }
 
     // Welcome email for new users
-    async sendWelcomeEmail(email: string, userData: { name?: string; creditsAdded: number }): Promise<void> {
+    async sendWelcomeEmail(
+        email: string,
+        userData: { name?: string; creditsAdded: number },
+    ): Promise<void> {
         await this.jobService.addEmailJob({
             to: email,
             subject: 'Welcome to Genie AI! 🎉',
@@ -78,14 +81,17 @@ export class EmailService {
     }
 
     // Payment confirmation email
-    async sendPaymentConfirmationEmail(email: string, paymentData: {
-        packageName: string;
-        amount: number;
-        currency: string;
-        creditsAdded: number;
-        newBalance: number;
-        transactionId: string;
-    }): Promise<void> {
+    async sendPaymentConfirmationEmail(
+        email: string,
+        paymentData: {
+            packageName: string;
+            amount: number;
+            currency: string;
+            creditsAdded: number;
+            newBalance: number;
+            transactionId: string;
+        },
+    ): Promise<void> {
         await this.jobService.addEmailJob({
             to: email,
             subject: 'Payment Confirmed - Credits Added! 💳',
@@ -96,13 +102,16 @@ export class EmailService {
     }
 
     // Payment failure notification
-    async sendPaymentFailureEmail(email: string, failureData: {
-        packageName: string;
-        amount: number;
-        currency: string;
-        failureReason: string;
-        orderId: string;
-    }): Promise<void> {
+    async sendPaymentFailureEmail(
+        email: string,
+        failureData: {
+            packageName: string;
+            amount: number;
+            currency: string;
+            failureReason: string;
+            orderId: string;
+        },
+    ): Promise<void> {
         await this.jobService.addEmailJob({
             to: email,
             subject: 'Payment Failed - Need Help? 🔧',
@@ -113,13 +122,16 @@ export class EmailService {
     }
 
     // Refund confirmation email
-    async sendRefundConfirmationEmail(email: string, refundData: {
-        packageName: string;
-        refundAmount: number;
-        currency: string;
-        refundId: string;
-        reason: string;
-    }): Promise<void> {
+    async sendRefundConfirmationEmail(
+        email: string,
+        refundData: {
+            packageName: string;
+            refundAmount: number;
+            currency: string;
+            refundId: string;
+            reason: string;
+        },
+    ): Promise<void> {
         await this.jobService.addEmailJob({
             to: email,
             subject: 'Refund Processed Successfully 💰',
@@ -130,11 +142,14 @@ export class EmailService {
     }
 
     // Low credits warning
-    async sendLowCreditsWarning(email: string, creditData: {
-        currentBalance: number;
-        threshold: number;
-        recommendedPackage?: string;
-    }): Promise<void> {
+    async sendLowCreditsWarning(
+        email: string,
+        creditData: {
+            currentBalance: number;
+            threshold: number;
+            recommendedPackage?: string;
+        },
+    ): Promise<void> {
         await this.jobService.addEmailJob({
             to: email,
             subject: 'Low Credits Alert - Time to Top Up? ⚡',
@@ -145,13 +160,16 @@ export class EmailService {
     }
 
     // Security alert email
-    async sendSecurityAlert(email: string, alertData: {
-        alertType: string;
-        description: string;
-        timestamp: Date;
-        ip: string;
-        actionRequired: boolean;
-    }): Promise<void> {
+    async sendSecurityAlert(
+        email: string,
+        alertData: {
+            alertType: string;
+            description: string;
+            timestamp: Date;
+            ip: string;
+            actionRequired: boolean;
+        },
+    ): Promise<void> {
         await this.jobService.addEmailJob({
             to: email,
             subject: '🔒 Security Alert - Account Activity',
@@ -162,14 +180,17 @@ export class EmailService {
     }
 
     // Monthly usage report
-    async sendMonthlyReport(email: string, reportData: {
-        month: string;
-        totalChats: number;
-        totalMessages: number;
-        creditsUsed: number;
-        favoriteModel: string;
-        totalSpent: number;
-    }): Promise<void> {
+    async sendMonthlyReport(
+        email: string,
+        reportData: {
+            month: string;
+            totalChats: number;
+            totalMessages: number;
+            creditsUsed: number;
+            favoriteModel: string;
+            totalSpent: number;
+        },
+    ): Promise<void> {
         await this.jobService.addEmailJob({
             to: email,
             subject: `Your Monthly AI Usage Report - ${reportData.month} 📊`,
@@ -324,11 +345,15 @@ export class EmailService {
             <p><strong>IP Address:</strong> ${data.ip}</p>
           </div>
 
-          ${data.actionRequired ? `
+          ${
+              data.actionRequired
+                  ? `
             <div style="background: #FEF2F2; padding: 15px; border-radius: 6px;">
               <strong>Action Required:</strong> Please review your account security settings.
             </div>
-          ` : ''}
+          `
+                  : ''
+          }
 
           <p>If this was you, no action is needed. If you don't recognize this activity, please secure your account immediately.</p>
           

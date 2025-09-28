@@ -25,7 +25,7 @@ export class AnalyticsJobService {
         private readonly transactionRepository: Repository<CreditTransaction>,
         private readonly jobService: JobService,
         private readonly redisService: RedisService,
-    ) { }
+    ) {}
 
     @Cron(CronExpression.EVERY_DAY_AT_2AM)
     async scheduleDailyAnalytics() {
@@ -104,7 +104,7 @@ export class AnalyticsJobService {
         await this.redisService.set(
             `daily_metrics:${metrics.date}`,
             JSON.stringify(metrics),
-            86400 // 24 hours
+            86400, // 24 hours
         );
 
         return metrics;
@@ -128,7 +128,7 @@ export class AnalyticsJobService {
         await this.redisService.set(
             `weekly_metrics:${metrics.weekStart}`,
             JSON.stringify(metrics),
-            604800 // 7 days
+            604800, // 7 days
         );
 
         return metrics;
@@ -297,7 +297,11 @@ export class AnalyticsJobService {
         }));
     }
 
-    private async getTopUsersByActivity(startDate: Date, endDate: Date, limit: number = 10): Promise<any[]> {
+    private async getTopUsersByActivity(
+        startDate: Date,
+        endDate: Date,
+        limit: number = 10,
+    ): Promise<any[]> {
         const result = await this.messageRepository
             .createQueryBuilder('message')
             .innerJoin('message.chat', 'chat')
@@ -322,15 +326,18 @@ export class AnalyticsJobService {
 
     private async getRetentionMetrics(startDate: Date, endDate: Date): Promise<any> {
         // Simple retention calculation - users who were active in both periods
-        const previousStart = new Date(startDate.getTime() - (endDate.getTime() - startDate.getTime()));
+        const previousStart = new Date(
+            startDate.getTime() - (endDate.getTime() - startDate.getTime()),
+        );
 
         const currentActiveUsers = await this.getActiveUserIds(startDate, endDate);
         const previousActiveUsers = await this.getActiveUserIds(previousStart, startDate);
 
         const retainedUsers = currentActiveUsers.filter(id => previousActiveUsers.includes(id));
-        const retentionRate = previousActiveUsers.length > 0
-            ? (retainedUsers.length / previousActiveUsers.length) * 100
-            : 0;
+        const retentionRate =
+            previousActiveUsers.length > 0
+                ? (retainedUsers.length / previousActiveUsers.length) * 100
+                : 0;
 
         return {
             currentActiveUsers: currentActiveUsers.length,
@@ -356,7 +363,10 @@ export class AnalyticsJobService {
             .createQueryBuilder('transaction')
             .select('SUM(ABS(transaction.amount))', 'total')
             .where('transaction.type = :type', { type: 'USAGE' })
-            .andWhere('transaction.createdAt BETWEEN :startDate AND :endDate', { startDate, endDate })
+            .andWhere('transaction.createdAt BETWEEN :startDate AND :endDate', {
+                startDate,
+                endDate,
+            })
             .getRawOne();
 
         return parseFloat(result.total) || 0;
@@ -401,7 +411,10 @@ export class AnalyticsJobService {
         const result = await this.chatRepository
             .createQueryBuilder('chat')
             .leftJoin('chat.messages', 'message')
-            .select('AVG(EXTRACT(EPOCH FROM (MAX(message.createdAt) - MIN(message.createdAt))))', 'avgSeconds')
+            .select(
+                'AVG(EXTRACT(EPOCH FROM (MAX(message.createdAt) - MIN(message.createdAt))))',
+                'avgSeconds',
+            )
             .where('chat.createdAt BETWEEN :startDate AND :endDate', { startDate, endDate })
             .groupBy('chat.id')
             .having('COUNT(message.id) > 1')
@@ -412,16 +425,19 @@ export class AnalyticsJobService {
 
     private async getChurnRate(startDate: Date, endDate: Date): Promise<number> {
         // Users who were active before the period but not during
-        const periodDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        const periodDays = Math.ceil(
+            (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+        );
         const beforeStart = new Date(startDate.getTime() - periodDays * 24 * 60 * 60 * 1000);
 
         const activeBeforePeriod = await this.getActiveUserIds(beforeStart, startDate);
         const activeDuringPeriod = await this.getActiveUserIds(startDate, endDate);
 
         const churnedUsers = activeBeforePeriod.filter(id => !activeDuringPeriod.includes(id));
-        const churnRate = activeBeforePeriod.length > 0
-            ? (churnedUsers.length / activeBeforePeriod.length) * 100
-            : 0;
+        const churnRate =
+            activeBeforePeriod.length > 0
+                ? (churnedUsers.length / activeBeforePeriod.length) * 100
+                : 0;
 
         return parseFloat(churnRate.toFixed(2));
     }

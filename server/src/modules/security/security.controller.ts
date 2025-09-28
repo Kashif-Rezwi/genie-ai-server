@@ -6,7 +6,7 @@ import {
     Body,
     Param,
     UseGuards,
-    ValidationPipe
+    ValidationPipe,
 } from '@nestjs/common';
 import { ApiKeyService, CreateApiKeyDto } from './services/api-key.service';
 import { RateLimitService } from './services/rate-limit.service';
@@ -23,14 +23,11 @@ export class SecurityController {
         private readonly apiKeyService: ApiKeyService,
         private readonly rateLimitService: RateLimitService,
         private readonly securityService: SecurityService,
-    ) { }
+    ) {}
 
     @Post('api-keys')
     @RateLimit('api')
-    async createApiKey(
-        @CurrentUser() user: any,
-        @Body(ValidationPipe) createDto: CreateApiKeyDto
-    ) {
+    async createApiKey(@CurrentUser() user: any, @Body(ValidationPipe) createDto: CreateApiKeyDto) {
         return this.apiKeyService.createApiKey(user.id, createDto);
     }
 
@@ -40,10 +37,7 @@ export class SecurityController {
     }
 
     @Delete('api-keys/:keyId')
-    async revokeApiKey(
-        @CurrentUser() user: any,
-        @Param('keyId') keyId: string
-    ) {
+    async revokeApiKey(@CurrentUser() user: any, @Param('keyId') keyId: string) {
         await this.apiKeyService.revokeApiKey(keyId, user.id);
         return { message: 'API key revoked successfully' };
     }
@@ -89,7 +83,7 @@ export class SecurityController {
     @Roles(UserRole.ADMIN)
     async resetUserRateLimit(
         @Param('userId') userId: string,
-        @Body('operation') operation: string
+        @Body('operation') operation: string,
     ) {
         const userTier = await this.rateLimitService.getUserTierFromCredits(userId);
         await this.rateLimitService.resetRateLimit(`${userTier}_user`, userId);

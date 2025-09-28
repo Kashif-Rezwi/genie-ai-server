@@ -4,7 +4,6 @@ import { streamText, generateText } from 'ai';
 import { AIRequestDto } from '../dto/ai-request.dto';
 import { AIResponseDto } from '../dto/ai-response.dto';
 
-
 @Injectable()
 export class OpenAIProvider {
     // Primary method - always use streaming

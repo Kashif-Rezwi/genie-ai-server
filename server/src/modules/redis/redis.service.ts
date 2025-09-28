@@ -15,7 +15,7 @@ export class RedisService {
         this.subscriber = new Redis(config);
         this.publisher = new Redis(config);
 
-        this.client.on('error', (err) => {
+        this.client.on('error', err => {
             console.error('Redis Client Error:', err);
         });
 
