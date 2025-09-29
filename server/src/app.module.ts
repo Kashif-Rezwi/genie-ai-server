@@ -6,6 +6,7 @@ import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 // Feature Modules
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { AIModule } from './modules/ai/ai.module';
 
 // Configuration
 import { appConfig, databaseConfig } from './config';
@@ -31,6 +32,7 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
         // Feature Modules (dependency order)
         HealthModule,
         AuthModule,
+        AIModule,
     ],
 
     providers: [
