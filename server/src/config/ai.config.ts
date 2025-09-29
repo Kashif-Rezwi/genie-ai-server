@@ -1,7 +1,7 @@
 export interface AIModelConfig {
     id: string;
     name: string;
-    provider: 'openai' | 'anthropic' | 'mistral' | 'groq';
+    provider: 'openai' | 'anthropic' | 'groq';
     costPerToken: number; // Credits per 1000 tokens
     maxTokens: number;
     isFree: boolean;
@@ -71,15 +71,6 @@ export const AI_MODELS: Record<string, AIModelConfig> = {
         maxTokens: 8192,
         isFree: true,
         description: 'Instruction-tuned 70B model for complex reasoning',
-    },
-    'mixtral-8x7b-32768': {
-        id: 'mixtral-8x7b-32768',
-        name: 'Mixtral 8x7B',
-        provider: 'groq',
-        costPerToken: 0,
-        maxTokens: 32768,
-        isFree: true,
-        description: 'Mixture of experts model with 8x7B parameters',
     },
     'gemma-7b-it': {
         id: 'gemma-7b-it',
