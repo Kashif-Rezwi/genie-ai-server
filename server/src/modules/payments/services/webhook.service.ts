@@ -96,15 +96,14 @@ export class WebhookService {
 
             // Add credits if not already added
             if (!payment.creditTransactionId) {
-                const creditResult = await this.creditsService.addCredits(
+                await this.creditsService.addCredits(
                     payment.userId,
                     payment.creditsAmount,
                     `Package purchase: ${payment.packageName} (Webhook)`,
                     paymentEntity.id,
-                    payment.packageId,
                 );
 
-                payment.creditTransactionId = creditResult.transaction.id;
+                payment.status = PaymentStatus.COMPLETED;
                 await manager.save(payment);
 
                 this.logger.log(
@@ -211,15 +210,14 @@ export class WebhookService {
 
                 // Add credits if not already added
                 if (!payment.creditTransactionId) {
-                    const creditResult = await this.creditsService.addCredits(
+                    await this.creditsService.addCredits(
                         payment.userId,
                         payment.creditsAmount,
                         `Package purchase: ${payment.packageName} (Retry)`,
                         payment.razorpayPaymentId,
-                        payment.packageId,
                     );
 
-                    payment.creditTransactionId = creditResult.transaction.id;
+                    payment.status = PaymentStatus.COMPLETED;
                     await manager.save(payment);
                 }
             });

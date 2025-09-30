@@ -39,7 +39,7 @@ export class GenericAIProvider extends BaseAIProvider {
                     `${this.providerName}-stream-${Date.now()}`,
                     accumulatedText,
                     delta,
-                    false
+                    false,
                 );
             }
 
@@ -50,7 +50,7 @@ export class GenericAIProvider extends BaseAIProvider {
                 accumulatedText,
                 '',
                 true,
-                finalUsage
+                finalUsage,
             );
         } catch (error) {
             yield this.createStreamChunk(
@@ -59,7 +59,7 @@ export class GenericAIProvider extends BaseAIProvider {
                 '',
                 true,
                 undefined,
-                `${this.providerName} streaming error: ${error.message}`
+                `${this.providerName} streaming error: ${error.message}`,
             );
         }
     }
@@ -84,7 +84,7 @@ export class GenericAIProvider extends BaseAIProvider {
                 result.text,
                 request.model || this.defaultModel,
                 result.usage,
-                result.finishReason || 'stop'
+                result.finishReason || 'stop',
             );
         } catch (error) {
             throw new Error(`${this.providerName} error: ${error.message}`);

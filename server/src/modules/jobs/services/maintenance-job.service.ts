@@ -130,20 +130,29 @@ export class MaintenanceJobService {
                 calculatedBalance += transaction.amount;
             }
 
-            // Check for discrepancy
-            const discrepancy = Math.abs(user.creditsBalance - calculatedBalance);
+            // Check for discrepancy (considering reserved credits)
+            const totalReserved = user.creditsReserved || 0;
+            const availableBalance = user.creditsBalance - totalReserved;
+            const calculatedAvailable = calculatedBalance - totalReserved;
+
+            const discrepancy = Math.abs(availableBalance - calculatedAvailable);
             if (discrepancy > 0.01) {
                 // Allow for small floating point differences
                 discrepanciesFound++;
 
                 this.logger.warn(
                     `Credit discrepancy found for user ${user.id}: ` +
-                        `stored=${user.creditsBalance}, calculated=${calculatedBalance}`,
+                        `stored=${user.creditsBalance}, calculated=${calculatedBalance}, ` +
+                        `reserved=${totalReserved}`,
                 );
 
-                // Fix the discrepancy
+                // Fix the discrepancy by updating the balance
                 user.creditsBalance = calculatedBalance;
                 await this.userRepository.save(user);
+
+                // Invalidate Redis cache for this user
+                await this.redisService.del(`balance:${user.id}`);
+
                 fixedCount++;
             }
         }

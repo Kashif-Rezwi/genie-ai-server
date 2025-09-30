@@ -1,10 +1,10 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { AIRequestDto } from '../dto/ai-request.dto';
 import { AIResponseDto } from '../dto/ai-response.dto';
-
 import { AIProviderFactory } from '../providers/ai-provider.factory';
-import { AICreditService } from './ai-credit.service';
+import { CreditsService } from '../../credits/services/credits.service';
 import { getModelConfig, AIModelConfig, aiProvidersConfig } from '../../../config';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AIService {
@@ -12,7 +12,7 @@ export class AIService {
 
     constructor(
         private readonly providerFactory: AIProviderFactory,
-        private readonly aiCreditService: AICreditService,
+        private readonly creditsService: CreditsService,
     ) {}
 
     // Non-streaming endpoint (collects stream internally)
@@ -24,33 +24,46 @@ export class AIService {
             throw new BadRequestException(`Model ${modelId} not supported`);
         }
 
-        // Check credits for paid models
-        await this.aiCreditService.checkCreditsForRequest(userId, request, modelConfig);
-
-        // Use streaming internally but collect all chunks
-        let response: AIResponseDto;
-        let totalTokens = 0;
+        let reservationId: string | null = null;
 
         try {
-            response = await this.getProviderResponse(modelConfig.provider, {
+            // For paid models, reserve credits
+            if (!modelConfig.isFree) {
+                const estimatedCredits = this.estimateCredits(request, modelConfig);
+                reservationId = await this.creditsService.reserveCredits(userId, estimatedCredits, {
+                    model: modelConfig.name,
+                    provider: modelConfig.provider,
+                    operation: 'generate',
+                    requestId: uuidv4(),
+                });
+            }
+
+            // Process AI request
+            const response = await this.getProviderResponse(modelConfig.provider, {
                 ...request,
                 model: modelId,
             });
-            totalTokens = response.usage.totalTokens;
+
+            // Calculate actual credits used
+            const actualCredits = this.calculateCreditsUsed(
+                response.usage.totalTokens,
+                modelConfig,
+            );
+
+            // Confirm reservation with actual amount
+            if (reservationId) {
+                await this.creditsService.confirmReservation(reservationId, actualCredits);
+            }
+
+            response.creditsUsed = actualCredits;
+            return response;
         } catch (error) {
-            throw new BadRequestException(`AI generation failed: ${error.message}`);
+            // Release reservation on any failure
+            if (reservationId) {
+                await this.creditsService.releaseReservation(reservationId);
+            }
+            throw error;
         }
-
-        // Calculate and deduct credits
-        const creditsUsed = await this.aiCreditService.deductCreditsForResponse(
-            userId,
-            response.usage.totalTokens,
-            modelConfig,
-            'AI generation'
-        );
-        response.creditsUsed = creditsUsed;
-
-        return response;
     }
 
     // Streaming endpoint with real-time credit deduction
@@ -65,17 +78,27 @@ export class AIService {
             throw new BadRequestException(`Model ${modelId} not supported`);
         }
 
-        // Check credits for paid models
-        await this.aiCreditService.checkCreditsForRequest(userId, request, modelConfig);
+        let reservationId: string | null = null;
 
-        // Stream response
         try {
+            // For paid models, reserve credits
+            if (!modelConfig.isFree) {
+                const estimatedCredits = this.estimateCredits(request, modelConfig);
+                reservationId = await this.creditsService.reserveCredits(userId, estimatedCredits, {
+                    model: modelConfig.name,
+                    provider: modelConfig.provider,
+                    operation: 'stream',
+                    requestId: uuidv4(),
+                });
+            }
+
+            // Stream response
             const stream = this.getProviderStream(modelConfig.provider, {
                 ...request,
                 model: modelId,
             });
             let totalTokens = 0;
-            let creditsDeducted = false;
+            let creditsConfirmed = false;
 
             for await (const chunk of stream) {
                 // Forward chunk to client immediately
@@ -85,36 +108,39 @@ export class AIService {
                 };
 
                 // Handle final chunk with usage data
-                if (chunk.done && chunk.usage?.totalTokens && !creditsDeducted) {
+                if (chunk.done && chunk.usage?.totalTokens && !creditsConfirmed) {
                     totalTokens = chunk.usage.totalTokens;
 
-                    // Deduct credits after streaming completes
-                    if (!modelConfig.isFree && totalTokens > 0) {
+                    // Confirm reservation with actual amount
+                    if (reservationId && totalTokens > 0) {
                         try {
-                            const creditsUsed = await this.aiCreditService.deductCreditsForResponse(
-                                userId,
+                            const actualCredits = this.calculateCreditsUsed(
                                 totalTokens,
                                 modelConfig,
-                                'AI streaming generation'
+                            );
+
+                            await this.creditsService.confirmReservation(
+                                reservationId,
+                                actualCredits,
                             );
 
                             // Send credit info to client
                             yield {
                                 id: `credits-${Date.now()}`,
-                                creditsUsed,
+                                creditsUsed: actualCredits,
                                 totalTokens,
-                                remainingBalance: await this.aiCreditService.getUserBalance(userId),
+                                remainingBalance: await this.creditsService.getBalance(userId),
                                 done: true,
                                 type: 'credit_update',
                             };
                         } catch (creditError) {
                             yield {
-                                error: `Credit deduction failed: ${creditError.message}`,
+                                error: `Credit confirmation failed: ${creditError.message}`,
                                 done: true,
                                 type: 'credit_error',
                             };
                         }
-                        creditsDeducted = true;
+                        creditsConfirmed = true;
                     }
                 }
 
@@ -124,6 +150,10 @@ export class AIService {
                 }
             }
         } catch (error) {
+            // Release reservation on any failure
+            if (reservationId) {
+                await this.creditsService.releaseReservation(reservationId);
+            }
             yield {
                 error: `AI streaming failed: ${error.message}`,
                 done: true,
@@ -144,4 +174,12 @@ export class AIService {
         return providerInstance.streamResponse(request);
     }
 
+    private estimateCredits(request: AIRequestDto, modelConfig: AIModelConfig): number {
+        const estimatedTokens = (request.maxTokens || 1000) + 500;
+        return this.calculateCreditsUsed(estimatedTokens, modelConfig);
+    }
+
+    private calculateCreditsUsed(tokens: number, modelConfig: AIModelConfig): number {
+        return Math.ceil((tokens / 1000) * modelConfig.costPerToken * 100) / 100;
+    }
 }

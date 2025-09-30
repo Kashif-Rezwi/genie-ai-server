@@ -19,6 +19,7 @@ export {
     hasRateLimitConfig,
     RATE_LIMIT_CONFIGS,
 } from './rate-limiting.config';
+export { creditConfig } from './credit.config';
 
 // Re-export types for convenience
 export type { AIModelConfig } from './ai.config';
