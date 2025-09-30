@@ -34,6 +34,9 @@ export class CreditTransaction {
     @Column({ nullable: true })
     razorpayPaymentId: string;
 
+    @Column({ type: 'jsonb', nullable: true })
+    metadata: Record<string, any>;
+
     @Column()
     userId: string;
 

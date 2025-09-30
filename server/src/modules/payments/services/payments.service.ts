@@ -3,6 +3,7 @@ import {
     NotFoundException,
     BadRequestException,
     ConflictException,
+    Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -22,6 +23,7 @@ import {
 
 @Injectable()
 export class PaymentsService {
+    private readonly logger = new Logger(PaymentsService.name);
     private readonly config = paymentConfig();
 
     constructor(
@@ -172,8 +174,8 @@ export class PaymentsService {
 
             await manager.save(payment);
 
-            // Add credits to user account
-            const creditResult = await this.creditsService.addCredits(
+            // Add credits to user account with idempotency
+            const creditResult = await this.creditsService.addCreditsIdempotent(
                 payment.userId,
                 payment.creditsAmount,
                 `Package purchase: ${payment.packageName}`,
@@ -181,8 +183,14 @@ export class PaymentsService {
                 payment.packageId,
             );
 
-            // Update payment with credit transaction ID
-            payment.creditTransactionId = creditResult.transaction.id;
+            if (creditResult.processed) {
+                this.logger.log(`Credits added for payment ${razorpayPaymentId}`);
+            } else {
+                this.logger.log(`Payment ${razorpayPaymentId} was already processed`);
+            }
+
+            // Update payment status
+            payment.status = PaymentStatus.COMPLETED;
             await manager.save(payment);
 
             return {
@@ -194,7 +202,7 @@ export class PaymentsService {
                     status: payment.status,
                     amount: payment.amount,
                     creditsAdded: payment.creditsAmount,
-                    newBalance: creditResult.newBalance,
+                    newBalance: await this.creditsService.getBalance(payment.userId),
                 },
             };
         });
