@@ -14,7 +14,7 @@ export abstract class BaseAIProvider implements AIProvider {
 
     protected processMessages(request: AIRequestDto) {
         const { messages, systemPrompt } = request;
-        
+
         // Add system prompt to messages if provided
         const processedMessages = [...messages];
         if (systemPrompt) {
@@ -23,7 +23,7 @@ export abstract class BaseAIProvider implements AIProvider {
                 content: systemPrompt,
             });
         }
-        
+
         return processedMessages;
     }
 
@@ -33,7 +33,7 @@ export abstract class BaseAIProvider implements AIProvider {
         delta: string,
         done: boolean = false,
         usage?: any,
-        error?: string
+        error?: string,
     ) {
         const chunk: any = {
             id,
@@ -62,7 +62,7 @@ export abstract class BaseAIProvider implements AIProvider {
         content: string,
         model: string,
         usage: any,
-        finishReason: string = 'stop'
+        finishReason: string = 'stop',
     ): AIResponseDto {
         return {
             id,
