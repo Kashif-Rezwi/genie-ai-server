@@ -1,11 +1,9 @@
-import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { AIRequestDto } from '../dto/ai-request.dto';
 import { AIResponseDto } from '../dto/ai-response.dto';
 
-import { CreditsService } from '../../credits/services/credits.service';
-import { OpenAIProvider } from '../providers/openai.provider';
-import { AnthropicProvider } from '../providers/anthropic.provider';
-import { GroqProvider } from '../providers/groq.provider';
+import { AIProviderFactory } from '../providers/ai-provider.factory';
+import { AICreditService } from './ai-credit.service';
 import { getModelConfig, AIModelConfig, aiProvidersConfig } from '../../../config';
 
 @Injectable()
@@ -13,10 +11,8 @@ export class AIService {
     private readonly config = aiProvidersConfig();
 
     constructor(
-        private readonly creditsService: CreditsService,
-        private readonly openaiProvider: OpenAIProvider,
-        private readonly anthropicProvider: AnthropicProvider,
-        private readonly groqProvider: GroqProvider,
+        private readonly providerFactory: AIProviderFactory,
+        private readonly aiCreditService: AICreditService,
     ) {}
 
     // Non-streaming endpoint (collects stream internally)
@@ -28,17 +24,8 @@ export class AIService {
             throw new BadRequestException(`Model ${modelId} not supported`);
         }
 
-        // Check credits for paid models using enhanced service
-        if (!modelConfig.isFree) {
-            const estimatedCost = this.estimateCredits(request, modelConfig);
-            const balance = await this.creditsService.getUserBalance(userId);
-
-            if (balance < estimatedCost) {
-                throw new ForbiddenException(
-                    `Insufficient credits. Required: ${estimatedCost}, Available: ${balance}`,
-                );
-            }
-        }
+        // Check credits for paid models
+        await this.aiCreditService.checkCreditsForRequest(userId, request, modelConfig);
 
         // Use streaming internally but collect all chunks
         let response: AIResponseDto;
@@ -54,17 +41,14 @@ export class AIService {
             throw new BadRequestException(`AI generation failed: ${error.message}`);
         }
 
-        // Calculate and deduct credits using enhanced service
-        const creditsUsed = this.calculateCreditsUsed(response.usage.totalTokens, modelConfig);
+        // Calculate and deduct credits
+        const creditsUsed = await this.aiCreditService.deductCreditsForResponse(
+            userId,
+            response.usage.totalTokens,
+            modelConfig,
+            'AI generation'
+        );
         response.creditsUsed = creditsUsed;
-
-        if (!modelConfig.isFree && creditsUsed > 0) {
-            await this.creditsService.deductCredits(userId, creditsUsed, 'AI generation', {
-                model: modelConfig.name,
-                tokens: response.usage.totalTokens,
-                provider: modelConfig.provider,
-            });
-        }
 
         return response;
     }
@@ -81,17 +65,8 @@ export class AIService {
             throw new BadRequestException(`Model ${modelId} not supported`);
         }
 
-        // Check credits for paid models using enhanced service
-        if (!modelConfig.isFree) {
-            const estimatedCost = this.estimateCredits(request, modelConfig);
-            const balance = await this.creditsService.getUserBalance(userId);
-
-            if (balance < estimatedCost) {
-                throw new ForbiddenException(
-                    `Insufficient credits. Required: ${estimatedCost}, Available: ${balance}`,
-                );
-            }
-        }
+        // Check credits for paid models
+        await this.aiCreditService.checkCreditsForRequest(userId, request, modelConfig);
 
         // Stream response
         try {
@@ -115,18 +90,12 @@ export class AIService {
 
                     // Deduct credits after streaming completes
                     if (!modelConfig.isFree && totalTokens > 0) {
-                        const creditsUsed = this.calculateCreditsUsed(totalTokens, modelConfig);
-
                         try {
-                            await this.creditsService.deductCredits(
+                            const creditsUsed = await this.aiCreditService.deductCreditsForResponse(
                                 userId,
-                                creditsUsed,
-                                'AI streaming generation',
-                                {
-                                    model: modelConfig.name,
-                                    tokens: totalTokens,
-                                    provider: modelConfig.provider,
-                                },
+                                totalTokens,
+                                modelConfig,
+                                'AI streaming generation'
                             );
 
                             // Send credit info to client
@@ -134,7 +103,7 @@ export class AIService {
                                 id: `credits-${Date.now()}`,
                                 creditsUsed,
                                 totalTokens,
-                                remainingBalance: await this.creditsService.getUserBalance(userId),
+                                remainingBalance: await this.aiCreditService.getUserBalance(userId),
                                 done: true,
                                 type: 'credit_update',
                             };
@@ -166,37 +135,13 @@ export class AIService {
         provider: string,
         request: AIRequestDto,
     ): Promise<AIResponseDto> {
-        switch (provider) {
-            case 'openai':
-                return this.openaiProvider.generateResponse(request);
-            case 'anthropic':
-                return this.anthropicProvider.generateResponse(request);
-            case 'groq':
-                return this.groqProvider.generateResponse(request);
-            default:
-                throw new BadRequestException(`Provider ${provider} not supported`);
-        }
+        const providerInstance = this.providerFactory.getProvider(provider);
+        return providerInstance.generateResponse(request);
     }
 
     private getProviderStream(provider: string, request: AIRequestDto) {
-        switch (provider) {
-            case 'openai':
-                return this.openaiProvider.streamResponse(request);
-            case 'anthropic':
-                return this.anthropicProvider.streamResponse(request);
-            case 'groq':
-                return this.groqProvider.streamResponse(request);
-            default:
-                throw new BadRequestException(`Provider ${provider} not supported`);
-        }
+        const providerInstance = this.providerFactory.getProvider(provider);
+        return providerInstance.streamResponse(request);
     }
 
-    private estimateCredits(request: AIRequestDto, modelConfig: AIModelConfig): number {
-        const estimatedTokens = (request.maxTokens || 1000) + 500;
-        return this.calculateCreditsUsed(estimatedTokens, modelConfig);
-    }
-
-    private calculateCreditsUsed(tokens: number, modelConfig: AIModelConfig): number {
-        return Math.ceil((tokens / 1000) * modelConfig.costPerToken * 100) / 100;
-    }
 }

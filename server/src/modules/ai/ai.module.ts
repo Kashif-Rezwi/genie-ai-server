@@ -3,16 +3,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CreditsModule } from '../credits/credits.module';
 import { AIController } from './ai.controller';
 import { AIService } from './services/ai.service';
-import { CreditService } from './services/credit.service';
-import { OpenAIProvider } from './providers/openai.provider';
-import { AnthropicProvider } from './providers/anthropic.provider';
-import { GroqProvider } from './providers/groq.provider';
+import { AICreditService } from './services/ai-credit.service';
+import { AIProviderFactory } from './providers/ai-provider.factory';
 import { User, CreditTransaction } from '../../entities';
 
 @Module({
     imports: [TypeOrmModule.forFeature([User, CreditTransaction]), CreditsModule],
     controllers: [AIController],
-    providers: [AIService, CreditService, OpenAIProvider, AnthropicProvider, GroqProvider],
-    exports: [AIService, CreditService],
+    providers: [AIService, AICreditService, AIProviderFactory],
+    exports: [AIService],
 })
 export class AIModule {}
