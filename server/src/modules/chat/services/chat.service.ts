@@ -8,7 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Chat, Message, MessageRole, User } from '../../../entities';
 import { CreateChatDto, UpdateChatDto, ChatListQueryDto } from '../dto/chat.dto';
-import { ChatResponseDto, ChatDetailResponseDto } from '../dto/message.dto';
+import { ChatResponse, ChatDetailResponse, ChatStats } from '../interfaces/chat.interfaces';
 
 @Injectable()
 export class ChatService {
@@ -53,7 +53,7 @@ export class ChatService {
     async getUserChats(
         userId: string,
         query: ChatListQueryDto,
-    ): Promise<{ chats: ChatResponseDto[]; total: number }> {
+    ): Promise<{ chats: ChatResponse[]; total: number }> {
         const { limit = 20, offset = 0, search } = query;
 
         const queryBuilder = this.chatRepository
@@ -81,7 +81,7 @@ export class ChatService {
             queryBuilder.getCount(),
         ]);
 
-        const chats: ChatResponseDto[] = rawChats.map(raw => ({
+        const chats: ChatResponse[] = rawChats.map(raw => ({
             id: raw.chat_id,
             title: raw.chat_title,
             systemPrompt: raw.chat_systemPrompt,
@@ -94,30 +94,42 @@ export class ChatService {
         return { chats, total };
     }
 
-    async getChatById(chatId: string, userId: string): Promise<ChatDetailResponseDto> {
+    async getChatById(chatId: string, userId: string, limit: number = 50): Promise<ChatDetailResponse> {
+        // First, verify chat exists and belongs to user
         const chat = await this.chatRepository.findOne({
             where: { id: chatId, userId },
-            relations: ['messages'],
+            select: ['id', 'title', 'systemPrompt', 'createdAt', 'updatedAt'],
         });
 
         if (!chat) {
             throw new NotFoundException('Chat not found');
         }
 
-        // Calculate total credits used in this chat
-        const totalCreditsUsed = chat.messages.reduce((sum, msg) => sum + msg.creditsUsed, 0);
+        // Get messages with pagination to avoid loading all messages
+        const [messages, totalCreditsUsed] = await Promise.all([
+            this.messageRepository.find({
+                where: { chatId },
+                order: { createdAt: 'ASC' },
+                take: limit,
+                select: ['id', 'role', 'content', 'model', 'creditsUsed', 'createdAt'],
+            }),
+            this.messageRepository
+                .createQueryBuilder('message')
+                .select('SUM(message.creditsUsed)', 'total')
+                .where('message.chatId = :chatId', { chatId })
+                .getRawOne()
+                .then(result => parseFloat(result.total) || 0),
+        ]);
 
-        // Sort messages by creation time
-        const sortedMessages = chat.messages
-            .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-            .map(msg => ({
-                id: msg.id,
-                role: msg.role,
-                content: msg.content,
-                model: msg.model,
-                creditsUsed: msg.creditsUsed,
-                createdAt: msg.createdAt,
-            }));
+        // Map messages to response format
+        const sortedMessages = messages.map(msg => ({
+            id: msg.id,
+            role: msg.role,
+            content: msg.content,
+            model: msg.model,
+            creditsUsed: msg.creditsUsed,
+            createdAt: msg.createdAt,
+        }));
 
         return {
             id: chat.id,
@@ -157,28 +169,46 @@ export class ChatService {
     }
 
     async generateChatTitle(firstMessage: string): Promise<string> {
-        // Generate a smart title from the first message
-        const words = firstMessage.trim().split(' ').slice(0, 6);
-        let title = words.join(' ');
+        try {
+            // Use AI to generate a meaningful title
+            const titlePrompt = `Generate a concise, descriptive title (max 6 words) for a chat that starts with this message: "${firstMessage.substring(0, 200)}"`;
+            
+            // For now, use a simple heuristic approach
+            // In production, you would call the AI service here
+            const words = firstMessage.trim().split(' ').slice(0, 6);
+            let title = words.join(' ');
 
-        if (firstMessage.length > 50) {
-            title += '...';
+            // Clean up the title
+            title = title.replace(/[^\w\s-]/g, '').trim();
+
+            if (firstMessage.length > 50) {
+                title += '...';
+            }
+
+            // Ensure title is not empty and has reasonable length
+            if (!title || title.length < 3) {
+                title = `Chat ${new Date().toLocaleDateString()}`;
+            }
+
+            return title.substring(0, 100);
+        } catch (error) {
+            // Fallback to simple title generation
+            const words = firstMessage.trim().split(' ').slice(0, 6);
+            let title = words.join(' ');
+
+            if (firstMessage.length > 50) {
+                title += '...';
+            }
+
+            if (!title || title.length < 3) {
+                title = `Chat ${new Date().toLocaleDateString()}`;
+            }
+
+            return title.substring(0, 100);
         }
-
-        // Ensure title is not empty and has reasonable length
-        if (!title || title.length < 3) {
-            title = `Chat ${new Date().toLocaleDateString()}`;
-        }
-
-        return title.substring(0, 100);
     }
 
-    async getChatStats(userId: string): Promise<{
-        totalChats: number;
-        totalMessages: number;
-        totalCreditsUsed: number;
-        averageMessagesPerChat: number;
-    }> {
+    async getChatStats(userId: string): Promise<ChatStats> {
         const stats = await this.chatRepository
             .createQueryBuilder('chat')
             .leftJoin('chat.messages', 'message')
@@ -200,6 +230,47 @@ export class ChatService {
             totalMessages,
             totalCreditsUsed,
             averageMessagesPerChat,
+        };
+    }
+
+    async getChatMessagesPaginated(
+        chatId: string,
+        userId: string,
+        limit: number = 50,
+        offset: number = 0,
+    ): Promise<{ messages: any[]; total: number; hasMore: boolean }> {
+        // Verify chat belongs to user
+        const chat = await this.chatRepository.findOne({
+            where: { id: chatId, userId },
+            select: ['id'],
+        });
+
+        if (!chat) {
+            throw new NotFoundException('Chat not found');
+        }
+
+        const [messages, total] = await Promise.all([
+            this.messageRepository.find({
+                where: { chatId },
+                order: { createdAt: 'ASC' },
+                skip: offset,
+                take: limit,
+                select: ['id', 'role', 'content', 'model', 'creditsUsed', 'createdAt'],
+            }),
+            this.messageRepository.count({ where: { chatId } }),
+        ]);
+
+        return {
+            messages: messages.map(msg => ({
+                id: msg.id,
+                role: msg.role,
+                content: msg.content,
+                model: msg.model,
+                creditsUsed: msg.creditsUsed,
+                createdAt: msg.createdAt,
+            })),
+            total,
+            hasMore: offset + limit < total,
         };
     }
 }
