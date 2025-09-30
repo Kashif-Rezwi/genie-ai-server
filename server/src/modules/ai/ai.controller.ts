@@ -1,7 +1,7 @@
 import { Controller, Post, Get, Body, UseGuards, Res, ValidationPipe } from '@nestjs/common';
 import { Response } from 'express';
 import { AIService } from './services/ai.service';
-import { AICreditService } from './services/ai-credit.service';
+import { CreditsService } from '../credits/services/credits.service';
 import { AIRequestDto } from './dto/ai-request.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -13,7 +13,7 @@ import { RateLimit } from '../security/guards/rate-limit.guard';
 export class AIController {
     constructor(
         private readonly aiService: AIService,
-        private readonly aiCreditService: AICreditService,
+        private readonly creditsService: CreditsService,
     ) {}
 
     @Get('models')
@@ -28,12 +28,11 @@ export class AIController {
 
     @Get('credits')
     async getUserCredits(@CurrentUser() user: any) {
-        const balance = await this.aiCreditService.getUserBalance(user.id);
-        // Note: Transaction history would need to be accessed through the main CreditsService
-        // For now, just return the balance
+        const balance = await this.creditsService.getBalance(user.id);
+        const transactions = await this.creditsService.getRecentTransactions(user.id);
         return {
             balance,
-            recentTransactions: [], // TODO: Add transaction history if needed
+            recentTransactions: transactions,
         };
     }
 

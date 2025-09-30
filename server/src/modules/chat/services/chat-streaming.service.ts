@@ -59,7 +59,7 @@ export class ChatStreamingService {
 
             // Step 6: Check credits for paid models
             if (!modelConfig.isFree) {
-                const balance = await this.creditsService.getUserBalance(userId);
+                const balance = await this.creditsService.getBalance(userId);
                 const estimatedCost = this.estimateCredits(content, modelConfig);
 
                 if (balance < estimatedCost) {

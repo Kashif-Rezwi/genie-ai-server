@@ -23,6 +23,9 @@ export class User {
     @Column({ default: 0 })
     creditsBalance: number;
 
+    @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+    creditsReserved: number;
+
     @Column({ default: true })
     isActive: boolean;
 
