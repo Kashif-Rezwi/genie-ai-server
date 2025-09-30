@@ -1,11 +1,9 @@
 import {
     IsString,
     IsOptional,
-    IsUUID,
-    IsArray,
-    ValidateNested,
     MinLength,
     MaxLength,
+    IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -40,8 +38,9 @@ export class UpdateChatDto {
 
 export class SendMessageDto {
     @IsString()
+    @IsNotEmpty()
     @MinLength(1)
-    @MaxLength(10000)
+    @MaxLength(50000) // Increased from 10KB to 50KB for better user experience
     content: string;
 
     @IsOptional()

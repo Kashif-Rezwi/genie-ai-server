@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, MoreThan } from 'typeorm';
 import { Chat, Message, MessageRole } from '../../../entities';
+import { ConversationHistory, CostAnalysis, ModelUsage, RecentActivity } from '../interfaces/chat.interfaces';
 import { MessageResponseDto } from '../dto/message.dto';
 
 @Injectable()
@@ -22,6 +23,20 @@ export class MessageService {
 
         if (!chat) {
             throw new NotFoundException('Chat not found');
+        }
+
+        // Check for duplicate message in last 5 minutes
+        const recentMessage = await this.messageRepository.findOne({
+            where: { 
+                chatId, 
+                role: MessageRole.USER,
+                content,
+                createdAt: MoreThan(new Date(Date.now() - 5 * 60 * 1000))
+            }
+        });
+
+        if (recentMessage) {
+            throw new BadRequestException('Duplicate message detected. Please wait before sending the same message again.');
         }
 
         const message = this.messageRepository.create({
@@ -98,12 +113,7 @@ export class MessageService {
     async getConversationHistory(
         chatId: string,
         userId: string,
-    ): Promise<
-        Array<{
-            role: 'user' | 'assistant' | 'system';
-            content: string;
-        }>
-    > {
+    ): Promise<ConversationHistory[]> {
         // Verify chat belongs to user
         const chat = await this.chatRepository.findOne({
             where: { id: chatId, userId },
@@ -143,14 +153,7 @@ export class MessageService {
     async getMessageCostAnalysis(
         chatId: string,
         userId: string,
-    ): Promise<{
-        totalCost: number;
-        messagesByModel: Array<{
-            model: string;
-            count: number;
-            totalCost: number;
-        }>;
-    }> {
+    ): Promise<CostAnalysis> {
         // Verify chat belongs to user
         const chat = await this.chatRepository.findOne({
             where: { id: chatId, userId },
@@ -185,13 +188,7 @@ export class MessageService {
         };
     }
 
-    async getUserModelUsage(userId: string): Promise<
-        Array<{
-            model: string;
-            messageCount: number;
-            totalCreditsUsed: number;
-        }>
-    > {
+    async getUserModelUsage(userId: string): Promise<ModelUsage[]> {
         const result = await this.messageRepository
             .createQueryBuilder('message')
             .innerJoin('message.chat', 'chat')
@@ -216,13 +213,7 @@ export class MessageService {
     async getRecentActivity(
         userId: string,
         days: number = 7,
-    ): Promise<
-        Array<{
-            date: string;
-            messageCount: number;
-            creditsUsed: number;
-        }>
-    > {
+    ): Promise<RecentActivity[]> {
         const endDate = new Date();
         const startDate = new Date();
         startDate.setDate(endDate.getDate() - days);

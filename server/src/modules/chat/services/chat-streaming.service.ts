@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { Response } from 'express';
 import { ChatService } from './chat.service';
 import { MessageService } from './message.service';
@@ -10,7 +10,9 @@ import { getModelConfig, aiProvidersConfig } from '../../../config';
 
 @Injectable()
 export class ChatStreamingService {
+    private readonly logger = new Logger(ChatStreamingService.name);
     private readonly config = aiProvidersConfig();
+    private readonly activeStreams = new Map<string, boolean>();
 
     constructor(
         private readonly chatService: ChatService,
@@ -26,6 +28,38 @@ export class ChatStreamingService {
         response: Response,
     ): Promise<void> {
         const { content, model, systemPrompt } = sendMessageDto;
+        const streamKey = `${chatId}-${userId}`;
+        let isClientConnected = true;
+        let cleanupExecuted = false;
+
+        // Check if there's already an active stream for this chat
+        if (this.activeStreams.has(streamKey)) {
+            throw new BadRequestException('Another message is already being processed for this chat. Please wait.');
+        }
+
+        // Mark stream as active
+        this.activeStreams.set(streamKey, true);
+
+        // Setup cleanup function
+        const cleanup = () => {
+            if (cleanupExecuted) return;
+            cleanupExecuted = true;
+            this.activeStreams.delete(streamKey);
+            this.logger.log('Stream cleanup executed', { chatId, userId });
+        };
+
+        // Handle client disconnection
+        response.on('close', () => {
+            isClientConnected = false;
+            this.logger.log('Client disconnected during streaming', { chatId, userId });
+            cleanup();
+        });
+
+        response.on('error', (error) => {
+            this.logger.error('Stream response error', { error: error.message, chatId, userId });
+            isClientConnected = false;
+            cleanup();
+        });
 
         try {
             // Step 1: Verify chat exists and belongs to user
@@ -93,6 +127,12 @@ export class ChatStreamingService {
             const stream = this.aiService.streamResponse(userId, aiRequest);
 
             for await (const chunk of stream) {
+                // Check if client is still connected
+                if (!isClientConnected) {
+                    this.logger.log('Client disconnected, stopping stream processing', { chatId, userId });
+                    break;
+                }
+
                 // Accumulate content
                 if (chunk.delta) {
                     fullContent += chunk.delta;
@@ -103,17 +143,29 @@ export class ChatStreamingService {
                     totalTokens = chunk.usage.totalTokens;
                 }
 
-                // Send streaming response to client
-                const streamResponse: StreamingChatResponseDto = {
-                    chatId,
-                    messageId: messageId || `temp-${Date.now()}`,
-                    content: fullContent,
-                    delta: chunk.delta || '',
-                    model: modelId,
-                    done: chunk.done,
-                };
+                // Send streaming response to client only if still connected
+                if (isClientConnected) {
+                    const streamResponse: StreamingChatResponseDto = {
+                        chatId,
+                        messageId: messageId || `temp-${Date.now()}`,
+                        content: fullContent,
+                        delta: chunk.delta || '',
+                        model: modelId,
+                        done: chunk.done,
+                    };
 
-                this.writeSSEData(response, streamResponse);
+                    try {
+                        this.writeSSEData(response, streamResponse);
+                    } catch (writeError) {
+                        this.logger.error('Failed to write SSE data', {
+                            error: writeError.message,
+                            chatId,
+                            userId,
+                        });
+                        isClientConnected = false;
+                        break;
+                    }
+                }
 
                 // If this is the final chunk, save to database
                 if (chunk.done) {
@@ -131,35 +183,67 @@ export class ChatStreamingService {
                     messageId = assistantMessage.id;
 
                     // Send final response with correct message ID and credit info
-                    const finalResponse: StreamingChatResponseDto = {
-                        chatId,
-                        messageId,
-                        content: fullContent,
-                        delta: '',
-                        model: modelId,
-                        creditsUsed,
-                        done: true,
-                    };
+                    if (isClientConnected) {
+                        const finalResponse: StreamingChatResponseDto = {
+                            chatId,
+                            messageId,
+                            content: fullContent,
+                            delta: '',
+                            model: modelId,
+                            creditsUsed,
+                            done: true,
+                        };
 
-                    this.writeSSEData(response, finalResponse);
+                        try {
+                            this.writeSSEData(response, finalResponse);
+                        } catch (writeError) {
+                            this.logger.error('Failed to write final SSE data', {
+                                error: writeError.message,
+                                chatId,
+                                userId,
+                            });
+                        }
+                    }
                 }
             }
 
-            response.end();
+            // Only end response if client is still connected
+            if (isClientConnected) {
+                response.end();
+            }
         } catch (error) {
-            console.error('Streaming error:', error);
-
-            const errorResponse: StreamingChatResponseDto = {
+            this.logger.error('Streaming error occurred', {
+                error: error.message,
+                stack: error.stack,
                 chatId,
-                messageId: '',
-                content: '',
-                delta: '',
-                done: true,
-                error: error.message || 'An error occurred during streaming',
-            };
+                userId,
+                content: sendMessageDto.content,
+            });
 
-            this.writeSSEData(response, errorResponse);
-            response.end();
+            // Only send error response if client is still connected
+            if (isClientConnected) {
+                const errorResponse: StreamingChatResponseDto = {
+                    chatId,
+                    messageId: '',
+                    content: '',
+                    delta: '',
+                    done: true,
+                    error: error.message || 'An error occurred during streaming',
+                };
+
+                try {
+                    this.writeSSEData(response, errorResponse);
+                    response.end();
+                } catch (writeError) {
+                    this.logger.error('Failed to write error response', {
+                        error: writeError.message,
+                        chatId,
+                        userId,
+                    });
+                }
+            }
+        } finally {
+            cleanup();
         }
     }
 
@@ -168,10 +252,25 @@ export class ChatStreamingService {
         response.write(`data: ${jsonData}\n\n`);
     }
 
-    private estimateCredits(content: string, modelConfig: any): number {
-        // Rough estimation: 1 token ≈ 4 characters for input + max output
-        const estimatedInputTokens = Math.ceil(content.length / 4);
-        const estimatedOutputTokens = 500; // Conservative estimate
+    private estimateCredits(content: string, modelConfig: { costPerToken: number }): number {
+        // More accurate token estimation
+        // For English text: ~4 characters per token
+        // For code/mixed content: ~3 characters per token
+        // For non-English: ~2 characters per token
+        
+        const isCodeContent = /[{}();=<>]/.test(content) || content.includes('```');
+        const hasNonEnglish = /[^\x00-\x7F]/.test(content);
+        
+        let charsPerToken = 4; // Default for English text
+        
+        if (isCodeContent) {
+            charsPerToken = 3;
+        } else if (hasNonEnglish) {
+            charsPerToken = 2;
+        }
+        
+        const estimatedInputTokens = Math.ceil(content.length / charsPerToken);
+        const estimatedOutputTokens = Math.min(1000, Math.max(100, estimatedInputTokens * 0.5)); // Dynamic output estimation
         const totalEstimatedTokens = estimatedInputTokens + estimatedOutputTokens;
 
         return Math.ceil((totalEstimatedTokens / 1000) * modelConfig.costPerToken * 100) / 100;
@@ -182,44 +281,69 @@ export class ChatStreamingService {
         userId: string,
         sendMessageDto: SendMessageDto,
     ): Promise<{
-        userMessage: any;
-        assistantMessage: any;
+        userMessage: { id: string; content: string; role: string; createdAt: Date };
+        assistantMessage: { id: string; content: string; role: string; model?: string; creditsUsed: number; createdAt: Date };
         creditsUsed: number;
     }> {
-        const { content, model } = sendMessageDto;
+        try {
+            const { content, model } = sendMessageDto;
 
-        // Step 1: Save user message
-        const userMessage = await this.messageService.addUserMessage(chatId, userId, content);
+            this.logger.log('Processing quick response', {
+                chatId,
+                userId,
+                contentLength: content.length,
+                model: model || this.config.defaultModel,
+            });
 
-        // Step 2: Get conversation history
-        const conversationHistory = await this.messageService.getConversationHistory(
-            chatId,
-            userId,
-        );
+            // Step 1: Save user message
+            const userMessage = await this.messageService.addUserMessage(chatId, userId, content);
 
-        // Step 3: Generate AI response (non-streaming)
-        const aiRequest = {
-            messages: conversationHistory,
-            model: model || this.config.defaultModel,
-            maxTokens: 1000,
-            temperature: 0.7,
-        };
+            // Step 2: Get conversation history
+            const conversationHistory = await this.messageService.getConversationHistory(
+                chatId,
+                userId,
+            );
 
-        const aiResponse = await this.aiService.generateResponse(userId, aiRequest);
+            // Step 3: Generate AI response (non-streaming)
+            const aiRequest = {
+                messages: conversationHistory,
+                model: model || this.config.defaultModel,
+                maxTokens: 1000,
+                temperature: 0.7,
+            };
 
-        // Step 4: Save assistant message
-        const assistantMessage = await this.messageService.addAssistantMessage(
-            chatId,
-            userId,
-            aiResponse.content,
-            aiResponse.model,
-            aiResponse.creditsUsed,
-        );
+            const aiResponse = await this.aiService.generateResponse(userId, aiRequest);
 
-        return {
-            userMessage,
-            assistantMessage,
-            creditsUsed: aiResponse.creditsUsed,
-        };
+            // Step 4: Save assistant message
+            const assistantMessage = await this.messageService.addAssistantMessage(
+                chatId,
+                userId,
+                aiResponse.content,
+                aiResponse.model,
+                aiResponse.creditsUsed,
+            );
+
+            this.logger.log('Quick response completed successfully', {
+                chatId,
+                userId,
+                creditsUsed: aiResponse.creditsUsed,
+                responseLength: aiResponse.content.length,
+            });
+
+            return {
+                userMessage,
+                assistantMessage,
+                creditsUsed: aiResponse.creditsUsed,
+            };
+        } catch (error) {
+            this.logger.error('Quick response failed', {
+                error: error.message,
+                stack: error.stack,
+                chatId,
+                userId,
+                content: sendMessageDto.content,
+            });
+            throw error;
+        }
     }
 }
