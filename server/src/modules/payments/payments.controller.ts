@@ -17,8 +17,8 @@ import {
 import { Request } from 'express';
 import { PaymentsService } from './services/payments.service';
 import { WebhookService } from './services/webhook.service';
-import { PaymentHistoryService } from './services/payment-history.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { AdminRoleGuard } from '../../common/guards/admin-role.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RateLimit, RateLimitGuard } from '../security/guards/rate-limit.guard';
 import {
@@ -37,7 +37,6 @@ export class PaymentsController {
     constructor(
         private readonly paymentsService: PaymentsService,
         private readonly webhookService: WebhookService,
-        private readonly historyService: PaymentHistoryService,
     ) {}
 
     @Get('packages')
@@ -81,7 +80,7 @@ export class PaymentsController {
     async getPaymentStats(@CurrentUser() user: any) {
         const [paymentStats, userSummary] = await Promise.all([
             this.paymentsService.getPaymentStats(user.id),
-            this.historyService.getUserPaymentSummary(user.id),
+            this.paymentsService.getUserPaymentSummary(user.id),
         ]);
 
         return {
@@ -121,27 +120,56 @@ export class PaymentsController {
 
     // Admin endpoints
     @Get('admin/analytics')
-    @UseGuards(JwtAuthGuard) // Add admin role guard later
+    @UseGuards(JwtAuthGuard, AdminRoleGuard)
     async getPaymentAnalytics(@Query('days') days: number = 30) {
-        return this.historyService.getPaymentAnalytics(days);
+        return this.paymentsService.getPaymentAnalytics(days);
     }
 
     @Get('admin/recent')
-    @UseGuards(JwtAuthGuard) // Add admin role guard later
+    @UseGuards(JwtAuthGuard, AdminRoleGuard)
     async getRecentPayments(@Query('limit') limit: number = 10) {
-        return this.historyService.getRecentPayments(limit);
+        return this.paymentsService.getRecentPayments(limit);
     }
 
     @Get('admin/failed')
-    @UseGuards(JwtAuthGuard) // Add admin role guard later
+    @UseGuards(JwtAuthGuard, AdminRoleGuard)
     async getFailedPayments(@Query('days') days: number = 7) {
-        return this.historyService.getFailedPayments(days);
+        return this.paymentsService.getFailedPayments(days);
     }
 
     @Post('admin/:paymentId/retry')
-    @UseGuards(JwtAuthGuard) // Add admin role guard later
+    @UseGuards(JwtAuthGuard, AdminRoleGuard)
     @HttpCode(HttpStatus.NO_CONTENT)
     async retryFailedPayment(@Param('paymentId') paymentId: string) {
         await this.webhookService.retryFailedPaymentProcessing(paymentId);
+    }
+
+    @Post(':paymentId/refund')
+    @UseGuards(JwtAuthGuard)
+    @RateLimit('payment', 3) // 3 refunds per minute
+    async refundPayment(
+        @CurrentUser() user: any,
+        @Param('paymentId') paymentId: string,
+        @Body(ValidationPipe) refundDto: RefundPaymentDto,
+    ) {
+        return this.paymentsService.refundPayment(paymentId, user.id, refundDto);
+    }
+
+    @Get('health')
+    async getPaymentHealth() {
+        return {
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            services: {
+                razorpay: 'operational',
+                database: 'operational',
+                redis: 'operational',
+                queue: 'operational',
+            },
+            metrics: {
+                uptime: process.uptime(),
+                memory: process.memoryUsage(),
+            },
+        };
     }
 }

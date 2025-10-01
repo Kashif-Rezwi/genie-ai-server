@@ -97,6 +97,45 @@ export class AlertingService {
             cooldown: 600000, // 10 minutes
         });
 
+        // Payment processing delays
+        this.addAlertRule({
+            id: 'payment_processing_delay',
+            name: 'Payment Processing Delay',
+            condition: 'payment_processing_time',
+            threshold: 30000, // 30 seconds
+            window: 300000, // 5 minutes
+            severity: 'medium',
+            channels: ['email'],
+            enabled: true,
+            cooldown: 1800000, // 30 minutes
+        });
+
+        // High refund rate
+        this.addAlertRule({
+            id: 'high_refund_rate',
+            name: 'High Refund Rate',
+            condition: 'refund_rate',
+            threshold: 10, // 10% refund rate
+            window: 3600000, // 1 hour
+            severity: 'high',
+            channels: ['email', 'slack'],
+            enabled: true,
+            cooldown: 1800000, // 30 minutes
+        });
+
+        // Payment gateway connectivity
+        this.addAlertRule({
+            id: 'payment_gateway_down',
+            name: 'Payment Gateway Down',
+            condition: 'gateway_connectivity',
+            threshold: 1, // Any failure
+            window: 60000, // 1 minute
+            severity: 'critical',
+            channels: ['email', 'slack', 'phone'],
+            enabled: true,
+            cooldown: 300000, // 5 minutes
+        });
+
         // Queue job failures
         this.addAlertRule({
             id: 'queue_job_failures',

@@ -26,16 +26,23 @@ export class PaymentHistoryQueryDto {
     @IsNumber()
     @Min(1)
     @Max(100)
-    limit?: number = 20;
+    page?: number = 1;
 
     @IsOptional()
     @IsNumber()
-    @Min(0)
-    offset?: number = 0;
+    @Min(1)
+    @Max(100)
+    limit?: number = 10;
 
     @IsOptional()
     @IsEnum(['pending', 'completed', 'failed', 'refunded', 'cancelled'])
     status?: string;
+
+    @IsOptional()
+    startDate?: Date;
+
+    @IsOptional()
+    endDate?: Date;
 }
 
 export class RefundPaymentDto {
@@ -84,13 +91,22 @@ export interface PaymentVerificationResponse {
 }
 
 export interface PaymentHistoryResponse {
-    id: string;
-    packageName: string;
-    amount: number;
-    currency: string;
-    creditsAmount: number;
-    status: string;
-    method: string;
-    createdAt: Date;
-    completedAt?: Date;
+    payments: Array<{
+        id: string;
+        packageId: string;
+        packageName: string;
+        amount: number;
+        currency: string;
+        creditsAmount: number;
+        status: string;
+        method: string;
+        createdAt: Date;
+        completedAt?: Date;
+    }>;
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+    };
 }

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException, Logger } from '@nestjs/common';
 const Razorpay = require('razorpay');
 import * as crypto from 'crypto';
 import { paymentConfig } from '../../../config';
@@ -19,6 +19,7 @@ export interface RazorpayPaymentVerification {
 
 @Injectable()
 export class RazorpayService {
+    private readonly logger = new Logger(RazorpayService.name);
     private readonly config = paymentConfig();
     private razorpay: InstanceType<typeof Razorpay>;
 
@@ -55,7 +56,7 @@ export class RazorpayService {
             const order = await this.razorpay.orders.create(options);
             return order as RazorpayOrder;
         } catch (error) {
-            console.error('Razorpay order creation failed:', error);
+            this.logger.error('Razorpay order creation failed:', error);
             throw new InternalServerErrorException('Failed to create payment order');
         }
     }
@@ -64,7 +65,7 @@ export class RazorpayService {
         try {
             return (await this.razorpay.orders.fetch(orderId)) as RazorpayOrder;
         } catch (error) {
-            console.error('Failed to fetch Razorpay order:', error);
+            this.logger.error('Failed to fetch Razorpay order:', error);
             throw new BadRequestException('Invalid order ID');
         }
     }
@@ -73,7 +74,7 @@ export class RazorpayService {
         try {
             return await this.razorpay.payments.fetch(paymentId);
         } catch (error) {
-            console.error('Failed to fetch Razorpay payment:', error);
+            this.logger.error('Failed to fetch Razorpay payment:', error);
             throw new BadRequestException('Invalid payment ID');
         }
     }
@@ -90,7 +91,7 @@ export class RazorpayService {
 
             return expectedSignature === razorpay_signature;
         } catch (error) {
-            console.error('Payment signature verification failed:', error);
+            this.logger.error('Payment signature verification failed:', error);
             return false;
         }
     }
@@ -104,7 +105,7 @@ export class RazorpayService {
 
             return expectedSignature === signature;
         } catch (error) {
-            console.error('Webhook signature verification failed:', error);
+            this.logger.error('Webhook signature verification failed:', error);
             return false;
         }
     }
@@ -122,7 +123,7 @@ export class RazorpayService {
 
             return await this.razorpay.payments.refund(paymentId, refundData);
         } catch (error) {
-            console.error('Razorpay refund failed:', error);
+            this.logger.error('Razorpay refund failed:', error);
             throw new InternalServerErrorException('Failed to process refund');
         }
     }
@@ -142,7 +143,7 @@ export class RazorpayService {
                 paylater: true,
             };
         } catch (error) {
-            console.error('Failed to fetch payment methods:', error);
+            this.logger.error('Failed to fetch payment methods:', error);
             return { cards: true, netbanking: true, wallet: true, upi: true };
         }
     }
