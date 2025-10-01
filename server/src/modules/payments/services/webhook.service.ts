@@ -22,36 +22,51 @@ export class WebhookService {
         body: string,
         signature: string,
     ): Promise<{ success: boolean; message: string }> {
-        try {
-            // Verify webhook signature
-            const isValid = this.razorpayService.verifyWebhookSignature(body, signature);
+        const maxRetries = 3;
+        let retryCount = 0;
 
-            if (!isValid) {
-                this.logger.warn('Invalid webhook signature received');
-                throw new BadRequestException('Invalid webhook signature');
+        while (retryCount < maxRetries) {
+            try {
+                // Verify webhook signature
+                const isValid = this.razorpayService.verifyWebhookSignature(body, signature);
+
+                if (!isValid) {
+                    this.logger.warn('Invalid webhook signature received');
+                    throw new BadRequestException('Invalid webhook signature');
+                }
+
+                const event: RazorpayWebhookEvent = JSON.parse(body);
+                this.logger.log(`Processing webhook event: ${event.event} (attempt ${retryCount + 1})`);
+
+                switch (event.event) {
+                    case 'payment.captured':
+                        return await this.handlePaymentCaptured(event);
+
+                    case 'payment.failed':
+                        return await this.handlePaymentFailed(event);
+
+                    case 'order.paid':
+                        return await this.handleOrderPaid(event);
+
+                    default:
+                        this.logger.log(`Unhandled webhook event: ${event.event}`);
+                        return { success: true, message: 'Event acknowledged but not processed' };
+                }
+            } catch (error) {
+                retryCount++;
+                this.logger.error(`Webhook processing failed (attempt ${retryCount}):`, error);
+
+                if (retryCount >= maxRetries) {
+                    this.logger.error('Webhook processing failed after all retries');
+                    throw error;
+                }
+
+                // Wait before retry (exponential backoff)
+                await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
             }
-
-            const event: RazorpayWebhookEvent = JSON.parse(body);
-            this.logger.log(`Processing webhook event: ${event.event}`);
-
-            switch (event.event) {
-                case 'payment.captured':
-                    return await this.handlePaymentCaptured(event);
-
-                case 'payment.failed':
-                    return await this.handlePaymentFailed(event);
-
-                case 'order.paid':
-                    return await this.handleOrderPaid(event);
-
-                default:
-                    this.logger.log(`Unhandled webhook event: ${event.event}`);
-                    return { success: true, message: 'Event acknowledged but not processed' };
-            }
-        } catch (error) {
-            this.logger.error('Webhook processing failed:', error);
-            throw error;
         }
+
+        throw new Error('Webhook processing failed after all retries');
     }
 
     private async handlePaymentCaptured(
