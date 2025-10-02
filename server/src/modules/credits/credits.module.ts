@@ -7,11 +7,13 @@ import { CreditsController } from './credits.controller';
 import { CreditsService } from './services/credits.service';
 import { CreditsAnalyticsService } from './services/credits-analytics.service';
 import { CreditCleanupTask } from './tasks/credit-cleanup.task';
+import { SecurityModule } from '../security/security.module';
 import { User, CreditTransaction, CreditAuditLog } from '../../entities';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([User, CreditTransaction, CreditAuditLog]),
+        SecurityModule,
         RedisModule.forRoot({
             type: 'single',
             url: process.env.REDIS_URL || 'redis://localhost:6379',

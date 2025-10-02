@@ -6,6 +6,7 @@ import { PaymentsService } from './services/payments.service';
 import { RazorpayService } from './services/razorpay.service';
 import { WebhookService } from './services/webhook.service';
 import { CreditsModule } from '../credits/credits.module';
+import { SecurityModule } from '../security/security.module';
 import { User, CreditTransaction } from '../../entities';
 import { Payment } from '../../entities/payment.entity';
 import { QUEUE_NAMES } from '../jobs/constants/queue-names';
@@ -14,6 +15,7 @@ import { QUEUE_NAMES } from '../jobs/constants/queue-names';
     imports: [
         TypeOrmModule.forFeature([User, CreditTransaction, Payment]),
         CreditsModule,
+        SecurityModule,
         BullModule.registerQueue({
             name: QUEUE_NAMES.PAYMENT_PROCESSING,
         }),
