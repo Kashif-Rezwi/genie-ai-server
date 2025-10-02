@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import { RedisService } from '../../redis/redis.service';
 import { getRateLimitConfig } from '../../../config';
+import { LoggerService } from '../../../common/services/logger.service';
 
 export interface RateLimitConfig {
     keyPrefix?: string;
@@ -23,79 +24,36 @@ export class RateLimitService {
     private rateLimiters: Map<string, RateLimiterRedis> = new Map();
     private redisClient: any;
 
-    constructor(private readonly redisService: RedisService) {
+    constructor(
+        private readonly redisService: RedisService,
+        private readonly logger: LoggerService,
+    ) {
         this.redisClient = redisService.getClient();
         this.initializeRateLimiters();
     }
 
     private initializeRateLimiters() {
-        // Global API rate limiter
+        // Simplified rate limiters for 0-1000 users
         this.createRateLimiter('global', {
             keyPrefix: 'global_rate_limit',
-            points: 1000, // 1000 requests
+            points: 100, // 100 requests
             duration: 60, // per 60 seconds
             blockDuration: 60,
             execEvenly: true,
         });
 
-        // User tier rate limiters
-        this.createRateLimiter('free_user', {
-            keyPrefix: 'free_user_rate_limit',
-            points: 50, // 50 requests
-            duration: 60, // per minute
-            blockDuration: 120,
-        });
-
-        this.createRateLimiter('basic_user', {
-            keyPrefix: 'basic_user_rate_limit',
+        this.createRateLimiter('user', {
+            keyPrefix: 'user_rate_limit',
             points: 200, // 200 requests
             duration: 60, // per minute
             blockDuration: 60,
         });
 
-        this.createRateLimiter('pro_user', {
-            keyPrefix: 'pro_user_rate_limit',
-            points: 500, // 500 requests
-            duration: 60, // per minute
-            blockDuration: 30,
-        });
-
-        this.createRateLimiter('admin_user', {
-            keyPrefix: 'admin_rate_limit',
-            points: 2000, // 2000 requests
-            duration: 60, // per minute
-            blockDuration: 10,
-        });
-
-        // AI-specific rate limiters
-        this.createRateLimiter('ai_free', {
-            keyPrefix: 'ai_free_rate_limit',
-            points: 10, // 10 AI requests
-            duration: 3600, // per hour
-            blockDuration: 1800, // 30 minutes block
-        });
-
-        this.createRateLimiter('ai_paid', {
-            keyPrefix: 'ai_paid_rate_limit',
-            points: 100, // 100 AI requests
+        this.createRateLimiter('ai', {
+            keyPrefix: 'ai_rate_limit',
+            points: 50, // 50 AI requests
             duration: 3600, // per hour
             blockDuration: 300, // 5 minutes block
-        });
-
-        // Chat-specific rate limiters
-        this.createRateLimiter('chat_creation', {
-            keyPrefix: 'chat_creation_rate_limit',
-            points: 20, // 20 chat creations
-            duration: 3600, // per hour
-            blockDuration: 600, // 10 minutes block
-        });
-
-        // Payment rate limiter
-        this.createRateLimiter('payment', {
-            keyPrefix: 'payment_rate_limit',
-            points: 5, // 5 payment attempts
-            duration: 300, // per 5 minutes
-            blockDuration: 900, // 15 minutes block
         });
     }
 
@@ -132,47 +90,47 @@ export class RateLimitService {
                     `Rate limit exceeded. Try again in ${timeToReset} seconds`,
                 );
             }
-            throw rateLimitRes;
+            // Redis connection error - allow request but log warning
+            this.logger.warn('rate-limit', `Redis rate limiting failed for ${limiterName}`, {
+                error: rateLimitRes.message,
+                limiterName,
+            });
+            // Return a mock successful response to allow the request
+            return {
+                totalHits: 1,
+                remainingPoints: 999,
+                msBeforeNext: 0,
+                consumedPoints: 1,
+                isFirstInDuration: true,
+                toJSON: () => ({}),
+            } as unknown as RateLimiterRes;
         }
     }
 
-    async getUserTierFromCredits(userId: string): Promise<'free' | 'basic' | 'pro' | 'admin'> {
-        // Check user's credit balance to determine tier
+    async getUserTierFromCredits(userId: string): Promise<'free' | 'paid'> {
+        // Simplified tier logic for 0-1000 users
         const balanceKey = `user_balance:${userId}`;
         const balanceStr = await this.redisService.get(balanceKey);
 
         if (!balanceStr) {
-            // Fallback to database or default
             return 'free';
         }
 
         const balance = parseFloat(balanceStr);
-
-        if (balance >= 1000) return 'pro';
-        if (balance >= 100) return 'basic';
-        return 'free';
+        return balance > 0 ? 'paid' : 'free';
     }
 
     async checkUserRateLimit(userId: string, operation: string): Promise<RateLimiterRes> {
-        const userTier = await this.getUserTierFromCredits(userId);
-
-        // Different operations have different limiters
+        // Simplified rate limiting logic
         switch (operation) {
             case 'api':
-                return this.checkRateLimit(`${userTier}_user`, userId);
+                return this.checkRateLimit('user', userId);
 
             case 'ai':
-                const aiLimiter = userTier === 'free' ? 'ai_free' : 'ai_paid';
-                return this.checkRateLimit(aiLimiter, userId);
-
-            case 'chat':
-                return this.checkRateLimit('chat_creation', userId);
-
-            case 'payment':
-                return this.checkRateLimit('payment', userId);
+                return this.checkRateLimit('ai', userId);
 
             default:
-                return this.checkRateLimit('global', userId);
+                return this.checkRateLimit('user', userId);
         }
     }
 

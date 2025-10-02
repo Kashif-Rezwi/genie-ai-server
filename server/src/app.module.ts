@@ -1,4 +1,4 @@
-import { Module, ValidationPipe } from '@nestjs/common';
+import { Module, ValidationPipe, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
@@ -7,6 +7,9 @@ import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AIModule } from './modules/ai/ai.module';
+import { SecurityModule } from './modules/security/security.module';
+import { SecurityMiddleware } from './modules/security/middleware/security.middleware';
+import { ValidationMiddleware } from './modules/security/middleware/validation.middleware';
 
 // Configuration
 import { appConfig, databaseConfig } from './config';
@@ -30,6 +33,7 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
         }),
 
         // Feature Modules (dependency order)
+        SecurityModule, // Security must be loaded first
         HealthModule,
         AuthModule,
         AIModule,
@@ -58,4 +62,10 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
         },
     ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+    configure(consumer: MiddlewareConsumer) {
+        consumer
+            .apply(SecurityMiddleware, ValidationMiddleware)
+            .forRoutes('*');
+    }
+}

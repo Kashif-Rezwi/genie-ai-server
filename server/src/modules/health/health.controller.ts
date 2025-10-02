@@ -2,9 +2,11 @@ import { Controller, Get, UseGuards } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RateLimitGuard } from '../security/guards/rate-limit.guard';
 import { Chat, Message } from '../../entities';
 
 @Controller('health')
+@UseGuards(RateLimitGuard)
 export class HealthController {
     constructor(@InjectDataSource() private dataSource: DataSource) {}
 

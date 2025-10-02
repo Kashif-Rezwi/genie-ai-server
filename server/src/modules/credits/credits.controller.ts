@@ -1,11 +1,12 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { CreditsService } from './services/credits.service';
 import { CreditsAnalyticsService } from './services/credits-analytics.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RateLimitGuard } from '../security/guards/rate-limit.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @Controller('credits')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RateLimitGuard)
 export class CreditsController {
     constructor(
         private readonly creditsService: CreditsService,

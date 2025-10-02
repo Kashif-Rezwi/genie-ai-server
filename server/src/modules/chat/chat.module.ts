@@ -6,10 +6,11 @@ import { MessageService } from './services/message.service';
 import { ChatStreamingService } from './services/chat-streaming.service';
 import { AIModule } from '../ai/ai.module';
 import { CreditsModule } from '../credits/credits.module';
+import { SecurityModule } from '../security/security.module';
 import { Chat, Message, User } from '../../entities';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Chat, Message, User]), AIModule, CreditsModule],
+    imports: [TypeOrmModule.forFeature([Chat, Message, User]), AIModule, CreditsModule, SecurityModule],
     controllers: [ChatController],
     providers: [ChatService, MessageService, ChatStreamingService],
     exports: [ChatService, MessageService],

@@ -36,14 +36,19 @@ export class SecurityMiddleware implements NestMiddleware {
             res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 
-        // Content Security Policy
+        // Content Security Policy (more restrictive)
         res.setHeader(
             'Content-Security-Policy',
-            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none';",
         );
 
         // Referrer Policy
         res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        
+        // Additional security headers
+        res.setHeader('X-DNS-Prefetch-Control', 'off');
+        res.setHeader('X-Download-Options', 'noopen');
+        res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
     }
 
     private sanitizeQueryParams(req: Request) {

@@ -41,7 +41,12 @@ export class RateLimitGuard implements CanActivate {
                 response.setHeader('X-RateLimit-Reset', new Date(Date.now() + result.msBeforeNext));
             } else {
                 // Check IP-based rate limit for unauthenticated users
-                await this.rateLimitService.checkRateLimit('global', ip);
+                const result = await this.rateLimitService.checkRateLimit('global', ip);
+                
+                // Add rate limit headers for unauthenticated users too
+                response.setHeader('X-RateLimit-Limit', result.consumedPoints);
+                response.setHeader('X-RateLimit-Remaining', result.remainingPoints);
+                response.setHeader('X-RateLimit-Reset', new Date(Date.now() + result.msBeforeNext));
             }
 
             // Log security event
