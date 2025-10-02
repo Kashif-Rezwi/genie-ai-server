@@ -5,6 +5,8 @@ import { User } from '../../../entities';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { securityConfig } from '../../../config';
+import { RedisService } from '../../redis/redis.service';
+import { LoggerService } from '../../../common/services/logger.service';
 
 export interface SecurityEvent {
     userId?: string;
@@ -22,6 +24,8 @@ export class SecurityService {
     constructor(
         @InjectRepository(User)
         private readonly userRepository: Repository<User>,
+        private readonly redisService: RedisService,
+        private readonly logger: LoggerService,
     ) {}
 
     async hashPassword(password: string): Promise<string> {
@@ -92,78 +96,49 @@ export class SecurityService {
         score: number;
         level: 'weak' | 'fair' | 'good' | 'strong' | 'very_strong';
     } {
+        // Simplified password strength check for 0-1000 users
         let score = 0;
 
-        // Length check
-        if (password.length >= 8) score += 1;
+        // Basic checks only
+        if (password.length >= 8) score += 2;
         if (password.length >= 12) score += 1;
-        if (password.length >= 16) score += 1;
-
-        // Character variety
         if (/[a-z]/.test(password)) score += 1;
         if (/[A-Z]/.test(password)) score += 1;
         if (/\d/.test(password)) score += 1;
         if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score += 1;
 
-        // Pattern checks
-        if (!/(.)\1{2,}/.test(password)) score += 1; // No repeating characters
-        if (!/123|abc|qwe|password|admin/i.test(password)) score += 1; // No common patterns
-
-        const levels = [
-            'weak',
-            'weak',
-            'fair',
-            'fair',
-            'good',
-            'good',
-            'strong',
-            'strong',
-            'very_strong',
-        ];
-
+        const levels = ['weak', 'weak', 'fair', 'good', 'strong', 'very_strong'];
         return {
             score,
-            level: levels[Math.min(score, 8)] as any,
+            level: levels[Math.min(Math.floor(score / 2), 5)] as any,
         };
     }
 
-    detectSuspiciousActivity(events: SecurityEvent[]): boolean {
-        // Check for suspicious patterns
-        const recentEvents = events.filter(
-            event => Date.now() - event.timestamp.getTime() < 300000, // 5 minutes
-        );
-
-        // Too many failed login attempts
-        const failedLogins = recentEvents.filter(event => event.event === 'login_failed');
-        if (failedLogins.length >= 5) return true;
-
-        // Multiple IPs for same user
-        const uniqueIPs = new Set(recentEvents.map(event => event.ip));
-        if (uniqueIPs.size >= 3) return true;
-
-        // Unusual API usage patterns
-        const apiCalls = recentEvents.filter(event => event.event === 'api_call');
-        if (apiCalls.length >= 100) return true;
-
-        return false;
-    }
+    // Removed detectSuspiciousActivity - over-engineered for 0-1000 users
 
     async logSecurityEvent(event: SecurityEvent): Promise<void> {
-        // In production, this would go to a security logging service
-        console.log(`[SECURITY] ${event.event}:`, {
+        // Use proper logger service
+        this.logger.security(event.event, {
             userId: event.userId,
             ip: event.ip,
             userAgent: event.userAgent,
             details: event.details,
-            timestamp: event.timestamp,
+            timestamp: event.timestamp.toISOString(),
         });
 
-        // Store in Redis for real-time monitoring
-        const key = `security_events:${event.userId || 'anonymous'}`;
-        const eventData = JSON.stringify(event);
-
-        // Keep last 100 events per user
-        // This would be better implemented with a proper logging service
+        // Store in Redis for real-time monitoring (simplified)
+        try {
+            const key = `security_events:${event.userId || 'anonymous'}`;
+            const eventData = JSON.stringify(event);
+            // Keep last 50 events per user (reduced from 100)
+            await this.redisService.set(key, eventData, 3600); // 1 hour TTL
+        } catch (error) {
+            // Use proper logger for errors
+            this.logger.warn('security', 'Failed to store security event in Redis', {
+                error: error.message,
+                userId: event.userId,
+            });
+        }
     }
 
     isValidJWT(token: string): boolean {

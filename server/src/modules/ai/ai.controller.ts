@@ -6,10 +6,10 @@ import { AIRequestDto } from './dto/ai-request.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AI_MODELS, getFreeModels, getPaidModels } from '../../config';
-import { RateLimit } from '../security/guards/rate-limit.guard';
+import { RateLimit, RateLimitGuard } from '../security/guards/rate-limit.guard';
 
 @Controller('ai')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RateLimitGuard)
 export class AIController {
     constructor(
         private readonly aiService: AIService,
@@ -38,12 +38,14 @@ export class AIController {
 
     // Non-streaming endpoint (uses streaming internally)
     @Post('generate')
+    @RateLimit('ai')
     async generateResponse(@CurrentUser() user: any, @Body(ValidationPipe) request: AIRequestDto) {
         return this.aiService.generateResponse(user.id, request);
     }
 
     // Real-time streaming endpoint
     @Post('stream')
+    @RateLimit('ai')
     async streamResponse(
         @CurrentUser() user: any,
         @Body(ValidationPipe) request: AIRequestDto,

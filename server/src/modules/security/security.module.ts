@@ -1,40 +1,24 @@
 import { Module, Global } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ThrottlerModule } from '@nestjs/throttler';
 import { RedisService } from '../redis/redis.service';
 import { RateLimitService } from './services/rate-limit.service';
 import { SecurityService } from './services/security.service';
-import { ApiKeyService } from './services/api-key.service';
 import { SecurityController } from './security.controller';
-import { SecurityMiddleware } from './middleware/security.middleware';
-import { ValidationMiddleware } from './middleware/validation.middleware';
-import { User, ApiKey } from '../../entities';
-import { securityConfig } from '../../config';
-
-const config = securityConfig();
+import { LoggerService } from '../../common/services/logger.service';
+import { User } from '../../entities';
 
 @Global()
 @Module({
     imports: [
-        TypeOrmModule.forFeature([User, ApiKey]),
-        ThrottlerModule.forRoot({
-            throttlers: [
-                {
-                    ttl: config.rateLimit.ttl,
-                    limit: config.rateLimit.max,
-                },
-            ],
-        }),
+        TypeOrmModule.forFeature([User]),
     ],
     controllers: [SecurityController],
     providers: [
         RedisService,
         RateLimitService,
         SecurityService,
-        ApiKeyService,
-        SecurityMiddleware,
-        ValidationMiddleware,
+        LoggerService,
     ],
-    exports: [RedisService, RateLimitService, SecurityService, ApiKeyService],
+    exports: [RedisService, RateLimitService, SecurityService],
 })
 export class SecurityModule {}

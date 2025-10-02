@@ -30,7 +30,7 @@ import {
 import { getActivePackages, paymentConfig } from '../../config';
 
 @Controller('payments')
-@UseGuards(RateLimitGuard)
+@UseGuards(JwtAuthGuard, RateLimitGuard)
 export class PaymentsController {
     private readonly config = paymentConfig();
 
@@ -40,7 +40,6 @@ export class PaymentsController {
     ) {}
 
     @Get('packages')
-    @UseGuards(JwtAuthGuard)
     async getPaymentPackages() {
         return {
             packages: getActivePackages(),
