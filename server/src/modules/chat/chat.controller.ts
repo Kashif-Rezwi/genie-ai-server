@@ -34,7 +34,7 @@ export class ChatController {
     ) {}
 
     @Post()
-    @RateLimit('chat')
+    @RateLimit('api')
     async createChat(@CurrentUser() user: AuthenticatedUser, @Body(ValidationPipe) createChatDto: CreateChatDto): Promise<ChatResponse> {
         const chat = await this.chatService.createChat(user.id, createChatDto);
         return {
