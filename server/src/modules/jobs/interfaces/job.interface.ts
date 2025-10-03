@@ -6,31 +6,7 @@ export interface BaseJobData {
     createdAt: Date;
 }
 
-export interface AIJobData extends BaseJobData {
-    chatId: string;
-    messageId: string;
-    modelId: string;
-    messages: Array<{
-        role: 'user' | 'assistant' | 'system';
-        content: string;
-    }>;
-    options: {
-        maxTokens: number;
-        temperature: number;
-        stream?: boolean;
-    };
-    retryCount?: number;
-}
-
-export interface PaymentJobData extends BaseJobData {
-    paymentId: string;
-    action: 'process' | 'verify' | 'retry' | 'refund' | 'reconcile';
-    razorpayPaymentId?: string;
-    razorpayOrderId?: string;
-    amount?: number;
-    reason?: string;
-}
-
+// Current interface for 0-1000 users
 export interface EmailJobData extends BaseJobData {
     to: string | string[];
     subject: string;
@@ -42,25 +18,6 @@ export interface EmailJobData extends BaseJobData {
         contentType: string;
     }>;
     priority: string;
-}
-
-export interface AnalyticsJobData extends BaseJobData {
-    type: 'daily' | 'weekly' | 'monthly' | 'custom';
-    metrics: string[];
-    dateRange?: {
-        start: Date;
-        end: Date;
-    };
-    aggregationType: 'sum' | 'average' | 'count' | 'max' | 'min';
-    outputFormat: 'json' | 'csv' | 'pdf';
-}
-
-export interface MaintenanceJobData extends BaseJobData {
-    task: 'cleanup' | 'backup' | 'reconcile' | 'optimize' | 'security_scan';
-    targetTable?: string;
-    conditions?: Record<string, any>;
-    batchSize?: number;
-    dryRun?: boolean;
 }
 
 export enum JobStatus {
@@ -78,3 +35,37 @@ export enum JobPriority {
     HIGH = 10,
     CRITICAL = 15,
 }
+
+// Production-ready job options
+export interface ProductionJobOptions {
+    attempts: number;
+    backoff: {
+        type: 'exponential' | 'fixed';
+        delay: number;
+    };
+    removeOnComplete: number;
+    removeOnFail: number;
+    timeout?: number; // Job timeout in milliseconds
+    delay?: number; // Delay before processing
+    priority?: number;
+}
+
+// Error handling interfaces
+export interface JobError {
+    message: string;
+    stack?: string;
+    timestamp: Date;
+    attemptNumber: number;
+    jobId: string;
+}
+
+export interface DeadLetterJob {
+    jobId: string;
+    originalData: any;
+    error: JobError;
+    failedAt: Date;
+    retryCount: number;
+}
+
+// Future interfaces for scaling - add when needed
+// AIJobData, PaymentJobData, AnalyticsJobData, MaintenanceJobData

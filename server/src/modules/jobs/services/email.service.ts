@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
-import { JobService } from './job.service';
 import { emailConfig } from '../../../config';
 
 export interface EmailTemplate {
@@ -15,7 +14,7 @@ export class EmailService {
     private readonly config = emailConfig();
     private transporter: nodemailer.Transporter;
 
-    constructor(private readonly jobService: JobService) {
+    constructor() {
         this.initializeTransporter();
     }
 
@@ -66,141 +65,7 @@ export class EmailService {
         }
     }
 
-    // Welcome email for new users
-    async sendWelcomeEmail(
-        email: string,
-        userData: { name?: string; creditsAdded: number },
-    ): Promise<void> {
-        await this.jobService.addEmailJob({
-            to: email,
-            subject: 'Welcome to Genie AI! 🎉',
-            template: 'welcome',
-            templateData: userData,
-            priority: 'high',
-        });
-    }
-
-    // Payment confirmation email
-    async sendPaymentConfirmationEmail(
-        email: string,
-        paymentData: {
-            packageName: string;
-            amount: number;
-            currency: string;
-            creditsAdded: number;
-            newBalance: number;
-            transactionId: string;
-        },
-    ): Promise<void> {
-        await this.jobService.addEmailJob({
-            to: email,
-            subject: 'Payment Confirmed - Credits Added! 💳',
-            template: 'payment_confirmation',
-            templateData: paymentData,
-            priority: 'high',
-        });
-    }
-
-    // Payment failure notification
-    async sendPaymentFailureEmail(
-        email: string,
-        failureData: {
-            packageName: string;
-            amount: number;
-            currency: string;
-            failureReason: string;
-            orderId: string;
-        },
-    ): Promise<void> {
-        await this.jobService.addEmailJob({
-            to: email,
-            subject: 'Payment Failed - Need Help? 🔧',
-            template: 'payment_failure',
-            templateData: failureData,
-            priority: 'high',
-        });
-    }
-
-    // Refund confirmation email
-    async sendRefundConfirmationEmail(
-        email: string,
-        refundData: {
-            packageName: string;
-            refundAmount: number;
-            currency: string;
-            refundId: string;
-            reason: string;
-        },
-    ): Promise<void> {
-        await this.jobService.addEmailJob({
-            to: email,
-            subject: 'Refund Processed Successfully 💰',
-            template: 'refund_confirmation',
-            templateData: refundData,
-            priority: 'normal',
-        });
-    }
-
-    // Low credits warning
-    async sendLowCreditsWarning(
-        email: string,
-        creditData: {
-            currentBalance: number;
-            threshold: number;
-            recommendedPackage?: string;
-        },
-    ): Promise<void> {
-        await this.jobService.addEmailJob({
-            to: email,
-            subject: 'Low Credits Alert - Time to Top Up? ⚡',
-            template: 'low_credits_warning',
-            templateData: creditData,
-            priority: 'normal',
-        });
-    }
-
-    // Security alert email
-    async sendSecurityAlert(
-        email: string,
-        alertData: {
-            alertType: string;
-            description: string;
-            timestamp: Date;
-            ip: string;
-            actionRequired: boolean;
-        },
-    ): Promise<void> {
-        await this.jobService.addEmailJob({
-            to: email,
-            subject: '🔒 Security Alert - Account Activity',
-            template: 'security_alert',
-            templateData: alertData,
-            priority: 'critical',
-        });
-    }
-
-    // Monthly usage report
-    async sendMonthlyReport(
-        email: string,
-        reportData: {
-            month: string;
-            totalChats: number;
-            totalMessages: number;
-            creditsUsed: number;
-            favoriteModel: string;
-            totalSpent: number;
-        },
-    ): Promise<void> {
-        await this.jobService.addEmailJob({
-            to: email,
-            subject: `Your Monthly AI Usage Report - ${reportData.month} 📊`,
-            template: 'monthly_report',
-            templateData: reportData,
-            priority: 'low',
-        });
-    }
-
-    // Email templates
+    // Email templates - keep these for template generation
     getEmailTemplate(templateName: string, data: any): EmailTemplate {
         switch (templateName) {
             case 'welcome':
@@ -418,5 +283,56 @@ export class EmailService {
             .replace(/<[^>]*>/g, '')
             .replace(/\s+/g, ' ')
             .trim();
+    }
+
+    // High-level email methods for JobSchedulerService
+    async sendWelcomeEmail(userEmail: string, userData: any): Promise<any> {
+        const template = this.getEmailTemplate('welcome', userData);
+        return this.sendEmail(
+            userEmail,
+            template.subject,
+            template.html,
+            template.text
+        );
+    }
+
+    async sendPaymentConfirmationEmail(userEmail: string, paymentData: any): Promise<any> {
+        const template = this.getEmailTemplate('payment_confirmation', paymentData);
+        return this.sendEmail(
+            userEmail,
+            template.subject,
+            template.html,
+            template.text
+        );
+    }
+
+    async sendPaymentFailureEmail(userEmail: string, failureData: any): Promise<any> {
+        const template = this.getEmailTemplate('payment_failure', failureData);
+        return this.sendEmail(
+            userEmail,
+            template.subject,
+            template.html,
+            template.text
+        );
+    }
+
+    async sendLowCreditsEmail(userEmail: string, creditsData: any): Promise<any> {
+        const template = this.getEmailTemplate('low_credits_warning', creditsData);
+        return this.sendEmail(
+            userEmail,
+            template.subject,
+            template.html,
+            template.text
+        );
+    }
+
+    async sendSecurityAlertEmail(userEmail: string, securityData: any): Promise<any> {
+        const template = this.getEmailTemplate('security_alert', securityData);
+        return this.sendEmail(
+            userEmail,
+            template.subject,
+            template.html,
+            template.text
+        );
     }
 }

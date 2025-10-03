@@ -1,23 +1,12 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ScheduleModule } from '@nestjs/schedule';
 import { JobsController } from './jobs.controller';
 import { JobService } from './services/job.service';
 import { EmailService } from './services/email.service';
-import { AnalyticsJobService } from './services/analytics-job.service';
-import { MaintenanceJobService } from './services/maintenance-job.service';
-import { AIJobProcessor } from './processors/ai-job.processor';
-import { PaymentJobProcessor } from './processors/payment-job.processor';
+import { JobAuditService } from './services/job-audit.service';
 import { EmailJobProcessor } from './processors/email-job.processor';
-import { AnalyticsJobProcessor } from './processors/analytics-job.processor';
-import { MaintenanceJobProcessor } from './processors/maintenance-job.processor';
-import { CreditsModule } from '../credits/credits.module';
-import { PaymentsModule } from '../payments/payments.module';
-import { SecurityModule } from '../security/security.module';
-import { AIModule } from '../ai/ai.module';
-import { ChatModule } from '../chat/chat.module';
-import { User, Chat, Message, Payment, CreditTransaction } from '../../entities';
+import { JobAudit } from '../../entities';
 import { redisConfig } from '../../config';
 import { QUEUE_NAMES } from './constants/queue-names';
 
@@ -25,8 +14,7 @@ const config = redisConfig();
 
 @Module({
     imports: [
-        ScheduleModule.forRoot(),
-        TypeOrmModule.forFeature([User, Chat, Message, Payment, CreditTransaction]),
+        TypeOrmModule.forFeature([JobAudit]),
         BullModule.forRoot({
             connection: {
                 host: config.host,
@@ -44,31 +32,23 @@ const config = redisConfig();
                 },
             },
         }),
-        BullModule.registerQueue(
-            { name: QUEUE_NAMES.AI_PROCESSING },
-            { name: QUEUE_NAMES.PAYMENT_PROCESSING },
-            { name: QUEUE_NAMES.EMAIL_NOTIFICATIONS },
-            { name: QUEUE_NAMES.ANALYTICS },
-            { name: QUEUE_NAMES.MAINTENANCE },
-        ),
-        CreditsModule,
-        PaymentsModule,
-        SecurityModule,
-        AIModule,
-        ChatModule,
+        // Email queue for MVP
+        BullModule.registerQueue({
+            name: QUEUE_NAMES.EMAIL_NOTIFICATIONS,
+        }),
     ],
     controllers: [JobsController],
     providers: [
+        // Core services for MVP
         JobService,
         EmailService,
-        AnalyticsJobService,
-        MaintenanceJobService,
-        AIJobProcessor,
-        PaymentJobProcessor,
+        JobAuditService,
         EmailJobProcessor,
-        AnalyticsJobProcessor,
-        MaintenanceJobProcessor,
     ],
-    exports: [JobService, EmailService, AnalyticsJobService, MaintenanceJobService],
+    exports: [
+        JobService, 
+        EmailService,
+        JobAuditService
+    ],
 })
 export class JobsModule {}
