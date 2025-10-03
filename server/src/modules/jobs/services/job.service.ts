@@ -1,134 +1,43 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue, Job, JobsOptions } from 'bullmq';
-import {
-    AIJobData,
-    PaymentJobData,
-    EmailJobData,
-    AnalyticsJobData,
-    MaintenanceJobData,
-    JobPriority,
-} from '../interfaces/job.interface';
+import { EmailJobData, JobPriority } from '../interfaces/job.interface';
 import { QUEUE_NAMES } from '../constants/queue-names';
+import { RedisService } from '../../redis/redis.service';
+import { JobAuditService } from './job-audit.service';
 
 @Injectable()
 export class JobService {
     private readonly logger = new Logger(JobService.name);
 
     constructor(
-        @InjectQueue(QUEUE_NAMES.AI_PROCESSING)
-        private readonly aiQueue: Queue<AIJobData>,
-
-        @InjectQueue(QUEUE_NAMES.PAYMENT_PROCESSING)
-        private readonly paymentQueue: Queue<PaymentJobData>,
-
         @InjectQueue(QUEUE_NAMES.EMAIL_NOTIFICATIONS)
         private readonly emailQueue: Queue<EmailJobData>,
-
-        @InjectQueue(QUEUE_NAMES.ANALYTICS)
-        private readonly analyticsQueue: Queue<AnalyticsJobData>,
-
-        @InjectQueue(QUEUE_NAMES.MAINTENANCE)
-        private readonly maintenanceQueue: Queue<MaintenanceJobData>,
+        private readonly redisService: RedisService,
+        private readonly jobAuditService: JobAuditService,
     ) {}
 
-    // AI Processing Jobs
-    async addAIProcessingJob(
-        data: Omit<AIJobData, 'jobId' | 'createdAt'>,
-        options: Partial<JobsOptions> = {},
-    ): Promise<Job<AIJobData>> {
-        const jobData: AIJobData = {
-            ...data,
-            jobId: this.generateJobId('ai'),
-            createdAt: new Date(),
-        };
-
-        const jobOptions: JobsOptions = {
-            priority: options.priority || JobPriority.NORMAL,
-            delay: options.delay || 0,
-            attempts: options.attempts || 3,
-            backoff: options.backoff || {
-                type: 'exponential',
-                delay: 2000,
-            },
-            removeOnComplete: 10,
-            removeOnFail: 5,
-            ...options,
-        };
-
-        this.logger.log(`Adding AI processing job: ${jobData.jobId}`);
-        return this.aiQueue.add('process-ai-request', jobData, jobOptions);
-    }
-
-    async addLongRunningAIJob(
-        data: Omit<AIJobData, 'jobId' | 'createdAt'>,
-        estimatedDuration: number = 60000, // 1 minute default
-    ): Promise<Job<AIJobData>> {
-        return this.addAIProcessingJob(data, {
-            priority: JobPriority.HIGH,
-            attempts: 5,
-            backoff: {
-                type: 'exponential',
-                delay: 5000,
-            },
-            removeOnComplete: 20,
-            removeOnFail: 10,
-        });
-    }
-
-    // Payment Processing Jobs
-    async addPaymentProcessingJob(
-        data: Omit<PaymentJobData, 'jobId' | 'createdAt'>,
-        options: Partial<JobsOptions> = {},
-    ): Promise<Job<PaymentJobData>> {
-        const jobData: PaymentJobData = {
-            ...data,
-            jobId: this.generateJobId('payment'),
-            createdAt: new Date(),
-        };
-
-        const jobOptions: JobsOptions = {
-            priority: JobPriority.HIGH,
-            attempts: 5,
-            backoff: {
-                type: 'exponential',
-                delay: 1000,
-            },
-            removeOnComplete: 50,
-            removeOnFail: 20,
-            ...options,
-        };
-
-        this.logger.log(`Adding payment processing job: ${jobData.jobId}`);
-        return this.paymentQueue.add(`payment-${data.action}`, jobData, jobOptions);
-    }
-
-    async addPaymentRetryJob(
-        paymentId: string,
-        userId: string,
-        retryCount: number = 1,
-    ): Promise<Job<PaymentJobData>> {
-        const delay = Math.min(Math.pow(2, retryCount) * 1000, 300000); // Max 5 minutes
-
-        return this.addPaymentProcessingJob(
-            {
-                paymentId,
-                userId,
-                action: 'retry',
-                metadata: { retryCount },
-            },
-            {
-                delay,
-                priority: JobPriority.HIGH,
-            },
-        );
-    }
-
-    // Email Jobs
+    // Email Jobs - Core functionality for 0-1000 users
     async addEmailJob(
         data: Omit<EmailJobData, 'jobId' | 'createdAt'>,
         options: Partial<JobsOptions> = {},
     ): Promise<Job<EmailJobData>> {
+        // Rate limiting check
+        if (data.userId) {
+            const isRateLimited = await this.checkRateLimit(data.userId);
+            if (isRateLimited) {
+                throw new Error('Rate limit exceeded. Please try again later.');
+            }
+        }
+
+        // Job deduplication
+        const duplicateKey = this.generateDuplicateKey(data);
+        const existingJob = await this.checkForDuplicate(duplicateKey);
+        if (existingJob) {
+            this.logger.warn(`Duplicate email job detected: ${duplicateKey}`);
+            return existingJob;
+        }
+
         const jobData: EmailJobData = {
             ...data,
             jobId: this.generateJobId('email'),
@@ -149,7 +58,15 @@ export class JobService {
         };
 
         this.logger.log(`Adding email job: ${jobData.jobId} (${data.priority})`);
-        return this.emailQueue.add('send-email', jobData, jobOptions);
+        const job = await this.emailQueue.add('send-email', jobData, jobOptions);
+        
+        // Store duplicate key for deduplication
+        await this.storeDuplicateKey(duplicateKey, job.id!);
+        
+        // Create job audit record
+        await this.jobAuditService.createJobAudit(jobData, 'email');
+        
+        return job;
     }
 
     async addBulkEmailJob(
@@ -172,57 +89,9 @@ export class JobService {
         return jobs;
     }
 
-    // Analytics Jobs
-    async addAnalyticsJob(
-        data: Omit<AnalyticsJobData, 'jobId' | 'createdAt'>,
-        options: Partial<JobsOptions> = {},
-    ): Promise<Job<AnalyticsJobData>> {
-        const jobData: AnalyticsJobData = {
-            ...data,
-            jobId: this.generateJobId('analytics'),
-            createdAt: new Date(),
-        };
-
-        const jobOptions: JobsOptions = {
-            priority: JobPriority.LOW,
-            attempts: 2,
-            removeOnComplete: 20,
-            removeOnFail: 5,
-            ...options,
-        };
-
-        this.logger.log(`Adding analytics job: ${jobData.jobId}`);
-        return this.analyticsQueue.add(`analytics-${data.type}`, jobData, jobOptions);
-    }
-
-    // Maintenance Jobs
-    async addMaintenanceJob(
-        data: Omit<MaintenanceJobData, 'jobId' | 'createdAt'>,
-        options: Partial<JobsOptions> = {},
-    ): Promise<Job<MaintenanceJobData>> {
-        const jobData: MaintenanceJobData = {
-            ...data,
-            jobId: this.generateJobId('maintenance'),
-            createdAt: new Date(),
-        };
-
-        const jobOptions: JobsOptions = {
-            priority: JobPriority.LOW,
-            attempts: 2,
-            removeOnComplete: 10,
-            removeOnFail: 5,
-            ...options,
-        };
-
-        this.logger.log(`Adding maintenance job: ${jobData.jobId}`);
-        return this.maintenanceQueue.add(`maintenance-${data.task}`, jobData, jobOptions);
-    }
-
-    // Job Status and Management
-    async getJobStatus(queueName: string, jobId: string): Promise<any> {
-        const queue = this.getQueueByName(queueName);
-        const job = await queue.getJob(jobId);
-
+    // Job Status and Management - Essential for production
+    async getJobStatus(jobId: string): Promise<any> {
+        const job = await this.emailQueue.getJob(jobId);
         if (!job) {
             return null;
         }
@@ -242,43 +111,18 @@ export class JobService {
         };
     }
 
-    async getQueueStats(queueName: string): Promise<{
-        waiting: number;
-        active: number;
-        completed: number;
-        failed: number;
-        delayed: number;
-        paused: number;
-    }> {
-        const queue = this.getQueueByName(queueName);
-        return queue.getJobCounts() as any;
+    async pauseQueue(): Promise<void> {
+        await this.emailQueue.pause();
+        this.logger.log('Email queue paused');
     }
 
-    async getAllQueueStats(): Promise<Record<string, any>> {
-        const stats: Record<string, any> = {};
-
-        for (const queueName of Object.values(QUEUE_NAMES)) {
-            stats[queueName] = await this.getQueueStats(queueName);
-        }
-
-        return stats;
+    async resumeQueue(): Promise<void> {
+        await this.emailQueue.resume();
+        this.logger.log('Email queue resumed');
     }
 
-    async pauseQueue(queueName: string): Promise<void> {
-        const queue = this.getQueueByName(queueName);
-        await queue.pause();
-        this.logger.log(`Queue paused: ${queueName}`);
-    }
-
-    async resumeQueue(queueName: string): Promise<void> {
-        const queue = this.getQueueByName(queueName);
-        await queue.resume();
-        this.logger.log(`Queue resumed: ${queueName}`);
-    }
-
-    async retryFailedJobs(queueName: string, limit: number = 10): Promise<number> {
-        const queue = this.getQueueByName(queueName);
-        const failedJobs = await queue.getFailed(0, limit - 1);
+    async retryFailedJobs(limit: number = 10): Promise<number> {
+        const failedJobs = await this.emailQueue.getFailed(0, limit - 1);
 
         let retriedCount = 0;
         for (const job of failedJobs) {
@@ -290,26 +134,42 @@ export class JobService {
             }
         }
 
-        this.logger.log(`Retried ${retriedCount} failed jobs in queue: ${queueName}`);
+        this.logger.log(`Retried ${retriedCount} failed email jobs`);
         return retriedCount;
     }
 
-    // Scheduled Jobs
-    async addScheduledJob(
-        queueName: string,
-        jobName: string,
-        data: any,
+    // Scheduled Jobs - For future scaling
+    async addScheduledEmailJob(
+        data: Omit<EmailJobData, 'jobId' | 'createdAt'>,
         cronExpression: string,
     ): Promise<Job> {
-        const queue = this.getQueueByName(queueName);
+        const jobData: EmailJobData = {
+            ...data,
+            jobId: this.generateJobId('email-scheduled'),
+            createdAt: new Date(),
+        };
 
-        return queue.add(jobName, data, {
+        return this.emailQueue.add('send-email', jobData, {
             repeat: {
                 pattern: cronExpression,
             },
             removeOnComplete: 5,
             removeOnFail: 3,
         });
+    }
+
+    // Queue Statistics - Essential for monitoring
+    async getQueueStats(): Promise<any> {
+        const counts = await this.emailQueue.getJobCounts();
+        return {
+            waiting: counts.waiting,
+            active: counts.active,
+            completed: counts.completed,
+            failed: counts.failed,
+            delayed: counts.delayed,
+            paused: counts.paused,
+            lastUpdated: new Date(),
+        };
     }
 
     // Helper Methods
@@ -327,20 +187,42 @@ export class JobService {
         return priorities[priority] || JobPriority.NORMAL;
     }
 
-    private getQueueByName(queueName: string): Queue {
-        switch (queueName) {
-            case QUEUE_NAMES.AI_PROCESSING:
-                return this.aiQueue;
-            case QUEUE_NAMES.PAYMENT_PROCESSING:
-                return this.paymentQueue;
-            case QUEUE_NAMES.EMAIL_NOTIFICATIONS:
-                return this.emailQueue;
-            case QUEUE_NAMES.ANALYTICS:
-                return this.analyticsQueue;
-            case QUEUE_NAMES.MAINTENANCE:
-                return this.maintenanceQueue;
-            default:
-                throw new Error(`Unknown queue: ${queueName}`);
+    // Rate limiting - 10 emails per minute per user
+    private async checkRateLimit(userId: string): Promise<boolean> {
+        const key = `email_rate_limit:${userId}`;
+        const current = await this.redisService.get(key);
+        
+        if (!current) {
+            await this.redisService.set(key, '1', 60); // 1 minute TTL
+            return false;
         }
+        
+        const count = parseInt(current);
+        if (count >= 10) {
+            return true; // Rate limited
+        }
+        
+        await this.redisService.set(key, (count + 1).toString(), 60);
+        return false;
+    }
+
+    // Job deduplication
+    private generateDuplicateKey(data: Omit<EmailJobData, 'jobId' | 'createdAt'>): string {
+        const key = `${data.template}:${Array.isArray(data.to) ? data.to.join(',') : data.to}:${JSON.stringify(data.templateData)}`;
+        return `email_duplicate:${Buffer.from(key).toString('base64')}`;
+    }
+
+    private async checkForDuplicate(duplicateKey: string): Promise<Job<EmailJobData> | null> {
+        const jobId = await this.redisService.get(duplicateKey);
+        if (!jobId) {
+            return null;
+        }
+        
+        const job = await this.emailQueue.getJob(jobId);
+        return job || null;
+    }
+
+    private async storeDuplicateKey(duplicateKey: string, jobId: string): Promise<void> {
+        await this.redisService.set(duplicateKey, jobId, 3600); // 1 hour TTL
     }
 }
