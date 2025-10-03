@@ -5,4 +5,3 @@ export { CreditTransaction, TransactionType } from './credit-transaction.entity'
 export { Payment, PaymentStatus, PaymentMethod } from './payment.entity';
 export { ApiKey, ApiKeyStatus, ApiKeyType } from './api-key.entity';
 export { CreditAuditLog } from './credit-audit-log.entity';
-export { JobAudit } from './job-audit.entity';

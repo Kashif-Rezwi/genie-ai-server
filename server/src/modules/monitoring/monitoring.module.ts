@@ -11,7 +11,7 @@ import { AlertingService } from './services/alerting.service';
 import { RequestMonitoringMiddleware } from './middleware/request-monitoring.middleware';
 import { ErrorMonitoringMiddleware } from './middleware/error-monitoring.middleware';
 import { SecurityModule } from '../security/security.module';
-import { JobsModule } from '../jobs/jobs.module';
+import { EmailModule } from '../email/email.module';
 import { User, Chat, Message, Payment } from '../../entities';
 
 @Global()
@@ -20,7 +20,7 @@ import { User, Chat, Message, Payment } from '../../entities';
         TerminusModule,
         TypeOrmModule.forFeature([User, Chat, Message, Payment]),
         SecurityModule,
-        JobsModule,
+        EmailModule,
     ],
     controllers: [MonitoringController],
     providers: [
