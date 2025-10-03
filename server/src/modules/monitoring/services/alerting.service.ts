@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { LoggingService } from './logging.service';
-import { EmailService } from '../../jobs/services/email.service';
+import { EmailService } from '../../email/email.service';
 import { monitoringConfig } from '../../../config';
 
 export interface Alert {
@@ -348,12 +348,14 @@ export class AlertingService {
         }
 
         for (const recipient of recipients) {
-            await this.emailService.sendEmail(
-                recipient,
-                `🚨 Alert: ${alert.title}`,
-                this.generateEmailAlertHtml(alert),
-                this.generateEmailAlertText(alert),
-            );
+            await this.emailService.sendAlertEmail(recipient, {
+                title: alert.title,
+                message: alert.message,
+                severity: alert.severity,
+                timestamp: alert.timestamp.toISOString(),
+                data: alert.data,
+                id: alert.id,
+            });
         }
     }
 
