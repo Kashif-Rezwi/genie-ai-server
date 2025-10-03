@@ -8,7 +8,7 @@ import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { User } from '../../entities/user.entity';
-import { JobsModule } from '../jobs/jobs.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
     imports: [
@@ -25,7 +25,7 @@ import { JobsModule } from '../jobs/jobs.module';
             inject: [ConfigService],
         }),
         UsersModule,
-        JobsModule,
+        EmailModule,
     ],
     controllers: [AuthController],
     providers: [AuthService, JwtStrategy],

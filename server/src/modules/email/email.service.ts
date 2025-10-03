@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
-import { JobService } from './job.service';
-import { emailConfig } from '../../../config';
+import { emailConfig } from '../../config';
 
 export interface EmailTemplate {
     subject: string;
@@ -15,7 +14,7 @@ export class EmailService {
     private readonly config = emailConfig();
     private transporter: nodemailer.Transporter;
 
-    constructor(private readonly jobService: JobService) {
+    constructor() {
         this.initializeTransporter();
     }
 
@@ -66,140 +65,6 @@ export class EmailService {
         }
     }
 
-    // Welcome email for new users
-    async sendWelcomeEmail(
-        email: string,
-        userData: { name?: string; creditsAdded: number },
-    ): Promise<void> {
-        await this.jobService.addEmailJob({
-            to: email,
-            subject: 'Welcome to Genie AI! 🎉',
-            template: 'welcome',
-            templateData: userData,
-            priority: 'high',
-        });
-    }
-
-    // Payment confirmation email
-    async sendPaymentConfirmationEmail(
-        email: string,
-        paymentData: {
-            packageName: string;
-            amount: number;
-            currency: string;
-            creditsAdded: number;
-            newBalance: number;
-            transactionId: string;
-        },
-    ): Promise<void> {
-        await this.jobService.addEmailJob({
-            to: email,
-            subject: 'Payment Confirmed - Credits Added! 💳',
-            template: 'payment_confirmation',
-            templateData: paymentData,
-            priority: 'high',
-        });
-    }
-
-    // Payment failure notification
-    async sendPaymentFailureEmail(
-        email: string,
-        failureData: {
-            packageName: string;
-            amount: number;
-            currency: string;
-            failureReason: string;
-            orderId: string;
-        },
-    ): Promise<void> {
-        await this.jobService.addEmailJob({
-            to: email,
-            subject: 'Payment Failed - Need Help? 🔧',
-            template: 'payment_failure',
-            templateData: failureData,
-            priority: 'high',
-        });
-    }
-
-    // Refund confirmation email
-    async sendRefundConfirmationEmail(
-        email: string,
-        refundData: {
-            packageName: string;
-            refundAmount: number;
-            currency: string;
-            refundId: string;
-            reason: string;
-        },
-    ): Promise<void> {
-        await this.jobService.addEmailJob({
-            to: email,
-            subject: 'Refund Processed Successfully 💰',
-            template: 'refund_confirmation',
-            templateData: refundData,
-            priority: 'normal',
-        });
-    }
-
-    // Low credits warning
-    async sendLowCreditsWarning(
-        email: string,
-        creditData: {
-            currentBalance: number;
-            threshold: number;
-            recommendedPackage?: string;
-        },
-    ): Promise<void> {
-        await this.jobService.addEmailJob({
-            to: email,
-            subject: 'Low Credits Alert - Time to Top Up? ⚡',
-            template: 'low_credits_warning',
-            templateData: creditData,
-            priority: 'normal',
-        });
-    }
-
-    // Security alert email
-    async sendSecurityAlert(
-        email: string,
-        alertData: {
-            alertType: string;
-            description: string;
-            timestamp: Date;
-            ip: string;
-            actionRequired: boolean;
-        },
-    ): Promise<void> {
-        await this.jobService.addEmailJob({
-            to: email,
-            subject: '🔒 Security Alert - Account Activity',
-            template: 'security_alert',
-            templateData: alertData,
-            priority: 'critical',
-        });
-    }
-
-    // Monthly usage report
-    async sendMonthlyReport(
-        email: string,
-        reportData: {
-            month: string;
-            totalChats: number;
-            totalMessages: number;
-            creditsUsed: number;
-            favoriteModel: string;
-            totalSpent: number;
-        },
-    ): Promise<void> {
-        await this.jobService.addEmailJob({
-            to: email,
-            subject: `Your Monthly AI Usage Report - ${reportData.month} 📊`,
-            template: 'monthly_report',
-            templateData: reportData,
-            priority: 'low',
-        });
-    }
-
     // Email templates
     getEmailTemplate(templateName: string, data: any): EmailTemplate {
         switch (templateName) {
@@ -209,19 +74,79 @@ export class EmailService {
                 return this.getPaymentConfirmationTemplate(data);
             case 'payment_failure':
                 return this.getPaymentFailureTemplate(data);
-            case 'refund_confirmation':
-                return this.getRefundConfirmationTemplate(data);
             case 'low_credits_warning':
                 return this.getLowCreditsTemplate(data);
             case 'security_alert':
                 return this.getSecurityAlertTemplate(data);
-            case 'monthly_report':
-                return this.getMonthlyReportTemplate(data);
+            case 'alert':
+                return this.getAlertTemplate(data);
             default:
                 throw new Error(`Unknown email template: ${templateName}`);
         }
     }
 
+    // High-level email methods
+    async sendWelcomeEmail(userEmail: string, userData: any): Promise<any> {
+        const template = this.getEmailTemplate('welcome', userData);
+        return this.sendEmail(
+            userEmail,
+            template.subject,
+            template.html,
+            template.text
+        );
+    }
+
+    async sendPaymentConfirmationEmail(userEmail: string, paymentData: any): Promise<any> {
+        const template = this.getEmailTemplate('payment_confirmation', paymentData);
+        return this.sendEmail(
+            userEmail,
+            template.subject,
+            template.html,
+            template.text
+        );
+    }
+
+    async sendPaymentFailureEmail(userEmail: string, failureData: any): Promise<any> {
+        const template = this.getEmailTemplate('payment_failure', failureData);
+        return this.sendEmail(
+            userEmail,
+            template.subject,
+            template.html,
+            template.text
+        );
+    }
+
+    async sendLowCreditsEmail(userEmail: string, creditsData: any): Promise<any> {
+        const template = this.getEmailTemplate('low_credits_warning', creditsData);
+        return this.sendEmail(
+            userEmail,
+            template.subject,
+            template.html,
+            template.text
+        );
+    }
+
+    async sendSecurityAlertEmail(userEmail: string, securityData: any): Promise<any> {
+        const template = this.getEmailTemplate('security_alert', securityData);
+        return this.sendEmail(
+            userEmail,
+            template.subject,
+            template.html,
+            template.text
+        );
+    }
+
+    async sendAlertEmail(userEmail: string, alertData: any): Promise<any> {
+        const template = this.getEmailTemplate('alert', alertData);
+        return this.sendEmail(
+            userEmail,
+            template.subject,
+            template.html,
+            template.text
+        );
+    }
+
+    // Template implementations
     private getWelcomeTemplate(data: any): EmailTemplate {
         return {
             subject: 'Welcome to Genie AI! 🎉',
@@ -363,54 +288,53 @@ export class EmailService {
         };
     }
 
-    private getRefundConfirmationTemplate(data: any): EmailTemplate {
+    private getAlertTemplate(data: any): EmailTemplate {
         return {
-            subject: 'Refund Processed Successfully 💰',
+            subject: `🚨 Alert: ${data.title}`,
             html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #059669;">Refund Processed</h1>
-          <p>Your refund has been successfully processed and will be credited to your original payment method.</p>
-          
-          <div style="background: #ECFDF5; border: 1px solid #059669; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3>Refund Details:</h3>
-            <p><strong>Package:</strong> ${data.packageName}</p>
-            <p><strong>Refund Amount:</strong> ${data.currency} ${data.refundAmount}</p>
-            <p><strong>Refund ID:</strong> ${data.refundId}</p>
-            <p><strong>Reason:</strong> ${data.reason}</p>
-          </div>
-
-          <p>The refund will appear in your account within 5-7 business days, depending on your bank's processing time.</p>
-          
-          <p>If you have any questions about this refund, please contact our support team with the refund ID above.</p>
-          
-          <p>Thank you for using Genie AI!</p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: ${this.getSeverityColor(data.severity)}; color: white; padding: 20px; text-align: center;">
+          <h1>🚨 ${data.title}</h1>
+          <p style="margin: 0; font-size: 18px;">Severity: ${data.severity?.toUpperCase() || 'MEDIUM'}</p>
         </div>
-      `,
+        
+        <div style="padding: 20px; background: #f8f9fa;">
+          <h2>Alert Details</h2>
+          <p><strong>Time:</strong> ${data.timestamp || new Date().toISOString()}</p>
+          <p><strong>Message:</strong> ${data.message}</p>
+          
+          ${
+              data.data && Object.keys(data.data).length > 0
+                  ? `
+            <h3>Additional Data</h3>
+            <pre style="background: #e9ecef; padding: 10px; border-radius: 4px;">${JSON.stringify(data.data, null, 2)}</pre>
+          `
+                  : ''
+          }
+        </div>
+        
+        <div style="padding: 20px; text-align: center; background: #e9ecef;">
+          <p>This alert was generated by Genie AI Monitoring System</p>
+          <p>Alert ID: ${data.id || 'N/A'}</p>
+        </div>
+      </div>
+    `,
         };
     }
 
-    private getMonthlyReportTemplate(data: any): EmailTemplate {
-        return {
-            subject: `Your Monthly AI Usage Report - ${data.month} 📊`,
-            html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #4F46E5;">Your Monthly Report</h1>
-          <p>Here's your AI usage summary for ${data.month}:</p>
-          
-          <div style="background: #F3F4F6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3>Usage Statistics:</h3>
-            <p><strong>Total Chats:</strong> ${data.totalChats}</p>
-            <p><strong>Total Messages:</strong> ${data.totalMessages}</p>
-            <p><strong>Credits Used:</strong> ${data.creditsUsed}</p>
-            <p><strong>Favorite Model:</strong> ${data.favoriteModel}</p>
-            <p><strong>Total Spent:</strong> ₹${data.totalSpent}</p>
-          </div>
-
-          <p>Keep exploring the power of AI with Genie!</p>
-          <p><a href="${this.config.appUrl}/analytics" style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">View Detailed Analytics</a></p>
-        </div>
-      `,
-        };
+    private getSeverityColor(severity: string): string {
+        switch (severity) {
+            case 'critical':
+                return '#dc3545';
+            case 'high':
+                return '#fd7e14';
+            case 'medium':
+                return '#ffc107';
+            case 'low':
+                return '#28a745';
+            default:
+                return '#6c757d';
+        }
     }
 
     private htmlToText(html: string): string {

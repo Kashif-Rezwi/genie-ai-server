@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { EmailService } from '../jobs/services/email.service';
+import { EmailService } from '../email/email.service';
 
 export interface JwtPayload {
     sub: string;
@@ -43,16 +43,15 @@ export class AuthService {
         const payload: JwtPayload = { sub: user.id, email: user.email };
         const accessToken = this.jwtService.sign(payload);
 
-        // Queue welcome email asynchronously (don't wait for it)
+        // Send welcome email asynchronously (don't wait for it)
         this.emailService
             .sendWelcomeEmail(user.email, {
                 name: user.email.split('@')[0],
                 creditsAdded: user.creditsBalance,
             })
             .catch(error => {
-                // Log error and potentially retry later
+                // Log error - for MVP, we don't need complex retry logic
                 console.error('Failed to send welcome email:', error);
-                // Could also update user status or queue for retry
             });
 
         return {
