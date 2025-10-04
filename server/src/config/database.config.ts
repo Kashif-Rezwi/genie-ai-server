@@ -17,9 +17,24 @@ export const databaseConfig = (): TypeOrmModuleOptions => ({
     logging: process.env.NODE_ENV === 'development',
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
     
-    // Simple connection pool settings (TypeORM handles the rest)
+    // Enhanced connection pool settings for better performance
     extra: {
-        max: parseInt(process.env.DB_POOL_MAX || '10', 10), // Max connections
-        min: parseInt(process.env.DB_POOL_MIN || '2', 10),  // Min connections
+        max: parseInt(process.env.DB_POOL_MAX || '20', 10), // Increased for better concurrency
+        min: parseInt(process.env.DB_POOL_MIN || '5', 10),  // Increased minimum
+        acquire: 30000, // 30 seconds to acquire connection
+        idle: 10000,    // 10 seconds idle timeout
+        evict: 1000,    // 1 second eviction check
+        handleDisconnects: true,
     },
+    
+    // Query optimization (disabled for now - can be enabled later)
+    // cache: {
+    //     type: 'redis',
+    //     options: {
+    //         host: process.env.REDIS_HOST || 'localhost',
+    //         port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    //         db: 2, // Use separate Redis DB for query cache
+    //     },
+    //     duration: 30000, // 30 seconds cache duration
+    // },
 });
