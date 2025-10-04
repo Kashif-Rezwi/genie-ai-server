@@ -2,7 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import { RedisService } from '../../redis/redis.service';
 import { getRateLimitConfig } from '../../../config';
-import { LoggerService } from '../../../common/services/logger.service';
+import { LoggingService } from '../../monitoring/services/logging.service';
 
 export interface RateLimitConfig {
     keyPrefix?: string;
@@ -26,7 +26,7 @@ export class RateLimitService {
 
     constructor(
         private readonly redisService: RedisService,
-        private readonly logger: LoggerService,
+        private readonly logger: LoggingService,
     ) {
         this.redisClient = redisService.getClient();
         this.initializeRateLimiters();
@@ -91,7 +91,7 @@ export class RateLimitService {
                 );
             }
             // Redis connection error - allow request but log warning
-            this.logger.warn('rate-limit', `Redis rate limiting failed for ${limiterName}`, {
+            this.logger.logWarning(`Redis rate limiting failed for ${limiterName}`, {
                 error: rateLimitRes.message,
                 limiterName,
             });

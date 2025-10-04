@@ -1,6 +1,7 @@
 import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
+import { MetricsService } from '../monitoring/services/metrics.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { EmailService } from '../email/email.service';
@@ -25,6 +26,7 @@ export class AuthService {
         private readonly usersService: UsersService,
         private readonly jwtService: JwtService,
         private readonly emailService: EmailService,
+        private readonly metricsService: MetricsService,
     ) {}
 
     async register(registerDto: RegisterDto): Promise<AuthResponse> {
@@ -54,6 +56,9 @@ export class AuthService {
                 console.error('Failed to send welcome email:', error);
             });
 
+        // Record active user metric
+        this.metricsService.recordActiveUser();
+        
         return {
             user: {
                 id: user.id,
@@ -87,6 +92,9 @@ export class AuthService {
         // Generate JWT token
         const payload: JwtPayload = { sub: user.id, email: user.email };
         const accessToken = this.jwtService.sign(payload);
+
+        // Record active user metric
+        this.metricsService.recordActiveUser();
 
         return {
             user: {
