@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import { RedisService } from '../../redis/redis.service';
 import { getRateLimitConfig } from '../../../config';
+import { UserTier } from '../../../config/rate-limiting.config';
 import { LoggingService } from '../../monitoring/services/logging.service';
 
 export interface RateLimitConfig {
@@ -19,6 +20,14 @@ export interface UserTierLimits {
     admin: RateLimitConfig;
 }
 
+export interface RateLimitResult {
+    allowed: boolean;
+    remainingPoints: number;
+    msBeforeNext: number;
+    totalHits: number;
+    tier: UserTier;
+}
+
 @Injectable()
 export class RateLimitService {
     private rateLimiters: Map<string, RateLimiterRedis> = new Map();
@@ -33,27 +42,19 @@ export class RateLimitService {
     }
 
     private initializeRateLimiters() {
-        // Simplified rate limiters for 0-1000 users
-        this.createRateLimiter('global', {
-            keyPrefix: 'global_rate_limit',
-            points: 100, // 100 requests
-            duration: 60, // per 60 seconds
-            blockDuration: 60,
-            execEvenly: true,
-        });
+        // Initialize all rate limiters from configuration
+        const configs = [
+            'global', 'user_free', 'user_basic', 'user_pro', 'user_admin',
+            'ai_free', 'ai_basic', 'ai_pro', 'ai_admin',
+            'auth', 'password_reset', 'payment', 'upload'
+        ];
 
-        this.createRateLimiter('user', {
-            keyPrefix: 'user_rate_limit',
-            points: 200, // 200 requests
-            duration: 60, // per minute
-            blockDuration: 60,
-        });
-
-        this.createRateLimiter('ai', {
-            keyPrefix: 'ai_rate_limit',
-            points: 50, // 50 AI requests
-            duration: 3600, // per hour
-            blockDuration: 300, // 5 minutes block
+        configs.forEach(configName => {
+            const config = getRateLimitConfig(configName);
+            this.createRateLimiter(configName, {
+                keyPrefix: `${configName}_rate_limit`,
+                ...config,
+            });
         });
     }
 
@@ -107,30 +108,75 @@ export class RateLimitService {
         }
     }
 
-    async getUserTierFromCredits(userId: string): Promise<'free' | 'paid'> {
-        // Simplified tier logic for 0-1000 users
-        const balanceKey = `user_balance:${userId}`;
-        const balanceStr = await this.redisService.get(balanceKey);
+    async getUserTier(userId: string): Promise<UserTier> {
+        try {
+            // Check user's credit balance to determine tier
+            const balanceKey = `user_balance:${userId}`;
+            const balanceStr = await this.redisService.get(balanceKey);
 
-        if (!balanceStr) {
-            return 'free';
+            if (!balanceStr) {
+                return UserTier.FREE;
+            }
+
+            const balance = parseFloat(balanceStr);
+            
+            // Tier logic based on credit balance
+            if (balance >= 1000) return UserTier.PRO;
+            if (balance >= 100) return UserTier.BASIC;
+            if (balance > 0) return UserTier.FREE;
+            
+            return UserTier.FREE;
+        } catch (error) {
+            this.logger.logWarning('Failed to get user tier, defaulting to free', { userId, error: error.message });
+            return UserTier.FREE;
         }
-
-        const balance = parseFloat(balanceStr);
-        return balance > 0 ? 'paid' : 'free';
     }
 
-    async checkUserRateLimit(userId: string, operation: string): Promise<RateLimiterRes> {
-        // Simplified rate limiting logic
+    async checkUserRateLimit(userId: string, operation: string): Promise<RateLimitResult> {
+        try {
+            const tier = await this.getUserTier(userId);
+            const limiterName = this.getLimiterName(operation, tier);
+            
+            const result = await this.checkRateLimit(limiterName, userId);
+            
+            return {
+                allowed: true,
+                remainingPoints: result.remainingPoints,
+                msBeforeNext: result.msBeforeNext,
+                totalHits: result.consumedPoints,
+                tier,
+            };
+        } catch (error) {
+            if (error instanceof BadRequestException) {
+                const tier = await this.getUserTier(userId);
+                return {
+                    allowed: false,
+                    remainingPoints: 0,
+                    msBeforeNext: 0,
+                    totalHits: 0,
+                    tier,
+                };
+            }
+            throw error;
+        }
+    }
+
+    private getLimiterName(operation: string, tier: UserTier): string {
         switch (operation) {
             case 'api':
-                return this.checkRateLimit('user', userId);
-
+                return `user_${tier}`;
             case 'ai':
-                return this.checkRateLimit('ai', userId);
-
+                return `ai_${tier}`;
+            case 'auth':
+                return 'auth';
+            case 'password_reset':
+                return 'password_reset';
+            case 'payment':
+                return 'payment';
+            case 'upload':
+                return 'upload';
             default:
-                return this.checkRateLimit('user', userId);
+                return `user_${tier}`;
         }
     }
 

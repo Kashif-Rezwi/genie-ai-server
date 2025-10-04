@@ -35,10 +35,17 @@ export class RateLimitGuard implements CanActivate {
             if (user) {
                 const result = await this.rateLimitService.checkUserRateLimit(user.id, operation);
 
-                // Add rate limit headers
-                response.setHeader('X-RateLimit-Limit', result.consumedPoints);
+                if (!result.allowed) {
+                    throw new BadRequestException(
+                        `Rate limit exceeded for ${operation}. Try again in ${Math.round(result.msBeforeNext / 1000)} seconds`
+                    );
+                }
+
+                // Add comprehensive rate limit headers
+                response.setHeader('X-RateLimit-Limit', result.totalHits);
                 response.setHeader('X-RateLimit-Remaining', result.remainingPoints);
                 response.setHeader('X-RateLimit-Reset', new Date(Date.now() + result.msBeforeNext));
+                response.setHeader('X-RateLimit-Tier', result.tier);
             } else {
                 // Check IP-based rate limit for unauthenticated users
                 const result = await this.rateLimitService.checkRateLimit('global', ip);
@@ -47,6 +54,7 @@ export class RateLimitGuard implements CanActivate {
                 response.setHeader('X-RateLimit-Limit', result.consumedPoints);
                 response.setHeader('X-RateLimit-Remaining', result.remainingPoints);
                 response.setHeader('X-RateLimit-Reset', new Date(Date.now() + result.msBeforeNext));
+                response.setHeader('X-RateLimit-Tier', 'anonymous');
             }
 
             // Log security event

@@ -4,17 +4,22 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RateLimit, RateLimitGuard } from '../security/guards/rate-limit.guard';
 
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
 
     @Post('register')
+    @UseGuards(RateLimitGuard)
+    @RateLimit('auth')
     async register(@Body(ValidationPipe) registerDto: RegisterDto) {
         return this.authService.register(registerDto);
     }
 
     @Post('login')
+    @UseGuards(RateLimitGuard)
+    @RateLimit('auth')
     async login(@Body(ValidationPipe) loginDto: LoginDto) {
         return this.authService.login(loginDto);
     }
