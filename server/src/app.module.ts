@@ -4,12 +4,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 
 // Feature Modules
-import { HealthModule } from './modules/health/health.module';
+import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AIModule } from './modules/ai/ai.module';
 import { SecurityModule } from './modules/security/security.module';
 import { SecurityMiddleware } from './modules/security/middleware/security.middleware';
 import { ValidationMiddleware } from './modules/security/middleware/validation.middleware';
+import { RequestMonitoringMiddleware } from './modules/monitoring/middleware/request-monitoring.middleware';
 
 // Configuration
 import { appConfig, databaseConfig } from './config';
@@ -34,7 +35,7 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 
         // Feature Modules (dependency order)
         SecurityModule, // Security must be loaded first
-        HealthModule,
+        MonitoringModule, // Monitoring must be loaded early
         AuthModule,
         AIModule,
     ],
@@ -65,7 +66,11 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {
         consumer
-            .apply(SecurityMiddleware, ValidationMiddleware)
+            .apply(
+                RequestMonitoringMiddleware,
+                SecurityMiddleware,
+                ValidationMiddleware
+            )
             .forRoutes('*');
     }
 }
