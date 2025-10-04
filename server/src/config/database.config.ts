@@ -19,12 +19,18 @@ export const databaseConfig = (): TypeOrmModuleOptions => ({
 
   // Enhanced connection pool settings for better performance
   extra: {
-    max: parseInt(process.env.DB_POOL_MAX || '20', 10), // Increased for better concurrency
-    min: parseInt(process.env.DB_POOL_MIN || '5', 10), // Increased minimum
+    max: parseInt(process.env.DB_POOL_MAX || '30', 10), // Increased for better concurrency
+    min: parseInt(process.env.DB_POOL_MIN || '10', 10), // Increased minimum
     acquire: 30000, // 30 seconds to acquire connection
     idle: 10000, // 10 seconds idle timeout
     evict: 1000, // 1 second eviction check
     handleDisconnects: true,
+    // Additional performance optimizations
+    statement_timeout: 30000, // 30 seconds statement timeout
+    query_timeout: 30000, // 30 seconds query timeout
+    connectionTimeoutMillis: 10000, // 10 seconds connection timeout
+    idleTimeoutMillis: 30000, // 30 seconds idle timeout
+    maxUses: 7500, // Max uses per connection before recycling
   },
 
   // Query optimization (disabled for now - can be enabled later)
