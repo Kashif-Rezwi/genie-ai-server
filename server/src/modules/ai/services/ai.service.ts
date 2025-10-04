@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { AIRequestDto } from '../dto/ai-request.dto';
 import { AIResponseDto } from '../dto/ai-response.dto';
 import { AIProviderFactory } from '../providers/ai-provider.factory';
+import { AIQueueService } from './ai-queue.service';
 import { CreditsService } from '../../credits/services/credits.service';
 import { MetricsService } from '../../monitoring/services/metrics.service';
 import { getModelConfig, AIModelConfig, aiProvidersConfig } from '../../../config';
@@ -13,6 +14,7 @@ export class AIService {
 
     constructor(
         private readonly providerFactory: AIProviderFactory,
+        private readonly aiQueueService: AIQueueService,
         private readonly creditsService: CreditsService,
         private readonly metricsService: MetricsService,
     ) {}
@@ -191,5 +193,83 @@ export class AIService {
 
     private calculateCreditsUsed(tokens: number, modelConfig: AIModelConfig): number {
         return Math.ceil((tokens / 1000) * modelConfig.costPerToken * 100) / 100;
+    }
+
+    // Queued version for high-load scenarios (1000+ users)
+    async generateResponseQueued(userId: string, request: AIRequestDto): Promise<AIResponseDto> {
+        const modelId = request.model || this.config.defaultModel;
+        const modelConfig = getModelConfig(modelId);
+
+        if (!modelConfig) {
+            throw new BadRequestException(`Model ${modelId} not supported`);
+        }
+
+        // Determine priority based on user tier or request type
+        const priority = this.getRequestPriority(userId, request);
+        
+        // Use queue for processing
+        const queuePayload = {
+            userId,
+            request,
+            modelId,
+            modelConfig,
+            timestamp: Date.now(),
+        };
+
+        try {
+            const result = await this.aiQueueService.enqueueRequest(
+                userId,
+                queuePayload,
+                priority,
+                2 // max retries
+            );
+
+            // Process the actual AI request
+            return await this.processQueuedRequest(result);
+        } catch (error) {
+            throw new BadRequestException(`AI request failed: ${error.message}`);
+        }
+    }
+
+    private getRequestPriority(userId: string, request: AIRequestDto): number {
+        // Priority 1 = highest, 5 = lowest
+        // You can implement user tier logic here
+        if (request.priority === 'high') return 1;
+        if (request.priority === 'low') return 5;
+        
+        // Default priority based on request type
+        if (request.stream) return 2; // Streaming requests get higher priority
+        return 3; // Default priority
+    }
+
+    private async processQueuedRequest(queueResult: any): Promise<AIResponseDto> {
+        const { userId, request, modelId, modelConfig } = queueResult;
+        
+        // This would contain the actual AI processing logic
+        // For now, return a mock response
+        return {
+            id: uuidv4(),
+            content: `Queued AI response for user ${userId}`,
+            model: modelId,
+            provider: modelConfig.provider,
+            usage: {
+                promptTokens: 100,
+                completionTokens: 50,
+                totalTokens: 150,
+            },
+            creditsUsed: 0.15,
+            finishReason: 'stop',
+            timestamp: new Date().toISOString(),
+        };
+    }
+
+    // Get queue status for monitoring
+    getQueueStatus() {
+        return this.aiQueueService.getQueueStatus();
+    }
+
+    // Get user-specific queue status
+    getUserQueueStatus(userId: string) {
+        return this.aiQueueService.getUserQueueStatus(userId);
     }
 }

@@ -2,6 +2,7 @@ export interface AIResponseDto {
     id: string;
     content: string;
     model: string;
+    provider?: string;
     usage: {
         promptTokens: number;
         completionTokens: number;
@@ -9,6 +10,7 @@ export interface AIResponseDto {
     };
     creditsUsed: number;
     finishReason: string;
+    timestamp?: string;
 }
 
 export interface StreamChunkDto {

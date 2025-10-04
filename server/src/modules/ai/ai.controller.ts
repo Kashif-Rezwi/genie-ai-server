@@ -27,7 +27,7 @@ export class AIController {
     }
 
     @Get('credits')
-    async getUserCredits(@CurrentUser() user: any) {
+    async getUserCredits(@CurrentUser() user: { id: string }) {
         const balance = await this.creditsService.getBalance(user.id);
         const transactions = await this.creditsService.getRecentTransactions(user.id);
         return {
@@ -39,15 +39,36 @@ export class AIController {
     // Non-streaming endpoint (uses streaming internally)
     @Post('generate')
     @RateLimit('ai')
-    async generateResponse(@CurrentUser() user: any, @Body(ValidationPipe) request: AIRequestDto) {
+    async generateResponse(@CurrentUser() user: { id: string }, @Body(ValidationPipe) request: AIRequestDto) {
         return this.aiService.generateResponse(user.id, request);
+    }
+
+    // Queued endpoint for high-load scenarios
+    @Post('generate-queued')
+    @RateLimit('ai')
+    async generateResponseQueued(@CurrentUser() user: { id: string }, @Body(ValidationPipe) request: AIRequestDto) {
+        return this.aiService.generateResponseQueued(user.id, request);
+    }
+
+    // Get queue status
+    @Get('queue/status')
+    @RateLimit('api')
+    async getQueueStatus() {
+        return this.aiService.getQueueStatus();
+    }
+
+    // Get user queue status
+    @Get('queue/user-status')
+    @RateLimit('api')
+    async getUserQueueStatus(@CurrentUser() user: { id: string }) {
+        return this.aiService.getUserQueueStatus(user.id);
     }
 
     // Real-time streaming endpoint
     @Post('stream')
     @RateLimit('ai')
     async streamResponse(
-        @CurrentUser() user: any,
+        @CurrentUser() user: { id: string },
         @Body(ValidationPipe) request: AIRequestDto,
         @Res() response: Response,
     ) {

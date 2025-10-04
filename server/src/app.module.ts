@@ -10,6 +10,7 @@ import { AIModule } from './modules/ai/ai.module';
 import { SecurityModule } from './modules/security/security.module';
 import { SecurityMiddleware } from './modules/security/middleware/security.middleware';
 import { ValidationMiddleware } from './modules/security/middleware/validation.middleware';
+import { InputSanitizationMiddleware } from './modules/security/middleware/input-sanitization.middleware';
 import { RequestMonitoringMiddleware } from './modules/monitoring/middleware/request-monitoring.middleware';
 
 // Configuration
@@ -69,7 +70,8 @@ export class AppModule implements NestModule {
             .apply(
                 RequestMonitoringMiddleware,
                 SecurityMiddleware,
-                ValidationMiddleware
+                ValidationMiddleware,
+                InputSanitizationMiddleware
             )
             .forRoutes('*');
     }

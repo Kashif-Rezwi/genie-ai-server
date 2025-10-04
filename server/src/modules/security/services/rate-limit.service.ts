@@ -47,6 +47,7 @@ export class RateLimitService {
             points: 200, // 200 requests
             duration: 60, // per minute
             blockDuration: 60,
+            execEvenly: true, // Spread requests evenly to prevent bursts
         });
 
         this.createRateLimiter('ai', {

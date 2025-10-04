@@ -43,4 +43,11 @@ export class AIRequestDto {
     @Min(0)
     @Max(2)
     temperature?: number;
+
+    @IsOptional()
+    @IsIn(['high', 'normal', 'low'])
+    priority?: 'high' | 'normal' | 'low';
+
+    @IsOptional()
+    stream?: boolean;
 }

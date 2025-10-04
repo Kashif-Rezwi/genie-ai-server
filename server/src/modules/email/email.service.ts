@@ -146,6 +146,28 @@ export class EmailService {
         );
     }
 
+    async sendPasswordResetEmail(userEmail: string, resetToken: string): Promise<any> {
+        const resetUrl = `${this.config.appUrl}/reset-password?token=${resetToken}`;
+        const template = this.getPasswordResetTemplate(resetUrl);
+        return this.sendEmail(
+            userEmail,
+            template.subject,
+            template.html,
+            template.text
+        );
+    }
+
+    async sendVerificationEmail(userEmail: string, verificationToken: string): Promise<any> {
+        const verificationUrl = `${this.config.appUrl}/verify-email?token=${verificationToken}`;
+        const template = this.getEmailVerificationTemplate(verificationUrl);
+        return this.sendEmail(
+            userEmail,
+            template.subject,
+            template.html,
+            template.text
+        );
+    }
+
     // Template implementations
     private getWelcomeTemplate(data: any): EmailTemplate {
         return {
@@ -335,6 +357,40 @@ export class EmailService {
             default:
                 return '#6c757d';
         }
+    }
+
+    private getPasswordResetTemplate(resetUrl: string): EmailTemplate {
+        return {
+            subject: 'Reset Your Password - Genie AI',
+            html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #4F46E5;">Reset Your Password</h1>
+          <p>You requested to reset your password for your Genie AI account.</p>
+          <p>Click the button below to reset your password:</p>
+          <p><a href="${resetUrl}" style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Reset Password</a></p>
+          <p>This link will expire in 1 hour for security reasons.</p>
+          <p>If you didn't request this password reset, please ignore this email.</p>
+          <p>Best regards,<br>The Genie AI Team</p>
+        </div>
+      `,
+        };
+    }
+
+    private getEmailVerificationTemplate(verificationUrl: string): EmailTemplate {
+        return {
+            subject: 'Verify Your Email - Genie AI',
+            html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #4F46E5;">Verify Your Email Address</h1>
+          <p>Welcome to Genie AI! Please verify your email address to complete your registration.</p>
+          <p>Click the button below to verify your email:</p>
+          <p><a href="${verificationUrl}" style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Verify Email</a></p>
+          <p>This link will expire in 24 hours.</p>
+          <p>If you didn't create an account with us, please ignore this email.</p>
+          <p>Best regards,<br>The Genie AI Team</p>
+        </div>
+      `,
+        };
     }
 
     private htmlToText(html: string): string {

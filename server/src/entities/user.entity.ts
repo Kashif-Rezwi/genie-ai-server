@@ -32,6 +32,18 @@ export class User {
     @Column({ default: 'user' })
     role: string;
 
+    @Column({ default: false })
+    isEmailVerified: boolean;
+
+    @Column({ nullable: true })
+    emailVerificationToken: string | null;
+
+    @Column({ nullable: true })
+    resetToken: string | null;
+
+    @Column({ nullable: true })
+    resetTokenExpiry: Date | null;
+
     @OneToMany(() => Chat, chat => chat.user)
     chats: Chat[];
 

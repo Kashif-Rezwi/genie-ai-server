@@ -14,11 +14,13 @@ export class AIProviderFactory {
     }
 
     private initializeProviders() {
+        // OpenAI Provider
         this.providers.set('openai', new GenericAIProvider(openai, 'gpt-3.5-turbo', 'openai'));
-        this.providers.set(
-            'anthropic',
-            new GenericAIProvider(anthropic, 'claude-3-haiku-20240307', 'anthropic'),
-        );
+        
+        // Anthropic Provider
+        this.providers.set('anthropic', new GenericAIProvider(anthropic, 'claude-3-haiku-20240307', 'anthropic'));
+        
+        // Groq Provider
         this.providers.set('groq', new GenericAIProvider(groq, 'llama-3.1-8b-instant', 'groq'));
     }
 

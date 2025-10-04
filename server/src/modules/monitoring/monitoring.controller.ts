@@ -25,6 +25,14 @@ export class MonitoringController {
         return this.healthService.getQuickHealthStatus();
     }
 
+    // Detailed health endpoint (admin only)
+    @Get('health/detailed')
+    @UseGuards(RolesGuard)
+    @Roles(UserRole.ADMIN)
+    async getDetailedHealth() {
+        return this.healthService.getDetailedHealthStatus();
+    }
+
     // Metrics endpoint (admin only)
     @Get('metrics')
     @UseGuards(JwtAuthGuard, RolesGuard)

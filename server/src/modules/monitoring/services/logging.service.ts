@@ -8,6 +8,7 @@ import { getClientIP } from '../../../common/utils/request.utils';
 export interface LogContext {
     userId?: string;
     requestId?: string;
+    correlationId?: string;
     ip?: string;
     userAgent?: string;
     method?: string;

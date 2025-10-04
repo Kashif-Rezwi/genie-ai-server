@@ -34,4 +34,21 @@ export class UsersService {
     async validatePassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
         return bcrypt.compare(plainPassword, hashedPassword);
     }
+
+    async updateUser(id: string, updateData: Partial<User>): Promise<User> {
+        await this.userRepository.update(id, updateData);
+        const updatedUser = await this.findById(id);
+        if (!updatedUser) {
+            throw new Error('User not found after update');
+        }
+        return updatedUser;
+    }
+
+    async findByResetToken(token: string): Promise<User | null> {
+        return this.userRepository.findOne({ where: { resetToken: token } });
+    }
+
+    async findByEmailVerificationToken(token: string): Promise<User | null> {
+        return this.userRepository.findOne({ where: { emailVerificationToken: token } });
+    }
 }

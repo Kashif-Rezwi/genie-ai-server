@@ -19,6 +19,11 @@ export class RequestMonitoringMiddleware implements NestMiddleware {
         
         // Add request ID to response headers for client correlation
         res.setHeader('X-Request-ID', requestId);
+        
+        // Add correlation ID to request context
+        const correlationId = req.headers['x-correlation-id'] as string || requestId;
+        (req as any).correlationId = correlationId;
+        res.setHeader('X-Correlation-ID', correlationId);
 
         // Override res.end to capture response data
         const originalEnd = res.end;

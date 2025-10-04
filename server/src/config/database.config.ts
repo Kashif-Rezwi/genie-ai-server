@@ -17,9 +17,22 @@ export const databaseConfig = (): TypeOrmModuleOptions => ({
     logging: process.env.NODE_ENV === 'development',
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
     
-    // Simple connection pool settings (TypeORM handles the rest)
+    // Optimized connection pool settings
     extra: {
-        max: parseInt(process.env.DB_POOL_MAX || '10', 10), // Max connections
-        min: parseInt(process.env.DB_POOL_MIN || '2', 10),  // Min connections
+        max: parseInt(process.env.DB_POOL_MAX || '20', 10), // Max connections
+        min: parseInt(process.env.DB_POOL_MIN || '5', 10),  // Min connections
+        acquire: 30000, // Maximum time to acquire connection
+        idle: 10000,    // Maximum idle time
+        evict: 1000,    // Check for idle connections every 1 second
+        handleDisconnects: true,
+        validate: true,
+        // Connection timeout
+        connectionTimeoutMillis: 10000,
+        // Query timeout
+        query_timeout: 30000,
+        // Statement timeout
+        statement_timeout: 30000,
+        // Idle timeout
+        idle_in_transaction_session_timeout: 30000,
     },
 });

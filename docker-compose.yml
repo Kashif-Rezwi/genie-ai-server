@@ -5,9 +5,9 @@ services:
     container_name: genie-postgres
     restart: always
     environment:
-      POSTGRES_USER: genie_user
-      POSTGRES_PASSWORD: genie_pass
-      POSTGRES_DB: genie_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
@@ -38,12 +38,12 @@ services:
       NODE_ENV: development
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
-      POSTGRES_USER: genie_user
-      POSTGRES_PASSWORD: genie_pass
-      POSTGRES_DB: genie_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      JWT_SECRET: uTXDLSkkQdEu0u0iaMWqP+IUou/XZbok9er5BH5lpK8kQIPNEz1XZLShxZJ9kZsMkpRtlfn56LPD7PiayGXXJQ==
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: 7d
       PORT: 4000
     depends_on:

@@ -14,19 +14,19 @@ export class CreditsController {
     ) {}
 
     @Get('balance')
-    async getBalance(@CurrentUser() user: any) {
+    async getBalance(@CurrentUser() user: { id: string }) {
         const balance = await this.creditsService.getBalance(user.id);
         return { balance };
     }
 
     @Get('transactions')
-    async getTransactions(@CurrentUser() user: any) {
+    async getTransactions(@CurrentUser() user: { id: string }) {
         const transactions = await this.creditsService.getRecentTransactions(user.id);
         return { transactions };
     }
 
     @Get('summary')
-    async getSummary(@CurrentUser() user: any) {
+    async getSummary(@CurrentUser() user: { id: string }) {
         return this.analyticsService.getUserSummary(user.id);
     }
 }
