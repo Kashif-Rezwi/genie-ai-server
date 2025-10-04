@@ -151,6 +151,41 @@ class EnvironmentVariables {
     @IsBoolean()
     @Transform(({ value }) => value === 'true')
     SECURITY_HEADERS?: boolean;
+
+    @IsOptional()
+    @IsNumber()
+    @Min(1)
+    @Max(50)
+    @Transform(({ value }) => parseInt(value, 10))
+    AI_CONCURRENT_REQUESTS?: number;
+
+    @IsOptional()
+    @IsNumber()
+    @Min(1)
+    @Max(1000)
+    @Transform(({ value }) => parseInt(value, 10))
+    AI_REQUEST_DELAY_MS?: number;
+
+    @IsOptional()
+    @IsNumber()
+    @Min(10)
+    @Max(1000)
+    @Transform(({ value }) => parseInt(value, 10))
+    AI_MAX_QUEUE_SIZE?: number;
+
+    @IsOptional()
+    @IsNumber()
+    @Min(10000)
+    @Max(120000)
+    @Transform(({ value }) => parseInt(value, 10))
+    AI_REQUEST_TIMEOUT?: number;
+
+    @IsOptional()
+    @IsNumber()
+    @Min(1)
+    @Max(20)
+    @Transform(({ value }) => parseInt(value, 10))
+    AI_BATCH_SIZE?: number;
 }
 
 export function validateEnvironment(config: Record<string, unknown>) {

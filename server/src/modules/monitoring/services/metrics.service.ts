@@ -17,6 +17,10 @@ export interface MetricsData {
         slowQueries: number;
         memoryUsage: number;
         uptime: number;
+        cpuUsage: number;
+        responseTimeP95: number;
+        responseTimeP99: number;
+        throughput: number;
     };
     business: {
         aiRequests: number;
@@ -30,7 +34,15 @@ export class MetricsService {
     private metrics: MetricsData = {
         requests: { total: 0, success: 0, errors: 0, avgResponseTime: 0 },
         errors: { total: 0, byStatus: {}, byEndpoint: {} },
-        performance: { slowQueries: 0, memoryUsage: 0, uptime: 0 },
+        performance: { 
+            slowQueries: 0, 
+            memoryUsage: 0, 
+            uptime: 0, 
+            cpuUsage: 0, 
+            responseTimeP95: 0, 
+            responseTimeP99: 0, 
+            throughput: 0 
+        },
         business: { aiRequests: 0, creditsUsed: 0, activeUsers: 0 },
     };
 
@@ -86,6 +98,10 @@ export class MetricsService {
         const memUsage = process.memoryUsage();
         this.metrics.performance.memoryUsage = Math.round(memUsage.heapUsed / 1024 / 1024); // MB
         this.metrics.performance.uptime = Math.round(process.uptime());
+        this.metrics.performance.cpuUsage = this.getCpuUsage();
+        this.metrics.performance.responseTimeP95 = this.calculatePercentile(this.responseTimes, 95);
+        this.metrics.performance.responseTimeP99 = this.calculatePercentile(this.responseTimes, 99);
+        this.metrics.performance.throughput = this.calculateThroughput();
     }
 
     // Get current metrics
@@ -99,7 +115,15 @@ export class MetricsService {
         this.metrics = {
             requests: { total: 0, success: 0, errors: 0, avgResponseTime: 0 },
             errors: { total: 0, byStatus: {}, byEndpoint: {} },
-            performance: { slowQueries: 0, memoryUsage: 0, uptime: 0 },
+            performance: { 
+                slowQueries: 0, 
+                memoryUsage: 0, 
+                uptime: 0, 
+                cpuUsage: 0, 
+                responseTimeP95: 0, 
+                responseTimeP99: 0, 
+                throughput: 0 
+            },
             business: { aiRequests: 0, creditsUsed: 0, activeUsers: 0 },
         };
         this.responseTimes = [];
@@ -119,5 +143,25 @@ export class MetricsService {
         if (this.responseTimes.length === 0) return 0;
         const sum = this.responseTimes.reduce((a, b) => a + b, 0);
         return Math.round(sum / this.responseTimes.length);
+    }
+
+    private calculatePercentile(responseTimes: number[], percentile: number): number {
+        if (responseTimes.length === 0) return 0;
+        const sorted = [...responseTimes].sort((a, b) => a - b);
+        const index = Math.ceil((percentile / 100) * sorted.length) - 1;
+        return sorted[index] || 0;
+    }
+
+    private calculateThroughput(): number {
+        // Calculate requests per minute
+        const uptimeMinutes = process.uptime() / 60;
+        return uptimeMinutes > 0 ? Math.round(this.metrics.requests.total / uptimeMinutes) : 0;
+    }
+
+    private getCpuUsage(): number {
+        const usage = process.cpuUsage();
+        const totalUsage = usage.user + usage.system;
+        const uptime = process.uptime() * 1000000; // Convert to microseconds
+        return uptime > 0 ? Math.round((totalUsage / uptime) * 100) : 0;
     }
 }

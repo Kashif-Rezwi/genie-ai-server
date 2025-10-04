@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, UnauthorizedException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { MetricsService } from '../monitoring/services/metrics.service';
@@ -26,6 +26,8 @@ export interface AuthResponse {
 
 @Injectable()
 export class AuthService {
+    private readonly logger = new Logger(AuthService.name);
+
     constructor(
         private readonly usersService: UsersService,
         private readonly jwtService: JwtService,
@@ -57,7 +59,7 @@ export class AuthService {
             })
             .catch(error => {
                 // Log error - for MVP, we don't need complex retry logic
-                console.error('Failed to send welcome email:', error);
+                this.logger.error('Failed to send welcome email:', error);
             });
 
         // Record active user metric

@@ -26,10 +26,11 @@ export class AIQueueService implements OnModuleInit, OnModuleDestroy {
     private queue: AIRequest[] = [];
     
     // Optimized for 1000 users
-    private readonly CONCURRENT_REQUESTS = 5; // Handle 5 concurrent AI requests
-    private readonly REQUEST_DELAY_MS = 50; // Small delay between requests
-    private readonly MAX_QUEUE_SIZE = 100; // Prevent memory issues
-    private readonly REQUEST_TIMEOUT = 30000; // 30 second timeout
+    private readonly CONCURRENT_REQUESTS = parseInt(process.env.AI_CONCURRENT_REQUESTS || '10', 10); // Handle 10 concurrent AI requests
+    private readonly REQUEST_DELAY_MS = parseInt(process.env.AI_REQUEST_DELAY_MS || '25', 10); // Reduced delay between requests
+    private readonly MAX_QUEUE_SIZE = parseInt(process.env.AI_MAX_QUEUE_SIZE || '200', 10); // Increased queue size
+    private readonly REQUEST_TIMEOUT = parseInt(process.env.AI_REQUEST_TIMEOUT || '45000', 10); // 45 second timeout
+    private readonly BATCH_SIZE = parseInt(process.env.AI_BATCH_SIZE || '5', 10); // Process requests in batches
 
     constructor(
         private readonly eventEmitter: EventEmitter2,

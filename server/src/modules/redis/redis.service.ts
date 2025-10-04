@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
 import { redisConfig } from '../../config';
 
 @Injectable()
 export class RedisService {
+    private readonly logger = new Logger(RedisService.name);
     private readonly client: Redis;
     private readonly subscriber: Redis;
     private readonly publisher: Redis;
@@ -16,11 +17,11 @@ export class RedisService {
         this.publisher = new Redis(config);
 
         this.client.on('error', err => {
-            console.error('Redis Client Error:', err);
+            this.logger.error('Redis Client Error:', err);
         });
 
         this.client.on('connect', () => {
-            console.log('✅ Redis connected successfully');
+            this.logger.log('✅ Redis connected successfully');
         });
     }
 
@@ -40,7 +41,7 @@ export class RedisService {
         try {
             return await this.client.get(key);
         } catch (error) {
-            console.error('Redis GET error:', error);
+            this.logger.error('Redis GET error:', error);
             return null;
         }
     }
@@ -52,7 +53,7 @@ export class RedisService {
             }
             return await this.client.set(key, value);
         } catch (error) {
-            console.error('Redis SET error:', error);
+            this.logger.error('Redis SET error:', error);
             throw error;
         }
     }
@@ -120,7 +121,7 @@ export class RedisService {
             await this.set(key, serialized, ttl);
             return data;
         } catch (error) {
-            console.error('Redis getOrSet error:', error);
+            this.logger.error('Redis getOrSet error:', error);
             // Fallback to direct fetch if Redis fails
             return await fetchFn();
         }
@@ -132,7 +133,7 @@ export class RedisService {
             if (keys.length === 0) return 0;
             return await this.client.del(...keys);
         } catch (error) {
-            console.error('Redis invalidatePattern error:', error);
+            this.logger.error('Redis invalidatePattern error:', error);
             return 0;
         }
     }
@@ -141,7 +142,7 @@ export class RedisService {
         try {
             return await this.client.mget(...keys);
         } catch (error) {
-            console.error('Redis getMultiple error:', error);
+            this.logger.error('Redis getMultiple error:', error);
             return keys.map(() => null);
         }
     }
@@ -158,7 +159,7 @@ export class RedisService {
             });
             await pipeline.exec();
         } catch (error) {
-            console.error('Redis setMultiple error:', error);
+            this.logger.error('Redis setMultiple error:', error);
             throw error;
         }
     }

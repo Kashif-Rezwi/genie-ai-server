@@ -31,6 +31,7 @@ export class LoggingService implements NestLoggerService {
         const logFormat = winston.format.combine(
             winston.format.timestamp(),
             winston.format.errors({ stack: true }),
+            winston.format.metadata({ fillExcept: ['message', 'level', 'timestamp'] }),
             winston.format.json()
         );
 
@@ -122,6 +123,32 @@ export class LoggingService implements NestLoggerService {
 
     logWarning(message: string, context?: LogContext) {
         this.logger.warn(message, context);
+    }
+
+    // Business metrics logging
+    logBusinessMetric(metric: string, value: number, context?: LogContext) {
+        this.logger.info('Business Metric', {
+            metric,
+            value,
+            type: 'business_metric',
+            ...context,
+        });
+    }
+
+    logUserAction(action: string, context?: LogContext) {
+        this.logger.info('User Action', {
+            action,
+            type: 'user_action',
+            ...context,
+        });
+    }
+
+    logSystemEvent(event: string, context?: LogContext) {
+        this.logger.info('System Event', {
+            event,
+            type: 'system_event',
+            ...context,
+        });
     }
 
     // Request logging

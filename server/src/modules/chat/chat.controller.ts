@@ -22,7 +22,9 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RateLimit, RateLimitGuard } from '../security/guards/rate-limit.guard';
 import { CreateChatDto, UpdateChatDto, SendMessageDto, ChatListQueryDto } from './dto/chat.dto';
+import { RegenerateOptionsDto } from './dto/regenerate-options.dto';
 import { AuthenticatedUser, ChatResponse, ChatDetailResponse, ChatAnalytics } from './interfaces/chat.interfaces';
+import { UUIDValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard, RateLimitGuard)
@@ -58,14 +60,14 @@ export class ChatController {
     }
 
     @Get(':chatId')
-    async getChatById(@CurrentUser() user: AuthenticatedUser, @Param('chatId') chatId: string): Promise<ChatDetailResponse> {
+    async getChatById(@CurrentUser() user: AuthenticatedUser, @Param('chatId', UUIDValidationPipe) chatId: string): Promise<ChatDetailResponse> {
         return this.chatService.getChatById(chatId, user.id);
     }
 
     @Put(':chatId')
     async updateChat(
         @CurrentUser() user: AuthenticatedUser,
-        @Param('chatId') chatId: string,
+        @Param('chatId', UUIDValidationPipe) chatId: string,
         @Body(ValidationPipe) updateChatDto: UpdateChatDto,
     ): Promise<ChatResponse> {
         const chat = await this.chatService.updateChat(chatId, user.id, updateChatDto);
@@ -81,22 +83,22 @@ export class ChatController {
 
     @Delete(':chatId')
     @HttpCode(HttpStatus.NO_CONTENT)
-    async deleteChat(@CurrentUser() user: AuthenticatedUser, @Param('chatId') chatId: string): Promise<void> {
+    async deleteChat(@CurrentUser() user: AuthenticatedUser, @Param('chatId', UUIDValidationPipe) chatId: string): Promise<void> {
         await this.chatService.deleteChat(chatId, user.id);
     }
 
     @Get(':chatId/messages')
     async getChatMessages(
         @CurrentUser() user: AuthenticatedUser,
-        @Param('chatId') chatId: string,
-        @Query('limit') limit: number = 50,
-        @Query('offset') offset: number = 0,
+        @Param('chatId', UUIDValidationPipe) chatId: string,
+        @Query('limit', ValidationPipe) limit: number = 50,
+        @Query('offset', ValidationPipe) offset: number = 0,
     ) {
         return this.chatService.getChatMessagesPaginated(chatId, user.id, limit, offset);
     }
 
     @Get(':chatId/cost-analysis')
-    async getChatCostAnalysis(@CurrentUser() user: AuthenticatedUser, @Param('chatId') chatId: string) {
+    async getChatCostAnalysis(@CurrentUser() user: AuthenticatedUser, @Param('chatId', UUIDValidationPipe) chatId: string) {
         return this.messageService.getMessageCostAnalysis(chatId, user.id);
     }
 
@@ -104,7 +106,7 @@ export class ChatController {
     @RateLimit('ai_paid')
     async sendMessage(
         @CurrentUser() user: AuthenticatedUser,
-        @Param('chatId') chatId: string,
+        @Param('chatId', UUIDValidationPipe) chatId: string,
         @Body(ValidationPipe) sendMessageDto: SendMessageDto,
     ) {
         // Non-streaming quick response
@@ -115,7 +117,7 @@ export class ChatController {
     @RateLimit('ai_paid')
     async streamMessage(
         @CurrentUser() user: AuthenticatedUser,
-        @Param('chatId') chatId: string,
+        @Param('chatId', UUIDValidationPipe) chatId: string,
         @Body(ValidationPipe) sendMessageDto: SendMessageDto,
         @Res() response: Response,
     ): Promise<void> {
@@ -134,8 +136,8 @@ export class ChatController {
     @HttpCode(HttpStatus.NO_CONTENT)
     async deleteMessage(
         @CurrentUser() user: AuthenticatedUser,
-        @Param('chatId') chatId: string,
-        @Param('messageId') messageId: string,
+        @Param('chatId', UUIDValidationPipe) chatId: string,
+        @Param('messageId', UUIDValidationPipe) messageId: string,
     ): Promise<void> {
         await this.messageService.deleteMessage(messageId, user.id);
     }
@@ -176,8 +178,8 @@ export class ChatController {
     @Post(':chatId/regenerate')
     async regenerateLastResponse(
         @CurrentUser() user: AuthenticatedUser,
-        @Param('chatId') chatId: string,
-        @Body() options: { model?: string },
+        @Param('chatId', UUIDValidationPipe) chatId: string,
+        @Body(ValidationPipe) options: RegenerateOptionsDto,
     ) {
         // Get the last user message to regenerate response
         const { messages } = await this.messageService.getChatMessages(chatId, user.id, 2);

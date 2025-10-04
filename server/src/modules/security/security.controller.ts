@@ -6,6 +6,7 @@ import {
     UseGuards,
     Req,
     Res,
+    ValidationPipe,
 } from '@nestjs/common';
 import { SecurityService } from './services/security.service';
 import { CsrfMiddleware } from './middleware/csrf.middleware';
@@ -21,7 +22,7 @@ export class SecurityController {
     ) {}
 
     @Post('validate-password')
-    async validatePassword(@Body('password') password: string) {
+    async validatePassword(@Body('password', ValidationPipe) password: string) {
         const validation = this.securityService.validatePassword(password);
         const strength = this.securityService.checkPasswordStrength(password);
         return { ...validation, strength };

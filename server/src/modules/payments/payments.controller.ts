@@ -21,6 +21,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AdminRoleGuard } from '../../common/guards/admin-role.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RateLimit, RateLimitGuard } from '../security/guards/rate-limit.guard';
+import { UUIDValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 import {
     CreatePaymentOrderDto,
     VerifyPaymentDto,
@@ -90,14 +91,14 @@ export class PaymentsController {
 
     @Get(':paymentId')
     @UseGuards(JwtAuthGuard)
-    async getPaymentDetails(@CurrentUser() user: any, @Param('paymentId') paymentId: string) {
+    async getPaymentDetails(@CurrentUser() user: any, @Param('paymentId', UUIDValidationPipe) paymentId: string) {
         return this.paymentsService.getPaymentById(paymentId, user.id);
     }
 
     @Post(':paymentId/cancel')
     @UseGuards(JwtAuthGuard)
     @HttpCode(HttpStatus.NO_CONTENT)
-    async cancelPayment(@CurrentUser() user: any, @Param('paymentId') paymentId: string) {
+    async cancelPayment(@CurrentUser() user: any, @Param('paymentId', UUIDValidationPipe) paymentId: string) {
         await this.paymentsService.cancelPayment(paymentId, user.id);
     }
 
@@ -120,26 +121,26 @@ export class PaymentsController {
     // Admin endpoints
     @Get('admin/analytics')
     @UseGuards(JwtAuthGuard, AdminRoleGuard)
-    async getPaymentAnalytics(@Query('days') days: number = 30) {
+    async getPaymentAnalytics(@Query('days', ValidationPipe) days: number = 30) {
         return this.paymentsService.getPaymentAnalytics(days);
     }
 
     @Get('admin/recent')
     @UseGuards(JwtAuthGuard, AdminRoleGuard)
-    async getRecentPayments(@Query('limit') limit: number = 10) {
+    async getRecentPayments(@Query('limit', ValidationPipe) limit: number = 10) {
         return this.paymentsService.getRecentPayments(limit);
     }
 
     @Get('admin/failed')
     @UseGuards(JwtAuthGuard, AdminRoleGuard)
-    async getFailedPayments(@Query('days') days: number = 7) {
+    async getFailedPayments(@Query('days', ValidationPipe) days: number = 7) {
         return this.paymentsService.getFailedPayments(days);
     }
 
     @Post('admin/:paymentId/retry')
     @UseGuards(JwtAuthGuard, AdminRoleGuard)
     @HttpCode(HttpStatus.NO_CONTENT)
-    async retryFailedPayment(@Param('paymentId') paymentId: string) {
+    async retryFailedPayment(@Param('paymentId', UUIDValidationPipe) paymentId: string) {
         await this.webhookService.retryFailedPaymentProcessing(paymentId);
     }
 
@@ -148,7 +149,7 @@ export class PaymentsController {
     @RateLimit('payment', 3) // 3 refunds per minute
     async refundPayment(
         @CurrentUser() user: any,
-        @Param('paymentId') paymentId: string,
+        @Param('paymentId', UUIDValidationPipe) paymentId: string,
         @Body(ValidationPipe) refundDto: RefundPaymentDto,
     ) {
         return this.paymentsService.refundPayment(paymentId, user.id, refundDto);

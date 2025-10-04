@@ -21,8 +21,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
                 ? exception.getStatus()
                 : HttpStatus.INTERNAL_SERVER_ERROR;
 
-        const message =
-            exception instanceof HttpException ? exception.getResponse() : 'Internal server error';
+        const message = this.sanitizeErrorMessage(
+            exception instanceof HttpException ? exception.getResponse() : 'Internal server error'
+        );
 
         // Create error context for logging
         const errorContext = {
@@ -63,6 +64,32 @@ export class AllExceptionsFilter implements ExceptionFilter {
             message,
             requestId: (request as any).requestId,
         });
+    }
+
+    private sanitizeErrorMessage(message: any): string {
+        if (typeof message === 'string') {
+            // Remove sensitive information patterns
+            return message
+                .replace(/password[^,}]*/gi, 'password: [REDACTED]')
+                .replace(/token[^,}]*/gi, 'token: [REDACTED]')
+                .replace(/key[^,}]*/gi, 'key: [REDACTED]')
+                .replace(/secret[^,}]*/gi, 'secret: [REDACTED]')
+                .replace(/authorization[^,}]*/gi, 'authorization: [REDACTED]')
+                .replace(/api[_-]?key[^,}]*/gi, 'api_key: [REDACTED]');
+        }
+        
+        if (typeof message === 'object' && message !== null) {
+            // Recursively sanitize object properties
+            const sanitized = { ...message };
+            for (const key in sanitized) {
+                if (typeof sanitized[key] === 'string') {
+                    sanitized[key] = this.sanitizeErrorMessage(sanitized[key]);
+                }
+            }
+            return sanitized;
+        }
+        
+        return 'Internal server error';
     }
 
 }

@@ -63,6 +63,25 @@ export class InputSanitizationMiddleware implements NestMiddleware {
         // Remove null bytes and control characters
         sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, '');
 
+        // Remove SQL injection patterns
+        sanitized = sanitized.replace(/(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/gi, '');
+
+        // Remove script tags and javascript: protocols
+        sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+        sanitized = sanitized.replace(/javascript:/gi, '');
+        sanitized = sanitized.replace(/vbscript:/gi, '');
+        sanitized = sanitized.replace(/onload/gi, '');
+        sanitized = sanitized.replace(/onerror/gi, '');
+        sanitized = sanitized.replace(/onclick/gi, '');
+
+        // Remove potential command injection patterns
+        sanitized = sanitized.replace(/[;&|`$()]/g, '');
+
+        // Limit string length to prevent DoS
+        if (sanitized.length > 10000) {
+            sanitized = sanitized.substring(0, 10000);
+        }
+
         // Trim whitespace
         sanitized = sanitized.trim();
 

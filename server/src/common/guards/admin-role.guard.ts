@@ -1,5 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { UserRole } from '../../modules/security/guards/roles.guard';
 
 @Injectable()
 export class AdminRoleGuard implements CanActivate {
@@ -13,9 +14,9 @@ export class AdminRoleGuard implements CanActivate {
             throw new ForbiddenException('User not authenticated');
         }
 
-        // For now, check if user has admin role
-        // TODO: Implement proper role-based access control
-        const isAdmin = user.role === 'admin' || user.isAdmin === true;
+        // Check if user has admin or system role
+        const userRole = user.role || UserRole.USER;
+        const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.SYSTEM;
 
         if (!isAdmin) {
             throw new ForbiddenException('Admin access required');

@@ -79,7 +79,7 @@ export class AuthController {
     @ApiOperation({ summary: 'Resend verification email' })
     @ApiResponse({ status: 200, description: 'Verification email sent' })
     @ApiResponse({ status: 400, description: 'Email already verified' })
-    async resendVerificationEmail(@Body('email') email: string) {
+    async resendVerificationEmail(@Body('email', ValidationPipe) email: string) {
         return this.authService.resendVerificationEmail(email);
     }
 }
