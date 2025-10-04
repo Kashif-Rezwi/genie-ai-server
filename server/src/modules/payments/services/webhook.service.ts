@@ -36,7 +36,9 @@ export class WebhookService {
                 }
 
                 const event: RazorpayWebhookEvent = JSON.parse(body);
-                this.logger.log(`Processing webhook event: ${event.event} (attempt ${retryCount + 1})`);
+                this.logger.log(
+                    `Processing webhook event: ${event.event} (attempt ${retryCount + 1})`,
+                );
 
                 switch (event.event) {
                     case 'payment.captured':

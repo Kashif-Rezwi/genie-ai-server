@@ -1,4 +1,11 @@
-import { Injectable, ConflictException, UnauthorizedException, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+    Injectable,
+    ConflictException,
+    UnauthorizedException,
+    NotFoundException,
+    BadRequestException,
+    Logger,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { MetricsService } from '../monitoring/services/metrics.service';
@@ -13,6 +20,11 @@ import * as bcrypt from 'bcryptjs';
 export interface JwtPayload {
     sub: string;
     email: string;
+    iat: number;
+    exp: number;
+    iss: string;
+    aud: string;
+    jti?: string; // JWT ID for token revocation
 }
 
 export interface AuthResponse {
@@ -47,9 +59,22 @@ export class AuthService {
         // Create new user
         const user = await this.usersService.create(email, password);
 
-        // Generate JWT token
-        const payload: JwtPayload = { sub: user.id, email: user.email };
-        const accessToken = this.jwtService.sign(payload);
+        // Generate JWT token with enhanced security
+        const now = Math.floor(Date.now() / 1000);
+        const payload: JwtPayload = {
+            sub: user.id,
+            email: user.email,
+            iat: now,
+            exp: now + 24 * 60 * 60, // 24 hours
+            iss: 'genie-ai-server',
+            aud: 'genie-ai-client',
+            jti: uuidv4(), // Unique token ID
+        };
+        const accessToken = this.jwtService.sign(payload, {
+            algorithm: 'HS256',
+            issuer: 'genie-ai-server',
+            audience: 'genie-ai-client',
+        });
 
         // Send welcome email asynchronously (don't wait for it)
         this.emailService
@@ -64,7 +89,7 @@ export class AuthService {
 
         // Record active user metric
         this.metricsService.recordActiveUser();
-        
+
         return {
             user: {
                 id: user.id,
@@ -95,9 +120,22 @@ export class AuthService {
             throw new UnauthorizedException('Account is deactivated');
         }
 
-        // Generate JWT token
-        const payload: JwtPayload = { sub: user.id, email: user.email };
-        const accessToken = this.jwtService.sign(payload);
+        // Generate JWT token with enhanced security
+        const now = Math.floor(Date.now() / 1000);
+        const payload: JwtPayload = {
+            sub: user.id,
+            email: user.email,
+            iat: now,
+            exp: now + 24 * 60 * 60, // 24 hours
+            iss: 'genie-ai-server',
+            aud: 'genie-ai-client',
+            jti: uuidv4(), // Unique token ID
+        };
+        const accessToken = this.jwtService.sign(payload, {
+            algorithm: 'HS256',
+            issuer: 'genie-ai-server',
+            audience: 'genie-ai-client',
+        });
 
         // Record active user metric
         this.metricsService.recordActiveUser();
@@ -112,13 +150,18 @@ export class AuthService {
         };
     }
 
-    async requestPasswordReset(requestPasswordResetDto: RequestPasswordResetDto): Promise<{ message: string }> {
+    async requestPasswordReset(
+        requestPasswordResetDto: RequestPasswordResetDto,
+    ): Promise<{ message: string }> {
         const { email } = requestPasswordResetDto;
 
         const user = await this.usersService.findByEmail(email);
         if (!user) {
             // Don't reveal if user exists or not for security
-            return { message: 'If an account with that email exists, a password reset link has been sent.' };
+            return {
+                message:
+                    'If an account with that email exists, a password reset link has been sent.',
+            };
         }
 
         // Generate reset token
@@ -134,7 +177,9 @@ export class AuthService {
         // Send reset email
         await this.emailService.sendPasswordResetEmail(user.email, resetToken);
 
-        return { message: 'If an account with that email exists, a password reset link has been sent.' };
+        return {
+            message: 'If an account with that email exists, a password reset link has been sent.',
+        };
     }
 
     async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {

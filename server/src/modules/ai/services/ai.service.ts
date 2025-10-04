@@ -60,10 +60,10 @@ export class AIService {
             }
 
             response.creditsUsed = actualCredits;
-            
+
             // Record AI request metrics
             this.metricsService.recordAIRequest(actualCredits);
-            
+
             return response;
         } catch (error) {
             // Release reservation on any failure
@@ -123,10 +123,7 @@ export class AIService {
                     if (reservationId && totalTokens > 0) {
                         let actualCredits = 0;
                         try {
-                            actualCredits = this.calculateCreditsUsed(
-                                totalTokens,
-                                modelConfig,
-                            );
+                            actualCredits = this.calculateCreditsUsed(totalTokens, modelConfig);
 
                             await this.creditsService.confirmReservation(
                                 reservationId,
@@ -150,7 +147,7 @@ export class AIService {
                             };
                         }
                         creditsConfirmed = true;
-                        
+
                         // Record AI request metrics for streaming
                         this.metricsService.recordAIRequest(actualCredits);
                     }
@@ -206,7 +203,7 @@ export class AIService {
 
         // Determine priority based on user tier or request type
         const priority = this.getRequestPriority(userId, request);
-        
+
         // Use queue for processing
         const queuePayload = {
             userId,
@@ -221,7 +218,7 @@ export class AIService {
                 userId,
                 queuePayload,
                 priority,
-                2 // max retries
+                2, // max retries
             );
 
             // Process the actual AI request
@@ -236,7 +233,7 @@ export class AIService {
         // You can implement user tier logic here
         if (request.priority === 'high') return 1;
         if (request.priority === 'low') return 5;
-        
+
         // Default priority based on request type
         if (request.stream) return 2; // Streaming requests get higher priority
         return 3; // Default priority
@@ -244,7 +241,7 @@ export class AIService {
 
     private async processQueuedRequest(queueResult: any): Promise<AIResponseDto> {
         const { userId, request, modelId, modelConfig } = queueResult;
-        
+
         // This would contain the actual AI processing logic
         // For now, return a mock response
         return {

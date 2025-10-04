@@ -5,11 +5,17 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     OneToMany,
+    Index,
 } from 'typeorm';
 import { Chat } from './chat.entity';
 import { CreditTransaction } from './credit-transaction.entity';
 
 @Entity('users')
+@Index(['email'])
+@Index(['isActive'])
+@Index(['isEmailVerified'])
+@Index(['createdAt'])
+@Index(['isActive', 'isEmailVerified'])
 export class User {
     @PrimaryGeneratedColumn('uuid')
     id: string;

@@ -55,16 +55,19 @@ export class InputSanitizationMiddleware implements NestMiddleware {
         }
 
         // Remove potential XSS attacks
-        let sanitized = DOMPurify.sanitize(str, { 
+        let sanitized = DOMPurify.sanitize(str, {
             ALLOWED_TAGS: [],
-            ALLOWED_ATTR: []
+            ALLOWED_ATTR: [],
         });
 
         // Remove null bytes and control characters
         sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, '');
 
         // Remove SQL injection patterns
-        sanitized = sanitized.replace(/(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/gi, '');
+        sanitized = sanitized.replace(
+            /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/gi,
+            '',
+        );
 
         // Remove script tags and javascript: protocols
         sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');

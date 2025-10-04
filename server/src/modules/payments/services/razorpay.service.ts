@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+    Injectable,
+    BadRequestException,
+    InternalServerErrorException,
+    Logger,
+} from '@nestjs/common';
 const Razorpay = require('razorpay');
 import * as crypto from 'crypto';
 import { paymentConfig } from '../../../config';

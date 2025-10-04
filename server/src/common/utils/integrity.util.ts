@@ -14,7 +14,11 @@ export class IntegrityUtil {
     /**
      * Verify data integrity using hash comparison
      */
-    static verifyIntegrity(data: string | Buffer, expectedHash: string, algorithm: string = 'sha256'): boolean {
+    static verifyIntegrity(
+        data: string | Buffer,
+        expectedHash: string,
+        algorithm: string = 'sha256',
+    ): boolean {
         const actualHash = this.generateHash(data, algorithm);
         return actualHash === expectedHash;
     }
@@ -41,9 +45,11 @@ export class IntegrityUtil {
             ];
 
             const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-            
+
             if (missingVars.length > 0) {
-                this.logger.error(`Missing required environment variables: ${missingVars.join(', ')}`);
+                this.logger.error(
+                    `Missing required environment variables: ${missingVars.join(', ')}`,
+                );
                 return false;
             }
 
@@ -67,12 +73,12 @@ export class IntegrityUtil {
         try {
             // Test basic database connectivity
             await connection.query('SELECT 1');
-            
+
             // Test if required tables exist
             const tables = ['users', 'chats', 'messages', 'credit_transactions'];
             for (const table of tables) {
                 const result = await connection.query(
-                    `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '${table}')`
+                    `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '${table}')`,
                 );
                 if (!result[0].exists) {
                     this.logger.error(`Required table '${table}' does not exist`);
@@ -94,12 +100,12 @@ export class IntegrityUtil {
         try {
             const testKey = 'integrity_test_' + Date.now();
             const testValue = 'test_value';
-            
+
             // Test basic operations
             await redisClient.set(testKey, testValue);
             const retrievedValue = await redisClient.get(testKey);
             await redisClient.del(testKey);
-            
+
             if (retrievedValue !== testValue) {
                 this.logger.error('Redis integrity test failed: value mismatch');
                 return false;

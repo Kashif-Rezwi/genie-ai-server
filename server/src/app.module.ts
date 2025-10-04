@@ -11,6 +11,7 @@ import { SecurityModule } from './modules/security/security.module';
 import { SecurityMiddleware } from './modules/security/middleware/security.middleware';
 import { ValidationMiddleware } from './modules/security/middleware/validation.middleware';
 import { InputSanitizationMiddleware } from './modules/security/middleware/input-sanitization.middleware';
+import { CsrfMiddleware } from './modules/security/middleware/csrf.middleware';
 import { RequestMonitoringMiddleware } from './modules/monitoring/middleware/request-monitoring.middleware';
 
 // Configuration
@@ -66,13 +67,21 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 })
 export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {
+        const config = appConfig();
+
+        // Apply core middleware to all routes
         consumer
             .apply(
                 RequestMonitoringMiddleware,
                 SecurityMiddleware,
                 ValidationMiddleware,
-                InputSanitizationMiddleware
+                InputSanitizationMiddleware,
             )
             .forRoutes('*');
+
+        // Apply CSRF middleware in production or when explicitly enabled
+        if (config.nodeEnv === 'production' || (process as any).env.CSRF_ENABLED === 'true') {
+            consumer.apply(CsrfMiddleware).forRoutes('*');
+        }
     }
 }

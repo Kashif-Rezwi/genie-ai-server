@@ -1,7 +1,8 @@
 export const loggingConfig = () => ({
     level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'warn' : 'info'),
     console: {
-        enabled: process.env.NODE_ENV !== 'production' || process.env.LOG_CONSOLE_ENABLED === 'true',
+        enabled:
+            process.env.NODE_ENV !== 'production' || process.env.LOG_CONSOLE_ENABLED === 'true',
     },
     file: {
         enabled: process.env.LOG_FILE_ENABLED !== 'false',

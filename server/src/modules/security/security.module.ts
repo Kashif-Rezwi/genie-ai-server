@@ -12,9 +12,7 @@ import { User } from '../../entities';
 
 @Global()
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([User]),
-    ],
+    imports: [TypeOrmModule.forFeature([User])],
     controllers: [SecurityController],
     providers: [
         RedisService,
@@ -25,6 +23,13 @@ import { User } from '../../entities';
         CsrfMiddleware,
         AuditService,
     ],
-    exports: [RedisService, RateLimitService, SecurityService, InputSanitizationMiddleware, CsrfMiddleware, AuditService],
+    exports: [
+        RedisService,
+        RateLimitService,
+        SecurityService,
+        InputSanitizationMiddleware,
+        CsrfMiddleware,
+        AuditService,
+    ],
 })
 export class SecurityModule {}

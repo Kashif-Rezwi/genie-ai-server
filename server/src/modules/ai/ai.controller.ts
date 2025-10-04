@@ -39,14 +39,20 @@ export class AIController {
     // Non-streaming endpoint (uses streaming internally)
     @Post('generate')
     @RateLimit('ai')
-    async generateResponse(@CurrentUser() user: { id: string }, @Body(ValidationPipe) request: AIRequestDto) {
+    async generateResponse(
+        @CurrentUser() user: { id: string },
+        @Body(ValidationPipe) request: AIRequestDto,
+    ) {
         return this.aiService.generateResponse(user.id, request);
     }
 
     // Queued endpoint for high-load scenarios
     @Post('generate-queued')
     @RateLimit('ai')
-    async generateResponseQueued(@CurrentUser() user: { id: string }, @Body(ValidationPipe) request: AIRequestDto) {
+    async generateResponseQueued(
+        @CurrentUser() user: { id: string },
+        @Body(ValidationPipe) request: AIRequestDto,
+    ) {
         return this.aiService.generateResponseQueued(user.id, request);
     }
 

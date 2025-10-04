@@ -7,11 +7,16 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     JoinColumn,
+    Index,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Message } from './message.entity';
 
 @Entity('chats')
+@Index(['userId'])
+@Index(['createdAt'])
+@Index(['userId', 'createdAt'])
+@Index(['title'])
 export class Chat {
     @PrimaryGeneratedColumn('uuid')
     id: string;

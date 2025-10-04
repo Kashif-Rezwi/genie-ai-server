@@ -29,16 +29,17 @@ export class SecurityMiddleware implements NestMiddleware {
         res.setHeader('X-XSS-Protection', '1; mode=block');
         res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-        
+
         // Content Security Policy
-        res.setHeader('Content-Security-Policy', 
+        res.setHeader(
+            'Content-Security-Policy',
             "default-src 'self'; " +
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-            "style-src 'self' 'unsafe-inline'; " +
-            "img-src 'self' data: https:; " +
-            "font-src 'self' data:; " +
-            "connect-src 'self' https:; " +
-            "frame-ancestors 'none';"
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+                "style-src 'self' 'unsafe-inline'; " +
+                "img-src 'self' data: https:; " +
+                "font-src 'self' data:; " +
+                "connect-src 'self' https:; " +
+                "frame-ancestors 'none';",
         );
 
         // Prevent information disclosure
@@ -57,7 +58,7 @@ export class SecurityMiddleware implements NestMiddleware {
 
         // Referrer Policy
         res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-        
+
         // Additional security headers
         res.setHeader('X-DNS-Prefetch-Control', 'off');
         res.setHeader('X-Download-Options', 'noopen');

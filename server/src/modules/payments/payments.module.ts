@@ -17,15 +17,7 @@ import { Payment } from '../../entities/payment.entity';
         // Removed BullModule - payment processing is synchronous for 0-1000 users
     ],
     controllers: [PaymentsController],
-    providers: [
-        PaymentsService,
-        RazorpayService,
-        WebhookService,
-    ],
-    exports: [
-        PaymentsService,
-        RazorpayService,
-        WebhookService,
-    ],
+    providers: [PaymentsService, RazorpayService, WebhookService],
+    exports: [PaymentsService, RazorpayService, WebhookService],
 })
 export class PaymentsModule {}

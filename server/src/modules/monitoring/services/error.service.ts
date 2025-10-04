@@ -53,7 +53,7 @@ export class ErrorService {
                     timestamp: new Date().toISOString(),
                     data: { error: error.message, context },
                     id: `error_${Date.now()}`,
-                }
+                },
             );
         } catch (emailError) {
             this.loggingService.logError('Failed to send error alert email', emailError);

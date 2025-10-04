@@ -4,7 +4,7 @@ export const creditConfig = () => ({
         ttl: parseInt(process.env.CREDIT_CACHE_TTL || '60', 10), // seconds
         keyPrefix: 'balance:',
     },
-    
+
     // Reservation settings
     reservation: {
         ttl: parseInt(process.env.CREDIT_RESERVATION_TTL || '300', 10), // 5 minutes
@@ -13,14 +13,14 @@ export const creditConfig = () => ({
         minAmount: parseFloat(process.env.MIN_RESERVATION_AMOUNT || '0.01'),
         keyPrefix: 'reservation:',
     },
-    
+
     // Redis settings
     redis: {
         checkInterval: parseInt(process.env.REDIS_CHECK_INTERVAL || '30000', 10), // 30 seconds
         timeout: parseInt(process.env.REDIS_TIMEOUT || '1000', 10), // 1 second
         retryAttempts: parseInt(process.env.REDIS_RETRY_ATTEMPTS || '3', 10),
     },
-    
+
     // Business rules
     business: {
         minimumBalance: parseFloat(process.env.MIN_CREDIT_BALANCE || '0'),
@@ -30,7 +30,7 @@ export const creditConfig = () => ({
         lowBalanceThreshold: parseFloat(process.env.LOW_BALANCE_THRESHOLD || '10'),
         criticalBalanceThreshold: parseFloat(process.env.CRITICAL_BALANCE_THRESHOLD || '5'),
     },
-    
+
     // Cleanup settings
     cleanup: {
         batchSize: parseInt(process.env.CLEANUP_BATCH_SIZE || '50', 10),
@@ -38,14 +38,14 @@ export const creditConfig = () => ({
         lockTtl: parseInt(process.env.CLEANUP_LOCK_TTL || '30', 10), // seconds
         batchDelay: parseInt(process.env.CLEANUP_BATCH_DELAY || '10', 10), // milliseconds
     },
-    
+
     // Idempotency settings
     idempotency: {
         defaultTtl: parseInt(process.env.IDEMPOTENCY_TTL || '300', 10), // 5 minutes
         keyPrefix: 'idempotent:',
         resultKeyPrefix: 'idempotent:result:',
     },
-    
+
     // Performance settings
     performance: {
         maxRetries: parseInt(process.env.MAX_OPERATION_RETRIES || '3', 10),

@@ -48,7 +48,7 @@ export class CreditsService {
     // CORE METHOD 1: Get balance with caching
     async getBalance(userId: string): Promise<number> {
         const startTime = Date.now();
-        
+
         if (!userId || typeof userId !== 'string') {
             this.logger.warn(`Invalid user ID provided to getBalance: ${userId}`);
             throw new BadRequestException('Invalid user ID');
@@ -69,14 +69,17 @@ export class CreditsService {
                 const cached = await Promise.race([
                     this.redis.get(`${this.config.cache.keyPrefix}${userId}`),
                     new Promise<null>((_, reject) =>
-                        setTimeout(() => reject(new Error('Redis timeout')), this.config.redis.timeout),
+                        setTimeout(
+                            () => reject(new Error('Redis timeout')),
+                            this.config.redis.timeout,
+                        ),
                     ),
                 ]);
 
                 if (cached !== null) {
                     const duration = Date.now() - startTime;
                     this.logger.debug(`Balance cache hit for user ${userId} (${duration}ms)`);
-                    
+
                     // Emit metrics event
                     this.eventEmitter.emit('credits.balance.retrieved', {
                         userId,
@@ -84,7 +87,7 @@ export class CreditsService {
                         source: 'cache',
                         duration,
                     });
-                    
+
                     return parseFloat(cached);
                 }
             } catch (error) {
@@ -115,7 +118,10 @@ export class CreditsService {
                         user.creditsBalance.toString(),
                     ),
                     new Promise<void>((_, reject) =>
-                        setTimeout(() => reject(new Error('Redis timeout')), this.config.redis.timeout),
+                        setTimeout(
+                            () => reject(new Error('Redis timeout')),
+                            this.config.redis.timeout,
+                        ),
                     ),
                 ]);
             } catch (error) {
@@ -125,8 +131,10 @@ export class CreditsService {
         }
 
         const duration = Date.now() - startTime;
-        this.logger.debug(`Balance retrieved from DB for user ${userId}: ${user.creditsBalance} (${duration}ms)`);
-        
+        this.logger.debug(
+            `Balance retrieved from DB for user ${userId}: ${user.creditsBalance} (${duration}ms)`,
+        );
+
         // Emit metrics event
         this.eventEmitter.emit('credits.balance.retrieved', {
             userId,
@@ -145,7 +153,7 @@ export class CreditsService {
         metadata?: Record<string, any>,
     ): Promise<string> {
         const startTime = Date.now();
-        
+
         // Input validation
         if (!userId || typeof userId !== 'string') {
             this.logger.warn(`Invalid user ID provided to reserveCredits: ${userId}`);
@@ -193,35 +201,35 @@ export class CreditsService {
                     throw new NotFoundException('User not found');
                 }
 
-            const availableBalance = user.creditsBalance - (user.creditsReserved || 0);
+                const availableBalance = user.creditsBalance - (user.creditsReserved || 0);
 
-            if (availableBalance < amount) {
-                throw new ConflictException(
-                    `Insufficient credits. Required: ${amount}, Available: ${availableBalance}`,
+                if (availableBalance < amount) {
+                    throw new ConflictException(
+                        `Insufficient credits. Required: ${amount}, Available: ${availableBalance}`,
+                    );
+                }
+
+                // Update reserved amount
+                user.creditsReserved = (user.creditsReserved || 0) + amount;
+                await manager.save(user);
+
+                // Store reservation in Redis with TTL
+                const reservation: CreditReservation = {
+                    id: reservationId,
+                    userId,
+                    amount,
+                    status: 'pending',
+                    expiresAt: new Date(Date.now() + this.config.reservation.ttl * 1000),
+                    metadata: validatedMetadata,
+                };
+
+                // Store reservation with user ID in key for easier lookup
+                const reservationKey = `${this.config.reservation.keyPrefix}${reservationId}:${userId}`;
+                await this.redis.setex(
+                    reservationKey,
+                    this.config.reservation.ttl,
+                    JSON.stringify(reservation),
                 );
-            }
-
-            // Update reserved amount
-            user.creditsReserved = (user.creditsReserved || 0) + amount;
-            await manager.save(user);
-
-            // Store reservation in Redis with TTL
-            const reservation: CreditReservation = {
-                id: reservationId,
-                userId,
-                amount,
-                status: 'pending',
-                expiresAt: new Date(Date.now() + this.config.reservation.ttl * 1000),
-                metadata: validatedMetadata,
-            };
-
-            // Store reservation with user ID in key for easier lookup
-            const reservationKey = `${this.config.reservation.keyPrefix}${reservationId}:${userId}`;
-            await this.redis.setex(
-                reservationKey,
-                this.config.reservation.ttl,
-                JSON.stringify(reservation),
-            );
 
                 // Invalidate balance cache using pipeline for better performance
                 try {
@@ -233,8 +241,10 @@ export class CreditsService {
                 }
 
                 const duration = Date.now() - startTime;
-                this.logger.log(`Successfully reserved ${amount} credits for user ${userId} (${duration}ms)`);
-                
+                this.logger.log(
+                    `Successfully reserved ${amount} credits for user ${userId} (${duration}ms)`,
+                );
+
                 // Emit metrics event
                 this.eventEmitter.emit('credits.reserved', {
                     userId,
@@ -243,12 +253,15 @@ export class CreditsService {
                     duration,
                     metadata,
                 });
-                
+
                 return reservationId;
             } catch (error) {
                 const duration = Date.now() - startTime;
-                this.logger.error(`Error in reserveCredits for user ${userId} (${duration}ms):`, error);
-                
+                this.logger.error(
+                    `Error in reserveCredits for user ${userId} (${duration}ms):`,
+                    error,
+                );
+
                 // Emit error metrics
                 this.eventEmitter.emit('credits.reservation.failed', {
                     userId,
@@ -256,7 +269,7 @@ export class CreditsService {
                     error: error.message,
                     duration,
                 });
-                
+
                 throw error;
             }
         });
@@ -265,7 +278,9 @@ export class CreditsService {
     // CORE METHOD 3: Confirm reservation with actual usage
     async confirmReservation(reservationId: string, actualAmount?: number): Promise<void> {
         // Find reservation (check with wildcard since we include userId)
-        const keys = await this.redis.keys(`${this.config.reservation.keyPrefix}${reservationId}:*`);
+        const keys = await this.redis.keys(
+            `${this.config.reservation.keyPrefix}${reservationId}:*`,
+        );
         if (keys.length === 0) {
             throw new NotFoundException('Reservation not found or expired');
         }
@@ -362,7 +377,9 @@ export class CreditsService {
     // CORE METHOD 4: Release reservation (on failure)
     async releaseReservation(reservationId: string): Promise<void> {
         // Find reservation (check with wildcard since we include userId)
-        const keys = await this.redis.keys(`${this.config.reservation.keyPrefix}${reservationId}:*`);
+        const keys = await this.redis.keys(
+            `${this.config.reservation.keyPrefix}${reservationId}:*`,
+        );
         if (keys.length === 0) {
             return; // Already expired or released
         }
@@ -501,7 +518,7 @@ export class CreditsService {
 
         try {
             const keys = await this.redis.keys(pattern);
-            
+
             // Process in batches to avoid overwhelming the system
             const batchSize = this.config.cleanup.batchSize;
             for (let i = 0; i < keys.length; i += batchSize) {
@@ -515,14 +532,14 @@ export class CreditsService {
                             pipeline.get(key);
                             pipeline.ttl(key);
                             const results = await pipeline.exec();
-                            
+
                             if (!results || results[0][1] === null) {
                                 return null; // Key doesn't exist
                             }
 
                             const data = results[0][1] as string;
                             const ttl = results[1][1] as number;
-                            
+
                             // Check if key is expired or has no TTL (shouldn't happen but safety check)
                             if (ttl === -1 || ttl === -2) {
                                 await this.redis.del(key);
@@ -532,12 +549,18 @@ export class CreditsService {
                             const reservation: CreditReservation = JSON.parse(data);
                             const now = new Date();
                             const expiresAt = new Date(reservation.expiresAt);
-                            
+
                             if (now > expiresAt) {
                                 // Use atomic operation to prevent race conditions
                                 const lockKey = `cleanup:lock:${reservation.id}`;
-                                const locked = await this.redis.set(lockKey, '1', 'EX', this.config.cleanup.lockTtl, 'NX');
-                                
+                                const locked = await this.redis.set(
+                                    lockKey,
+                                    '1',
+                                    'EX',
+                                    this.config.cleanup.lockTtl,
+                                    'NX',
+                                );
+
                                 if (locked) {
                                     try {
                                         await this.releaseReservation(reservation.id);
@@ -549,7 +572,7 @@ export class CreditsService {
                                     return 'locked'; // Another process is handling this
                                 }
                             }
-                            
+
                             return 'active';
                         } catch (error) {
                             this.logger.error(`Error cleaning reservation ${key}:`, error);
@@ -573,7 +596,9 @@ export class CreditsService {
 
                 // Small delay between batches to prevent overwhelming the system
                 if (i + batchSize < keys.length) {
-                    await new Promise(resolve => setTimeout(resolve, this.config.cleanup.batchDelay));
+                    await new Promise(resolve =>
+                        setTimeout(resolve, this.config.cleanup.batchDelay),
+                    );
                 }
             }
         } catch (error) {

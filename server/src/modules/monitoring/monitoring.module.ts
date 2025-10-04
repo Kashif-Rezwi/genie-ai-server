@@ -12,11 +12,7 @@ import { User } from '../../entities';
 
 @Global()
 @Module({
-    imports: [
-        TerminusModule,
-        TypeOrmModule.forFeature([User]),
-        EmailModule,
-    ],
+    imports: [TerminusModule, TypeOrmModule.forFeature([User]), EmailModule],
     controllers: [MonitoringController],
     providers: [
         LoggingService,

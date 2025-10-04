@@ -35,7 +35,9 @@ export class ChatStreamingService {
 
         // Check if there's already an active stream for this chat
         if (this.activeStreams.has(streamKey)) {
-            throw new BadRequestException('Another message is already being processed for this chat. Please wait.');
+            throw new BadRequestException(
+                'Another message is already being processed for this chat. Please wait.',
+            );
         }
 
         // Mark stream as active
@@ -56,7 +58,7 @@ export class ChatStreamingService {
             cleanup();
         });
 
-        response.on('error', (error) => {
+        response.on('error', error => {
             this.loggingService.logError('Stream response error', error, { chatId, userId });
             isClientConnected = false;
             cleanup();
@@ -130,7 +132,10 @@ export class ChatStreamingService {
             for await (const chunk of stream) {
                 // Check if client is still connected
                 if (!isClientConnected) {
-                    this.loggingService.logInfo('Client disconnected, stopping stream processing', { chatId, userId });
+                    this.loggingService.logInfo('Client disconnected, stopping stream processing', {
+                        chatId,
+                        userId,
+                    });
                     break;
                 }
 
@@ -197,10 +202,14 @@ export class ChatStreamingService {
                         try {
                             this.writeSSEData(response, finalResponse);
                         } catch (writeError) {
-                            this.loggingService.logError('Failed to write final SSE data', writeError, {
-                                chatId,
-                                userId,
-                            });
+                            this.loggingService.logError(
+                                'Failed to write final SSE data',
+                                writeError,
+                                {
+                                    chatId,
+                                    userId,
+                                },
+                            );
                         }
                     }
                 }
@@ -253,18 +262,18 @@ export class ChatStreamingService {
         // For English text: ~4 characters per token
         // For code/mixed content: ~3 characters per token
         // For non-English: ~2 characters per token
-        
+
         const isCodeContent = /[{}();=<>]/.test(content) || content.includes('```');
         const hasNonEnglish = /[^\x00-\x7F]/.test(content);
-        
+
         let charsPerToken = 4; // Default for English text
-        
+
         if (isCodeContent) {
             charsPerToken = 3;
         } else if (hasNonEnglish) {
             charsPerToken = 2;
         }
-        
+
         const estimatedInputTokens = Math.ceil(content.length / charsPerToken);
         const estimatedOutputTokens = Math.min(1000, Math.max(100, estimatedInputTokens * 0.5)); // Dynamic output estimation
         const totalEstimatedTokens = estimatedInputTokens + estimatedOutputTokens;
@@ -278,7 +287,14 @@ export class ChatStreamingService {
         sendMessageDto: SendMessageDto,
     ): Promise<{
         userMessage: { id: string; content: string; role: string; createdAt: Date };
-        assistantMessage: { id: string; content: string; role: string; model?: string; creditsUsed: number; createdAt: Date };
+        assistantMessage: {
+            id: string;
+            content: string;
+            role: string;
+            model?: string;
+            creditsUsed: number;
+            createdAt: Date;
+        };
         creditsUsed: number;
     }> {
         try {

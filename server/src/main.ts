@@ -24,35 +24,55 @@ async function bootstrap() {
     // Load app configuration
     const config = appConfig();
 
-    // Enable Helmet for security headers
-    app.use(helmet({
-        contentSecurityPolicy: {
-            directives: {
-                defaultSrc: ["'self'"],
-                styleSrc: ["'self'", "'unsafe-inline'"],
-                scriptSrc: ["'self'"],
-                imgSrc: ["'self'", "data:", "https:"],
-                connectSrc: ["'self'", "https:"],
-                fontSrc: ["'self'", "data:"],
-                objectSrc: ["'none'"],
-                mediaSrc: ["'self'"],
-                frameSrc: ["'none'"],
+    // Enable Helmet for comprehensive security headers
+    app.use(
+        helmet({
+            contentSecurityPolicy: {
+                directives: {
+                    defaultSrc: ["'self'"],
+                    styleSrc: ["'self'", "'unsafe-inline'"],
+                    scriptSrc: ["'self'"],
+                    imgSrc: ["'self'", 'data:', 'https:'],
+                    connectSrc: ["'self'", 'https:'],
+                    fontSrc: ["'self'", 'data:'],
+                    objectSrc: ["'none'"],
+                    mediaSrc: ["'self'"],
+                    frameSrc: ["'none'"],
+                    baseUri: ["'self'"],
+                    formAction: ["'self'"],
+                    frameAncestors: ["'none'"],
+                    upgradeInsecureRequests: [],
+                },
+                reportOnly: config.nodeEnv === 'development',
             },
-        },
-        crossOriginEmbedderPolicy: false,
-    }));
+            crossOriginEmbedderPolicy: false,
+            hsts: {
+                maxAge: 31536000, // 1 year
+                includeSubDomains: true,
+                preload: true,
+            },
+            noSniff: true,
+            xssFilter: true,
+            referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+            crossOriginResourcePolicy: { policy: 'cross-origin' },
+            crossOriginOpenerPolicy: { policy: 'same-origin' },
+            originAgentCluster: true,
+        }),
+    );
 
     // Enable compression for better performance
-    app.use(compression({
-        level: 6, // Compression level (1-9, 6 is good balance)
-        threshold: 1024, // Only compress responses > 1KB
-        filter: (req, res) => {
-            if (req.headers['x-no-compression']) {
-                return false;
-            }
-            return compression.filter(req, res);
-        },
-    }));
+    app.use(
+        compression({
+            level: 6, // Compression level (1-9, 6 is good balance)
+            threshold: 1024, // Only compress responses > 1KB
+            filter: (req, res) => {
+                if (req.headers['x-no-compression']) {
+                    return false;
+                }
+                return compression.filter(req, res);
+            },
+        }),
+    );
 
     // Enable CORS for cross-origin requests
     app.enableCors(config.cors);
@@ -70,6 +90,30 @@ async function bootstrap() {
 
     // Add 'api' prefix to all routes (e.g., /users becomes /api/users)
     app.setGlobalPrefix('api');
+
+    // Add additional security headers for API responses
+    app.use((req: any, res: any, next: any) => {
+        // Prevent caching of sensitive API responses
+        if (req.path.startsWith('/api/auth/') || req.path.startsWith('/api/payments/')) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+            res.setHeader('Surrogate-Control', 'no-store');
+        }
+
+        // Add API version header
+        res.setHeader('X-API-Version', config.version);
+
+        // Add request ID for tracing
+        res.setHeader('X-Request-ID', (req as any).requestId || 'unknown');
+
+        // Add security headers for API endpoints
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('X-Frame-Options', 'DENY');
+        res.setHeader('X-XSS-Protection', '1; mode=block');
+
+        next();
+    });
 
     // Swagger API Documentation
     const swaggerConfig = new DocumentBuilder()

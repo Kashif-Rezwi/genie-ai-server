@@ -24,7 +24,7 @@ export class AIQueueService implements OnModuleInit, OnModuleDestroy {
     private subscription: Subscription;
     private processing = false;
     private queue: AIRequest[] = [];
-    
+
     // Optimized for 1000 users
     private readonly CONCURRENT_REQUESTS = parseInt(process.env.AI_CONCURRENT_REQUESTS || '10', 10); // Handle 10 concurrent AI requests
     private readonly REQUEST_DELAY_MS = parseInt(process.env.AI_REQUEST_DELAY_MS || '25', 10); // Reduced delay between requests
@@ -41,24 +41,28 @@ export class AIQueueService implements OnModuleInit, OnModuleDestroy {
         this.logger.log('AIQueueService initialized for 1000 user scale');
         this.subscription = this.requestQueue
             .pipe(
-                mergeMap(request =>
-                    from(this.processRequest(request)).pipe(
-                        delay(this.REQUEST_DELAY_MS),
-                        retry({
-                            count: 2,
-                            delay: 1000,
-                        }),
-                        catchError(error => {
-                            this.logger.error(`AI request ${request.id} failed after retries:`, error);
-                            request.reject(error);
-                            return of(null);
-                        })
-                    ),
-                    this.CONCURRENT_REQUESTS // Limit concurrency
-                )
+                mergeMap(
+                    request =>
+                        from(this.processRequest(request)).pipe(
+                            delay(this.REQUEST_DELAY_MS),
+                            retry({
+                                count: 2,
+                                delay: 1000,
+                            }),
+                            catchError(error => {
+                                this.logger.error(
+                                    `AI request ${request.id} failed after retries:`,
+                                    error,
+                                );
+                                request.reject(error);
+                                return of(null);
+                            }),
+                        ),
+                    this.CONCURRENT_REQUESTS, // Limit concurrency
+                ),
             )
             .subscribe({
-                error: (error) => this.logger.error('AIQueueService stream error', error),
+                error: error => this.logger.error('AIQueueService stream error', error),
                 complete: () => this.logger.log('AIQueueService stream completed'),
             });
     }
@@ -74,7 +78,7 @@ export class AIQueueService implements OnModuleInit, OnModuleDestroy {
         userId: string,
         payload: any,
         priority: number = 3,
-        maxRetries: number = 2
+        maxRetries: number = 2,
     ): Promise<any> {
         return new Promise((resolve, reject) => {
             // Check queue size to prevent memory issues
@@ -98,9 +102,11 @@ export class AIQueueService implements OnModuleInit, OnModuleDestroy {
             // Add to queue and sort by priority
             this.queue.push(request);
             this.queue.sort((a, b) => a.priority - b.priority || a.timestamp - b.timestamp);
-            
-            this.logger.debug(`Queued AI request ${request.id} for user ${userId} with priority ${priority}`);
-            
+
+            this.logger.debug(
+                `Queued AI request ${request.id} for user ${userId} with priority ${priority}`,
+            );
+
             // Emit metrics
             this.eventEmitter.emit('ai.queue.enqueued', {
                 requestId: request.id,
@@ -126,25 +132,22 @@ export class AIQueueService implements OnModuleInit, OnModuleDestroy {
 
     private async processRequest(request: AIRequest): Promise<void> {
         const startTime = Date.now();
-        
+
         try {
             this.logger.debug(`Processing AI request: ${request.id} for user ${request.userId}`);
-            
+
             // Set timeout for the request
             const timeoutPromise = new Promise((_, reject) => {
                 setTimeout(() => reject(new Error('Request timeout')), this.REQUEST_TIMEOUT);
             });
 
             // Simulate AI processing with actual timeout
-            const result = await Promise.race([
-                this.simulateAIProcessing(request),
-                timeoutPromise
-            ]);
+            const result = await Promise.race([this.simulateAIProcessing(request), timeoutPromise]);
 
             const duration = Date.now() - startTime;
-            
+
             this.logger.log(`AI request ${request.id} completed in ${duration}ms`);
-            
+
             // Emit success metrics
             this.eventEmitter.emit('ai.queue.completed', {
                 requestId: request.id,
@@ -154,15 +157,17 @@ export class AIQueueService implements OnModuleInit, OnModuleDestroy {
             });
 
             request.resolve(result);
-            
         } catch (error) {
             const duration = Date.now() - startTime;
-            
+
             // Retry logic
             if (request.retryCount < request.maxRetries) {
                 request.retryCount++;
-                this.logger.warn(`AI request ${request.id} failed, retrying (${request.retryCount}/${request.maxRetries}):`, error.message);
-                
+                this.logger.warn(
+                    `AI request ${request.id} failed, retrying (${request.retryCount}/${request.maxRetries}):`,
+                    error.message,
+                );
+
                 // Add back to queue with higher priority for retry
                 request.priority = Math.max(1, request.priority - 1);
                 this.queue.unshift(request);
@@ -170,8 +175,11 @@ export class AIQueueService implements OnModuleInit, OnModuleDestroy {
                 return;
             }
 
-            this.logger.error(`AI request ${request.id} failed after ${request.maxRetries} retries:`, error);
-            
+            this.logger.error(
+                `AI request ${request.id} failed after ${request.maxRetries} retries:`,
+                error,
+            );
+
             // Emit failure metrics
             this.eventEmitter.emit('ai.queue.failed', {
                 requestId: request.id,
@@ -193,11 +201,11 @@ export class AIQueueService implements OnModuleInit, OnModuleDestroy {
         const priorityMultiplier = 6 - request.priority; // Higher priority = faster processing
         const contentLength = JSON.stringify(request.payload).length;
         const contentDelay = Math.min(contentLength * 0.1, 2000); // Max 2 seconds for content
-        
-        const totalDelay = (baseDelay / priorityMultiplier) + contentDelay + Math.random() * 1000;
-        
+
+        const totalDelay = baseDelay / priorityMultiplier + contentDelay + Math.random() * 1000;
+
         await new Promise(resolve => setTimeout(resolve, totalDelay));
-        
+
         return {
             requestId: request.id,
             userId: request.userId,

@@ -55,7 +55,9 @@ export class AuthController {
     @Post('forgot-password')
     @ApiOperation({ summary: 'Request password reset' })
     @ApiResponse({ status: 200, description: 'Password reset email sent' })
-    async requestPasswordReset(@Body(ValidationPipe) requestPasswordResetDto: RequestPasswordResetDto) {
+    async requestPasswordReset(
+        @Body(ValidationPipe) requestPasswordResetDto: RequestPasswordResetDto,
+    ) {
         return this.authService.requestPasswordReset(requestPasswordResetDto);
     }
 

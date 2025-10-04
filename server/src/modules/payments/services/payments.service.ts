@@ -231,7 +231,6 @@ export class PaymentsService {
         });
     }
 
-
     async getPaymentById(paymentId: string, userId: string): Promise<Payment> {
         const payment = await this.paymentRepository.findOne({
             where: { id: paymentId, userId },
@@ -374,7 +373,9 @@ export class PaymentsService {
         });
     }
 
-    async retryFailedPaymentProcessing(paymentId: string): Promise<{ success: boolean; message: string }> {
+    async retryFailedPaymentProcessing(
+        paymentId: string,
+    ): Promise<{ success: boolean; message: string }> {
         const payment = await this.paymentRepository.findOne({
             where: { id: paymentId },
         });
@@ -421,7 +422,10 @@ export class PaymentsService {
         }
     }
 
-    async reconcilePayments(userId: string, options: { days?: number } = {}): Promise<{ reconciledCount: number }> {
+    async reconcilePayments(
+        userId: string,
+        options: { days?: number } = {},
+    ): Promise<{ reconciledCount: number }> {
         const days = options.days || 7;
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
@@ -441,8 +445,10 @@ export class PaymentsService {
             if (payment.razorpayOrderId) {
                 try {
                     // Check Razorpay order status
-                    const razorpayOrder = await this.razorpayService.fetchOrder(payment.razorpayOrderId);
-                    
+                    const razorpayOrder = await this.razorpayService.fetchOrder(
+                        payment.razorpayOrderId,
+                    );
+
                     if (razorpayOrder.status === 'paid') {
                         // Order is paid, update our records
                         payment.status = PaymentStatus.COMPLETED;
@@ -483,7 +489,8 @@ export class PaymentsService {
         const totalRevenue = parseFloat(basicStats.totalRevenue) || 0;
         const totalSuccessfulPayments = parseInt(basicStats.totalSuccessfulPayments) || 0;
         const totalFailedPayments = parseInt(basicStats.totalFailedPayments) || 0;
-        const averageOrderValue = totalSuccessfulPayments > 0 ? totalRevenue / totalSuccessfulPayments : 0;
+        const averageOrderValue =
+            totalSuccessfulPayments > 0 ? totalRevenue / totalSuccessfulPayments : 0;
 
         // Top packages
         const topPackages = await this.paymentRepository
@@ -591,7 +598,8 @@ export class PaymentsService {
                 status: payment.status,
                 method: payment.method,
                 createdAt: payment.createdAt,
-                completedAt: payment.status === PaymentStatus.COMPLETED ? payment.updatedAt : undefined,
+                completedAt:
+                    payment.status === PaymentStatus.COMPLETED ? payment.updatedAt : undefined,
             })),
             pagination: {
                 page,

@@ -5,6 +5,7 @@ import {
     ManyToOne,
     CreateDateColumn,
     JoinColumn,
+    Index,
 } from 'typeorm';
 import { User } from './user.entity';
 
@@ -15,6 +16,12 @@ export enum TransactionType {
 }
 
 @Entity('credit_transactions')
+@Index(['userId'])
+@Index(['createdAt'])
+@Index(['type'])
+@Index(['userId', 'createdAt'])
+@Index(['userId', 'type', 'createdAt'])
+@Index(['razorpayPaymentId'])
 export class CreditTransaction {
     @PrimaryGeneratedColumn('uuid')
     id: string;

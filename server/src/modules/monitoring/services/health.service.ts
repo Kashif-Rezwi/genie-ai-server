@@ -67,7 +67,11 @@ export class HealthService {
         }
     }
 
-    async getQuickHealthStatus(): Promise<{ status: 'ok' | 'error'; timestamp: Date; details?: any }> {
+    async getQuickHealthStatus(): Promise<{
+        status: 'ok' | 'error';
+        timestamp: Date;
+        details?: any;
+    }> {
         try {
             const [databaseResult, redisResult, memoryResult] = await Promise.allSettled([
                 this.checkDatabase(),
@@ -76,13 +80,22 @@ export class HealthService {
             ]);
 
             const results = {
-                database: databaseResult.status === 'fulfilled' ? databaseResult.value : { status: 'down', error: databaseResult.reason },
-                redis: redisResult.status === 'fulfilled' ? redisResult.value : { status: 'down', error: redisResult.reason },
-                memory: memoryResult.status === 'fulfilled' ? memoryResult.value : { status: 'down', error: memoryResult.reason },
+                database:
+                    databaseResult.status === 'fulfilled'
+                        ? databaseResult.value
+                        : { status: 'down', error: databaseResult.reason },
+                redis:
+                    redisResult.status === 'fulfilled'
+                        ? redisResult.value
+                        : { status: 'down', error: redisResult.reason },
+                memory:
+                    memoryResult.status === 'fulfilled'
+                        ? memoryResult.value
+                        : { status: 'down', error: memoryResult.reason },
             };
 
             const hasUnhealthy = Object.values(results).some(
-                result => result.status === 'down' || result.status === 'error'
+                result => result.status === 'down' || result.status === 'error',
             );
 
             return {
@@ -102,13 +115,14 @@ export class HealthService {
 
     async getDetailedHealthStatus(): Promise<any> {
         try {
-            const [databaseResult, redisResult, memoryResult, diskResult, externalResult] = await Promise.allSettled([
-                this.checkDatabase(),
-                this.checkRedis(),
-                this.checkMemory(),
-                this.checkDiskSpace(),
-                this.checkExternalServices(),
-            ]);
+            const [databaseResult, redisResult, memoryResult, diskResult, externalResult] =
+                await Promise.allSettled([
+                    this.checkDatabase(),
+                    this.checkRedis(),
+                    this.checkMemory(),
+                    this.checkDiskSpace(),
+                    this.checkExternalServices(),
+                ]);
 
             return {
                 status: 'ok',
@@ -117,11 +131,26 @@ export class HealthService {
                 environment: process.env.NODE_ENV || 'development',
                 version: process.env.npm_package_version || '1.0.0',
                 services: {
-                    database: databaseResult.status === 'fulfilled' ? databaseResult.value : { status: 'down', error: databaseResult.reason },
-                    redis: redisResult.status === 'fulfilled' ? redisResult.value : { status: 'down', error: redisResult.reason },
-                    memory: memoryResult.status === 'fulfilled' ? memoryResult.value : { status: 'down', error: memoryResult.reason },
-                    disk: diskResult.status === 'fulfilled' ? diskResult.value : { status: 'down', error: diskResult.reason },
-                    external: externalResult.status === 'fulfilled' ? externalResult.value : { status: 'down', error: externalResult.reason },
+                    database:
+                        databaseResult.status === 'fulfilled'
+                            ? databaseResult.value
+                            : { status: 'down', error: databaseResult.reason },
+                    redis:
+                        redisResult.status === 'fulfilled'
+                            ? redisResult.value
+                            : { status: 'down', error: redisResult.reason },
+                    memory:
+                        memoryResult.status === 'fulfilled'
+                            ? memoryResult.value
+                            : { status: 'down', error: memoryResult.reason },
+                    disk:
+                        diskResult.status === 'fulfilled'
+                            ? diskResult.value
+                            : { status: 'down', error: diskResult.reason },
+                    external:
+                        externalResult.status === 'fulfilled'
+                            ? externalResult.value
+                            : { status: 'down', error: externalResult.reason },
                 },
                 system: {
                     platform: process.platform,

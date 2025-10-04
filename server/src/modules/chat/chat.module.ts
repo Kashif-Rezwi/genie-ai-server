@@ -10,7 +10,12 @@ import { SecurityModule } from '../security/security.module';
 import { Chat, Message, User } from '../../entities';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Chat, Message, User]), AIModule, CreditsModule, SecurityModule],
+    imports: [
+        TypeOrmModule.forFeature([Chat, Message, User]),
+        AIModule,
+        CreditsModule,
+        SecurityModule,
+    ],
     controllers: [ChatController],
     providers: [ChatService, MessageService, ChatStreamingService],
     exports: [ChatService, MessageService],

@@ -88,84 +88,44 @@ export class EmailService {
     // High-level email methods
     async sendWelcomeEmail(userEmail: string, userData: any): Promise<any> {
         const template = this.getEmailTemplate('welcome', userData);
-        return this.sendEmail(
-            userEmail,
-            template.subject,
-            template.html,
-            template.text
-        );
+        return this.sendEmail(userEmail, template.subject, template.html, template.text);
     }
 
     async sendPaymentConfirmationEmail(userEmail: string, paymentData: any): Promise<any> {
         const template = this.getEmailTemplate('payment_confirmation', paymentData);
-        return this.sendEmail(
-            userEmail,
-            template.subject,
-            template.html,
-            template.text
-        );
+        return this.sendEmail(userEmail, template.subject, template.html, template.text);
     }
 
     async sendPaymentFailureEmail(userEmail: string, failureData: any): Promise<any> {
         const template = this.getEmailTemplate('payment_failure', failureData);
-        return this.sendEmail(
-            userEmail,
-            template.subject,
-            template.html,
-            template.text
-        );
+        return this.sendEmail(userEmail, template.subject, template.html, template.text);
     }
 
     async sendLowCreditsEmail(userEmail: string, creditsData: any): Promise<any> {
         const template = this.getEmailTemplate('low_credits_warning', creditsData);
-        return this.sendEmail(
-            userEmail,
-            template.subject,
-            template.html,
-            template.text
-        );
+        return this.sendEmail(userEmail, template.subject, template.html, template.text);
     }
 
     async sendSecurityAlertEmail(userEmail: string, securityData: any): Promise<any> {
         const template = this.getEmailTemplate('security_alert', securityData);
-        return this.sendEmail(
-            userEmail,
-            template.subject,
-            template.html,
-            template.text
-        );
+        return this.sendEmail(userEmail, template.subject, template.html, template.text);
     }
 
     async sendAlertEmail(userEmail: string, alertData: any): Promise<any> {
         const template = this.getEmailTemplate('alert', alertData);
-        return this.sendEmail(
-            userEmail,
-            template.subject,
-            template.html,
-            template.text
-        );
+        return this.sendEmail(userEmail, template.subject, template.html, template.text);
     }
 
     async sendPasswordResetEmail(userEmail: string, resetToken: string): Promise<any> {
         const resetUrl = `${this.config.appUrl}/reset-password?token=${resetToken}`;
         const template = this.getPasswordResetTemplate(resetUrl);
-        return this.sendEmail(
-            userEmail,
-            template.subject,
-            template.html,
-            template.text
-        );
+        return this.sendEmail(userEmail, template.subject, template.html, template.text);
     }
 
     async sendVerificationEmail(userEmail: string, verificationToken: string): Promise<any> {
         const verificationUrl = `${this.config.appUrl}/verify-email?token=${verificationToken}`;
         const template = this.getEmailVerificationTemplate(verificationUrl);
-        return this.sendEmail(
-            userEmail,
-            template.subject,
-            template.html,
-            template.text
-        );
+        return this.sendEmail(userEmail, template.subject, template.html, template.text);
     }
 
     // Template implementations

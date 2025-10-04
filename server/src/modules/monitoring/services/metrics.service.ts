@@ -34,14 +34,14 @@ export class MetricsService {
     private metrics: MetricsData = {
         requests: { total: 0, success: 0, errors: 0, avgResponseTime: 0 },
         errors: { total: 0, byStatus: {}, byEndpoint: {} },
-        performance: { 
-            slowQueries: 0, 
-            memoryUsage: 0, 
-            uptime: 0, 
-            cpuUsage: 0, 
-            responseTimeP95: 0, 
-            responseTimeP99: 0, 
-            throughput: 0 
+        performance: {
+            slowQueries: 0,
+            memoryUsage: 0,
+            uptime: 0,
+            cpuUsage: 0,
+            responseTimeP95: 0,
+            responseTimeP99: 0,
+            throughput: 0,
         },
         business: { aiRequests: 0, creditsUsed: 0, activeUsers: 0 },
     };
@@ -54,17 +54,19 @@ export class MetricsService {
     // Request metrics
     recordRequest(method: string, url: string, statusCode: number, responseTime: number) {
         this.metrics.requests.total++;
-        
+
         if (statusCode >= 400) {
             this.metrics.requests.errors++;
             this.metrics.errors.total++;
-            
+
             // Track errors by status code
-            this.metrics.errors.byStatus[statusCode] = (this.metrics.errors.byStatus[statusCode] || 0) + 1;
-            
+            this.metrics.errors.byStatus[statusCode] =
+                (this.metrics.errors.byStatus[statusCode] || 0) + 1;
+
             // Track errors by endpoint
             const endpoint = `${method} ${url}`;
-            this.metrics.errors.byEndpoint[endpoint] = (this.metrics.errors.byEndpoint[endpoint] || 0) + 1;
+            this.metrics.errors.byEndpoint[endpoint] =
+                (this.metrics.errors.byEndpoint[endpoint] || 0) + 1;
         } else {
             this.metrics.requests.success++;
         }
@@ -74,11 +76,12 @@ export class MetricsService {
         if (this.responseTimes.length > this.maxResponseTimeSamples) {
             this.responseTimes.shift();
         }
-        
+
         this.metrics.requests.avgResponseTime = this.calculateAverageResponseTime();
 
         // Track slow queries
-        if (responseTime > 1000) { // 1 second threshold
+        if (responseTime > 1000) {
+            // 1 second threshold
             this.metrics.performance.slowQueries++;
         }
     }
@@ -115,14 +118,14 @@ export class MetricsService {
         this.metrics = {
             requests: { total: 0, success: 0, errors: 0, avgResponseTime: 0 },
             errors: { total: 0, byStatus: {}, byEndpoint: {} },
-            performance: { 
-                slowQueries: 0, 
-                memoryUsage: 0, 
-                uptime: 0, 
-                cpuUsage: 0, 
-                responseTimeP95: 0, 
-                responseTimeP99: 0, 
-                throughput: 0 
+            performance: {
+                slowQueries: 0,
+                memoryUsage: 0,
+                uptime: 0,
+                cpuUsage: 0,
+                responseTimeP95: 0,
+                responseTimeP99: 0,
+                throughput: 0,
             },
             business: { aiRequests: 0, creditsUsed: 0, activeUsers: 0 },
         };
@@ -132,11 +135,13 @@ export class MetricsService {
     // Get metrics summary for logging
     getMetricsSummary(): string {
         const { requests, errors, performance, business } = this.metrics;
-        return `Metrics - Requests: ${requests.total} (${requests.success} success, ${requests.errors} errors), ` +
-               `Avg Response: ${requests.avgResponseTime}ms, ` +
-               `Memory: ${performance.memoryUsage}MB, ` +
-               `AI Requests: ${business.aiRequests}, ` +
-               `Credits Used: ${business.creditsUsed}`;
+        return (
+            `Metrics - Requests: ${requests.total} (${requests.success} success, ${requests.errors} errors), ` +
+            `Avg Response: ${requests.avgResponseTime}ms, ` +
+            `Memory: ${performance.memoryUsage}MB, ` +
+            `AI Requests: ${business.aiRequests}, ` +
+            `Credits Used: ${business.creditsUsed}`
+        );
     }
 
     private calculateAverageResponseTime(): number {

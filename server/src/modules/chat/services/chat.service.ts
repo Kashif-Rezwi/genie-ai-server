@@ -94,7 +94,11 @@ export class ChatService {
         return { chats, total };
     }
 
-    async getChatById(chatId: string, userId: string, limit: number = 50): Promise<ChatDetailResponse> {
+    async getChatById(
+        chatId: string,
+        userId: string,
+        limit: number = 50,
+    ): Promise<ChatDetailResponse> {
         // First, verify chat exists and belongs to user
         const chat = await this.chatRepository.findOne({
             where: { id: chatId, userId },
@@ -172,7 +176,7 @@ export class ChatService {
         try {
             // Use AI to generate a meaningful title
             const titlePrompt = `Generate a concise, descriptive title (max 6 words) for a chat that starts with this message: "${firstMessage.substring(0, 200)}"`;
-            
+
             // For now, use a simple heuristic approach
             // In production, you would call the AI service here
             const words = firstMessage.trim().split(' ').slice(0, 6);

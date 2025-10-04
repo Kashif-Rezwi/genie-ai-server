@@ -23,7 +23,12 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RateLimit, RateLimitGuard } from '../security/guards/rate-limit.guard';
 import { CreateChatDto, UpdateChatDto, SendMessageDto, ChatListQueryDto } from './dto/chat.dto';
 import { RegenerateOptionsDto } from './dto/regenerate-options.dto';
-import { AuthenticatedUser, ChatResponse, ChatDetailResponse, ChatAnalytics } from './interfaces/chat.interfaces';
+import {
+    AuthenticatedUser,
+    ChatResponse,
+    ChatDetailResponse,
+    ChatAnalytics,
+} from './interfaces/chat.interfaces';
 import { UUIDValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 
 @Controller('chat')
@@ -37,7 +42,10 @@ export class ChatController {
 
     @Post()
     @RateLimit('api')
-    async createChat(@CurrentUser() user: AuthenticatedUser, @Body(ValidationPipe) createChatDto: CreateChatDto): Promise<ChatResponse> {
+    async createChat(
+        @CurrentUser() user: AuthenticatedUser,
+        @Body(ValidationPipe) createChatDto: CreateChatDto,
+    ): Promise<ChatResponse> {
         const chat = await this.chatService.createChat(user.id, createChatDto);
         return {
             id: chat.id,
@@ -50,7 +58,10 @@ export class ChatController {
     }
 
     @Get()
-    async getUserChats(@CurrentUser() user: AuthenticatedUser, @Query(ValidationPipe) query: ChatListQueryDto) {
+    async getUserChats(
+        @CurrentUser() user: AuthenticatedUser,
+        @Query(ValidationPipe) query: ChatListQueryDto,
+    ) {
         return this.chatService.getUserChats(user.id, query);
     }
 
@@ -60,7 +71,10 @@ export class ChatController {
     }
 
     @Get(':chatId')
-    async getChatById(@CurrentUser() user: AuthenticatedUser, @Param('chatId', UUIDValidationPipe) chatId: string): Promise<ChatDetailResponse> {
+    async getChatById(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('chatId', UUIDValidationPipe) chatId: string,
+    ): Promise<ChatDetailResponse> {
         return this.chatService.getChatById(chatId, user.id);
     }
 
@@ -83,7 +97,10 @@ export class ChatController {
 
     @Delete(':chatId')
     @HttpCode(HttpStatus.NO_CONTENT)
-    async deleteChat(@CurrentUser() user: AuthenticatedUser, @Param('chatId', UUIDValidationPipe) chatId: string): Promise<void> {
+    async deleteChat(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('chatId', UUIDValidationPipe) chatId: string,
+    ): Promise<void> {
         await this.chatService.deleteChat(chatId, user.id);
     }
 
@@ -98,7 +115,10 @@ export class ChatController {
     }
 
     @Get(':chatId/cost-analysis')
-    async getChatCostAnalysis(@CurrentUser() user: AuthenticatedUser, @Param('chatId', UUIDValidationPipe) chatId: string) {
+    async getChatCostAnalysis(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('chatId', UUIDValidationPipe) chatId: string,
+    ) {
         return this.messageService.getMessageCostAnalysis(chatId, user.id);
     }
 

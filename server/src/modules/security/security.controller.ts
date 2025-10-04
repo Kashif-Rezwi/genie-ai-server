@@ -1,13 +1,4 @@
-import {
-    Controller,
-    Post,
-    Get,
-    Body,
-    UseGuards,
-    Req,
-    Res,
-    ValidationPipe,
-} from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Req, Res, ValidationPipe } from '@nestjs/common';
 import { SecurityService } from './services/security.service';
 import { CsrfMiddleware } from './middleware/csrf.middleware';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -30,16 +21,17 @@ export class SecurityController {
 
     @Get('csrf-token')
     async getCsrfToken(@Req() req: Request, @Res() res: Response) {
-        const sessionId = (req as any).sessionID || req.headers['x-session-id'] as string || 'default';
+        const sessionId =
+            (req as any).sessionID || (req.headers['x-session-id'] as string) || 'default';
         const token = await this.csrfMiddleware.generateToken(sessionId);
-        
+
         res.setHeader('X-CSRF-Token', token);
         res.setHeader('X-Session-ID', sessionId);
-        
+
         return res.json({
             csrfToken: token,
             sessionId: sessionId,
-            message: 'Include these headers in subsequent requests'
+            message: 'Include these headers in subsequent requests',
         });
     }
 }

@@ -1,8 +1,4 @@
-import {
-    Controller,
-    Get,
-    UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { LoggingService } from './services/logging.service';
 import { HealthService } from './services/health.service';
 import { ErrorService } from './services/error.service';
@@ -48,7 +44,7 @@ export class MonitoringController {
     async getDashboardData() {
         const health = await this.healthService.getQuickHealthStatus();
         const metrics = this.metricsService.getMetrics();
-        
+
         return {
             health: {
                 status: health.status,

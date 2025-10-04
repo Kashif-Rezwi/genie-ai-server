@@ -15,7 +15,20 @@ export interface LogContext {
     url?: string;
     statusCode?: number;
     responseTime?: number;
+    operation?: string;
+    service?: string;
+    version?: string;
+    environment?: string;
     [key: string]: any;
+}
+
+export interface ErrorLogContext extends LogContext {
+    errorCode?: string;
+    errorType?: string;
+    stackTrace?: string;
+    severity?: 'low' | 'medium' | 'high' | 'critical';
+    component?: string;
+    action?: string;
 }
 
 @Injectable()
@@ -32,7 +45,7 @@ export class LoggingService implements NestLoggerService {
             winston.format.timestamp(),
             winston.format.errors({ stack: true }),
             winston.format.metadata({ fillExcept: ['message', 'level', 'timestamp'] }),
-            winston.format.json()
+            winston.format.json(),
         );
 
         const consoleFormat = winston.format.combine(
@@ -41,7 +54,7 @@ export class LoggingService implements NestLoggerService {
             winston.format.printf(({ timestamp, level, message, ...meta }) => {
                 const metaStr = Object.keys(meta).length ? JSON.stringify(meta, null, 2) : '';
                 return `${timestamp} ${level}: ${message} ${metaStr}`;
-            })
+            }),
         );
 
         const transports: winston.transport[] = [];
@@ -52,7 +65,7 @@ export class LoggingService implements NestLoggerService {
                 new winston.transports.Console({
                     level: this.config.level,
                     format: consoleFormat,
-                })
+                }),
             );
         }
 
@@ -66,7 +79,7 @@ export class LoggingService implements NestLoggerService {
                     maxFiles: this.config.file.maxFiles,
                     format: logFormat,
                     level: this.config.level,
-                })
+                }),
             );
         }
 
@@ -113,7 +126,7 @@ export class LoggingService implements NestLoggerService {
         this.logger.info(message, context);
     }
 
-    logError(message: string, error?: Error, context?: LogContext) {
+    logErrorBasic(message: string, error?: Error, context?: LogContext) {
         this.logger.error(message, {
             error: error?.message,
             stack: error?.stack,
@@ -183,4 +196,141 @@ export class LoggingService implements NestLoggerService {
         this.logger.log(level, message, logData);
     }
 
+    // Enhanced error logging
+    logError(message: string, error: Error, context?: ErrorLogContext) {
+        const errorContext: ErrorLogContext = {
+            ...context,
+            errorType: error.constructor.name,
+            errorCode: (error as any).errorCode || 'UNKNOWN_ERROR',
+            stackTrace: error.stack,
+            severity: this.determineSeverity(error),
+            component: context?.component || 'unknown',
+            action: context?.action || 'unknown',
+            service: 'genie-ai-server',
+            version: process.env.npm_package_version || '1.0.0',
+            environment: process.env.NODE_ENV || 'development',
+        };
+
+        this.logger.error(message, errorContext);
+    }
+
+    logSecurityEvent(event: string, context?: LogContext) {
+        this.logger.warn('Security Event', {
+            event,
+            type: 'security_event',
+            severity: 'high',
+            service: 'genie-ai-server',
+            ...context,
+        });
+    }
+
+    logBusinessEvent(event: string, context?: LogContext) {
+        this.logger.info('Business Event', {
+            event,
+            type: 'business_event',
+            service: 'genie-ai-server',
+            ...context,
+        });
+    }
+
+    logPerformanceMetric(metric: string, value: number, context?: LogContext) {
+        this.logger.info('Performance Metric', {
+            metric,
+            value,
+            type: 'performance_metric',
+            service: 'genie-ai-server',
+            ...context,
+        });
+    }
+
+    logAuditEvent(action: string, resource: string, context?: LogContext) {
+        this.logger.info('Audit Event', {
+            action,
+            resource,
+            type: 'audit_event',
+            service: 'genie-ai-server',
+            ...context,
+        });
+    }
+
+    private determineSeverity(error: Error): 'low' | 'medium' | 'high' | 'critical' {
+        const errorMessage = error.message.toLowerCase();
+        const errorName = error.constructor.name.toLowerCase();
+
+        // Critical errors
+        if (
+            errorMessage.includes('database') ||
+            errorMessage.includes('connection') ||
+            errorMessage.includes('memory') ||
+            errorName.includes('outofmemory')
+        ) {
+            return 'critical';
+        }
+
+        // High severity errors
+        if (
+            errorMessage.includes('authentication') ||
+            errorMessage.includes('authorization') ||
+            errorMessage.includes('security') ||
+            errorMessage.includes('payment') ||
+            errorName.includes('unauthorized') ||
+            errorName.includes('forbidden')
+        ) {
+            return 'high';
+        }
+
+        // Medium severity errors
+        if (
+            errorMessage.includes('validation') ||
+            errorMessage.includes('timeout') ||
+            errorMessage.includes('rate limit') ||
+            errorName.includes('timeout')
+        ) {
+            return 'medium';
+        }
+
+        // Default to low severity
+        return 'low';
+    }
+
+    // Structured logging for different components
+    logAIServiceEvent(event: string, context?: LogContext) {
+        this.logger.info('AI Service Event', {
+            event,
+            type: 'ai_service_event',
+            component: 'ai_service',
+            service: 'genie-ai-server',
+            ...context,
+        });
+    }
+
+    logPaymentEvent(event: string, context?: LogContext) {
+        this.logger.info('Payment Event', {
+            event,
+            type: 'payment_event',
+            component: 'payment_service',
+            service: 'genie-ai-server',
+            ...context,
+        });
+    }
+
+    logDatabaseEvent(event: string, context?: LogContext) {
+        this.logger.info('Database Event', {
+            event,
+            type: 'database_event',
+            component: 'database',
+            service: 'genie-ai-server',
+            ...context,
+        });
+    }
+
+    logCacheEvent(event: string, context?: LogContext) {
+        this.logger.info('Cache Event', {
+            event,
+            type: 'cache_event',
+            component: 'redis_cache',
+            service: 'genie-ai-server',
+            ...context,
+        });
+    }
 }

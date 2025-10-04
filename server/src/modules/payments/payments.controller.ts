@@ -91,14 +91,20 @@ export class PaymentsController {
 
     @Get(':paymentId')
     @UseGuards(JwtAuthGuard)
-    async getPaymentDetails(@CurrentUser() user: any, @Param('paymentId', UUIDValidationPipe) paymentId: string) {
+    async getPaymentDetails(
+        @CurrentUser() user: any,
+        @Param('paymentId', UUIDValidationPipe) paymentId: string,
+    ) {
         return this.paymentsService.getPaymentById(paymentId, user.id);
     }
 
     @Post(':paymentId/cancel')
     @UseGuards(JwtAuthGuard)
     @HttpCode(HttpStatus.NO_CONTENT)
-    async cancelPayment(@CurrentUser() user: any, @Param('paymentId', UUIDValidationPipe) paymentId: string) {
+    async cancelPayment(
+        @CurrentUser() user: any,
+        @Param('paymentId', UUIDValidationPipe) paymentId: string,
+    ) {
         await this.paymentsService.cancelPayment(paymentId, user.id);
     }
 
