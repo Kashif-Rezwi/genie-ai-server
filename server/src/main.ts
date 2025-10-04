@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { appConfig } from './config';
 import { setupSwagger } from './config/swagger.config';
+import { SecurityMiddleware } from './modules/security/middleware/security.middleware';
 import helmet from 'helmet';
 
 async function bootstrap() {
@@ -48,6 +49,10 @@ async function bootstrap() {
 
   // Add 'api' prefix to all routes (e.g., /users becomes /api/users)
   app.setGlobalPrefix('api');
+
+  // Apply security middleware globally
+  const securityMiddleware = app.get(SecurityMiddleware);
+  app.use(securityMiddleware.use.bind(securityMiddleware));
 
   // Setup Swagger documentation (only in development)
   if (config.nodeEnv === 'development') {

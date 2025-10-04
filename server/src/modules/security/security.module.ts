@@ -7,6 +7,10 @@ import { InputSanitizationService } from './services/input-sanitization.service'
 import { CSRFProtectionService } from './services/csrf-protection.service';
 import { RequestSizeService } from './services/request-size.service';
 import { SecurityService } from './services/security.service';
+import { PerUserRateLimitService } from './services/per-user-rate-limit.service';
+import { BruteForceProtectionService } from './services/brute-force-protection.service';
+import { AuditLoggingService } from './services/audit-logging.service';
+import { ContentSecurityPolicyService } from './services/content-security-policy.service';
 import { SecurityController } from './security.controller';
 import { LoggingService } from '../monitoring/services/logging.service';
 import { User } from '../../entities';
@@ -23,6 +27,10 @@ import { User } from '../../entities';
     CSRFProtectionService,
     RequestSizeService,
     SecurityService,
+    PerUserRateLimitService,
+    BruteForceProtectionService,
+    AuditLoggingService,
+    ContentSecurityPolicyService,
     LoggingService,
   ],
   exports: [
@@ -33,6 +41,10 @@ import { User } from '../../entities';
     CSRFProtectionService,
     RequestSizeService,
     SecurityService,
+    PerUserRateLimitService,
+    BruteForceProtectionService,
+    AuditLoggingService,
+    ContentSecurityPolicyService,
   ],
 })
 export class SecurityModule {}
