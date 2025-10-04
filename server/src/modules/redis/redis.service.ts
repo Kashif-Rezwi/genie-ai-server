@@ -4,94 +4,94 @@ import { redisConfig } from '../../config';
 
 @Injectable()
 export class RedisService {
-    private readonly client: Redis;
-    private readonly subscriber: Redis;
-    private readonly publisher: Redis;
+  private readonly client: Redis;
+  private readonly subscriber: Redis;
+  private readonly publisher: Redis;
 
-    constructor() {
-        const config = redisConfig();
+  constructor() {
+    const config = redisConfig();
 
-        this.client = new Redis(config);
-        this.subscriber = new Redis(config);
-        this.publisher = new Redis(config);
+    this.client = new Redis(config);
+    this.subscriber = new Redis(config);
+    this.publisher = new Redis(config);
 
-        this.client.on('error', err => {
-            console.error('Redis Client Error:', err);
-        });
+    this.client.on('error', err => {
+      // Redis Client Error - could be logged to proper logging service
+    });
 
-        this.client.on('connect', () => {
-            console.log('✅ Redis connected successfully');
-        });
+    this.client.on('connect', () => {
+      // Redis connected successfully
+    });
+  }
+
+  getClient(): Redis {
+    return this.client;
+  }
+
+  getSubscriber(): Redis {
+    return this.subscriber;
+  }
+
+  getPublisher(): Redis {
+    return this.publisher;
+  }
+
+  async get(key: string): Promise<string | null> {
+    return this.client.get(key);
+  }
+
+  async set(key: string, value: string, ttl?: number): Promise<'OK'> {
+    if (ttl) {
+      return this.client.setex(key, ttl, value);
     }
+    return this.client.set(key, value);
+  }
 
-    getClient(): Redis {
-        return this.client;
-    }
+  async del(key: string): Promise<number> {
+    return this.client.del(key);
+  }
 
-    getSubscriber(): Redis {
-        return this.subscriber;
-    }
+  async exists(key: string): Promise<number> {
+    return this.client.exists(key);
+  }
 
-    getPublisher(): Redis {
-        return this.publisher;
-    }
+  async incr(key: string): Promise<number> {
+    return this.client.incr(key);
+  }
 
-    async get(key: string): Promise<string | null> {
-        return this.client.get(key);
-    }
+  async decr(key: string): Promise<number> {
+    return this.client.decr(key);
+  }
 
-    async set(key: string, value: string, ttl?: number): Promise<'OK'> {
-        if (ttl) {
-            return this.client.setex(key, ttl, value);
-        }
-        return this.client.set(key, value);
-    }
+  async expire(key: string, seconds: number): Promise<number> {
+    return this.client.expire(key, seconds);
+  }
 
-    async del(key: string): Promise<number> {
-        return this.client.del(key);
-    }
+  async hget(key: string, field: string): Promise<string | null> {
+    return this.client.hget(key, field);
+  }
 
-    async exists(key: string): Promise<number> {
-        return this.client.exists(key);
-    }
+  async hset(key: string, field: string, value: string): Promise<number> {
+    return this.client.hset(key, field, value);
+  }
 
-    async incr(key: string): Promise<number> {
-        return this.client.incr(key);
-    }
+  async hgetall(key: string): Promise<Record<string, string>> {
+    return this.client.hgetall(key);
+  }
 
-    async decr(key: string): Promise<number> {
-        return this.client.decr(key);
-    }
+  async zadd(key: string, score: number, member: string): Promise<number> {
+    return this.client.zadd(key, score, member);
+  }
 
-    async expire(key: string, seconds: number): Promise<number> {
-        return this.client.expire(key, seconds);
-    }
+  async zcount(key: string, min: string, max: string): Promise<number> {
+    return this.client.zcount(key, min, max);
+  }
 
-    async hget(key: string, field: string): Promise<string | null> {
-        return this.client.hget(key, field);
-    }
+  async zremrangebyscore(key: string, min: string, max: string): Promise<number> {
+    return this.client.zremrangebyscore(key, min, max);
+  }
 
-    async hset(key: string, field: string, value: string): Promise<number> {
-        return this.client.hset(key, field, value);
-    }
-
-    async hgetall(key: string): Promise<Record<string, string>> {
-        return this.client.hgetall(key);
-    }
-
-    async zadd(key: string, score: number, member: string): Promise<number> {
-        return this.client.zadd(key, score, member);
-    }
-
-    async zcount(key: string, min: string, max: string): Promise<number> {
-        return this.client.zcount(key, min, max);
-    }
-
-    async zremrangebyscore(key: string, min: string, max: string): Promise<number> {
-        return this.client.zremrangebyscore(key, min, max);
-    }
-
-    async keys(pattern: string): Promise<string[]> {
-        return this.client.keys(pattern);
-    }
+  async keys(pattern: string): Promise<string[]> {
+    return this.client.keys(pattern);
+  }
 }

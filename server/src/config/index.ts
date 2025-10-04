@@ -14,10 +14,10 @@ export { databaseConfig } from './database.config';
 export { getActivePackages, getPackageById, calculateTotalCredits } from './credit-packages.config';
 export { getModelConfig, AI_MODELS, getFreeModels, getPaidModels } from './ai.config';
 export {
-    getRateLimitConfig,
-    getAllRateLimitConfigs,
-    hasRateLimitConfig,
-    RATE_LIMIT_CONFIGS,
+  getRateLimitConfig,
+  getAllRateLimitConfigs,
+  hasRateLimitConfig,
+  RATE_LIMIT_CONFIGS,
 } from './rate-limiting.config';
 export { creditConfig } from './credit.config';
 

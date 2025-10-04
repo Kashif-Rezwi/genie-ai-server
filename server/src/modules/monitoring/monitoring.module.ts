@@ -14,28 +14,24 @@ import { User } from '../../entities';
 
 @Global()
 @Module({
-    imports: [
-        TerminusModule,
-        TypeOrmModule.forFeature([User]),
-        EmailModule,
-    ],
-    controllers: [MonitoringController],
-    providers: [
-        LoggingService,
-        HealthService,
-        ErrorService,
-        MetricsService,
-        AlertingService,
-        RequestMonitoringMiddleware,
-        RedisService,
-    ],
-    exports: [
-        LoggingService,
-        HealthService,
-        ErrorService,
-        MetricsService,
-        AlertingService,
-        RequestMonitoringMiddleware,
-    ],
+  imports: [TerminusModule, TypeOrmModule.forFeature([User]), EmailModule],
+  controllers: [MonitoringController],
+  providers: [
+    LoggingService,
+    HealthService,
+    ErrorService,
+    MetricsService,
+    AlertingService,
+    RequestMonitoringMiddleware,
+    RedisService,
+  ],
+  exports: [
+    LoggingService,
+    HealthService,
+    ErrorService,
+    MetricsService,
+    AlertingService,
+    RequestMonitoringMiddleware,
+  ],
 })
 export class MonitoringModule {}

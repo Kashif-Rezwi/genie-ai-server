@@ -8,25 +8,25 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @Controller('credits')
 @UseGuards(JwtAuthGuard, RateLimitGuard)
 export class CreditsController {
-    constructor(
-        private readonly creditsService: CreditsService,
-        private readonly analyticsService: CreditsAnalyticsService,
-    ) {}
+  constructor(
+    private readonly creditsService: CreditsService,
+    private readonly analyticsService: CreditsAnalyticsService
+  ) {}
 
-    @Get('balance')
-    async getBalance(@CurrentUser() user: any) {
-        const balance = await this.creditsService.getBalance(user.id);
-        return { balance };
-    }
+  @Get('balance')
+  async getBalance(@CurrentUser() user: any) {
+    const balance = await this.creditsService.getBalance(user.id);
+    return { balance };
+  }
 
-    @Get('transactions')
-    async getTransactions(@CurrentUser() user: any) {
-        const transactions = await this.creditsService.getRecentTransactions(user.id);
-        return { transactions };
-    }
+  @Get('transactions')
+  async getTransactions(@CurrentUser() user: any) {
+    const transactions = await this.creditsService.getRecentTransactions(user.id);
+    return { transactions };
+  }
 
-    @Get('summary')
-    async getSummary(@CurrentUser() user: any) {
-        return this.analyticsService.getUserSummary(user.id);
-    }
+  @Get('summary')
+  async getSummary(@CurrentUser() user: any) {
+    return this.analyticsService.getUserSummary(user.id);
+  }
 }

@@ -13,28 +13,26 @@ import { User } from '../../entities';
 
 @Global()
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([User]),
-    ],
-    controllers: [SecurityController],
-    providers: [
-        RedisService,
-        RateLimitService,
-        RateLimitMonitoringService,
-        InputSanitizationService,
-        CSRFProtectionService,
-        RequestSizeService,
-        SecurityService,
-        LoggingService,
-    ],
-    exports: [
-        RedisService, 
-        RateLimitService, 
-        RateLimitMonitoringService, 
-        InputSanitizationService,
-        CSRFProtectionService,
-        RequestSizeService,
-        SecurityService
-    ],
+  imports: [TypeOrmModule.forFeature([User])],
+  controllers: [SecurityController],
+  providers: [
+    RedisService,
+    RateLimitService,
+    RateLimitMonitoringService,
+    InputSanitizationService,
+    CSRFProtectionService,
+    RequestSizeService,
+    SecurityService,
+    LoggingService,
+  ],
+  exports: [
+    RedisService,
+    RateLimitService,
+    RateLimitMonitoringService,
+    InputSanitizationService,
+    CSRFProtectionService,
+    RequestSizeService,
+    SecurityService,
+  ],
 })
 export class SecurityModule {}
