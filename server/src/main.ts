@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { appConfig } from './config';
+import { setupSwagger } from './config/swagger.config';
 import helmet from 'helmet';
 
 async function bootstrap() {
@@ -47,6 +48,11 @@ async function bootstrap() {
 
   // Add 'api' prefix to all routes (e.g., /users becomes /api/users)
   app.setGlobalPrefix('api');
+
+  // Setup Swagger documentation (only in development)
+  if (config.nodeEnv === 'development') {
+    setupSwagger(app);
+  }
 
   // Start server on configured port
   const port = config.port;
