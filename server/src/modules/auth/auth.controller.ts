@@ -5,20 +5,21 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RateLimit, RateLimitGuard } from '../security/guards/rate-limit.guard';
+import { CSRFProtectionGuard } from '../security/guards/csrf-protection.guard';
 
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
 
     @Post('register')
-    @UseGuards(RateLimitGuard)
+    @UseGuards(RateLimitGuard, CSRFProtectionGuard)
     @RateLimit('auth')
     async register(@Body(ValidationPipe) registerDto: RegisterDto) {
         return this.authService.register(registerDto);
     }
 
     @Post('login')
-    @UseGuards(RateLimitGuard)
+    @UseGuards(RateLimitGuard, CSRFProtectionGuard)
     @RateLimit('auth')
     async login(@Body(ValidationPipe) loginDto: LoginDto) {
         return this.authService.login(loginDto);

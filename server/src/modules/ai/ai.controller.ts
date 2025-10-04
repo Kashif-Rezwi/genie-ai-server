@@ -7,9 +7,10 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AI_MODELS, getFreeModels, getPaidModels } from '../../config';
 import { RateLimit, RateLimitGuard } from '../security/guards/rate-limit.guard';
+import { CSRFProtectionGuard } from '../security/guards/csrf-protection.guard';
 
 @Controller('ai')
-@UseGuards(JwtAuthGuard, RateLimitGuard)
+@UseGuards(JwtAuthGuard, RateLimitGuard, CSRFProtectionGuard)
 export class AIController {
     constructor(
         private readonly aiService: AIService,

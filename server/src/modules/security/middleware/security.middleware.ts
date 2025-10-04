@@ -1,13 +1,17 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { SecurityService } from '../services/security.service';
+import { InputSanitizationService } from '../services/input-sanitization.service';
 import { appConfig } from '../../../config';
 
 @Injectable()
 export class SecurityMiddleware implements NestMiddleware {
     private readonly config = appConfig();
 
-    constructor(private readonly securityService: SecurityService) {}
+    constructor(
+        private readonly securityService: SecurityService,
+        private readonly sanitizationService: InputSanitizationService,
+    ) {}
 
     use(req: Request, res: Response, next: NextFunction) {
         // Add security headers
@@ -55,7 +59,7 @@ export class SecurityMiddleware implements NestMiddleware {
         if (req.query) {
             for (const [key, value] of Object.entries(req.query)) {
                 if (typeof value === 'string') {
-                    req.query[key] = this.securityService.sanitizeInput(value);
+                    req.query[key] = this.sanitizationService.sanitizeText(value).sanitizedValue;
                 }
             }
         }

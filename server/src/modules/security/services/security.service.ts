@@ -50,13 +50,6 @@ export class SecurityService {
         return crypto.createHash('sha256').update(apiKey).digest('hex');
     }
 
-    sanitizeInput(input: string): string {
-        // Remove potentially dangerous characters
-        return input
-            .replace(/[<>\"'%;()&+]/g, '') // Basic XSS prevention
-            .trim()
-            .substring(0, 1000); // Limit length
-    }
 
     validateEmail(email: string): boolean {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

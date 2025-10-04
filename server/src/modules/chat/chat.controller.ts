@@ -21,11 +21,12 @@ import { ChatStreamingService } from './services/chat-streaming.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RateLimit, RateLimitGuard } from '../security/guards/rate-limit.guard';
+import { CSRFProtectionGuard } from '../security/guards/csrf-protection.guard';
 import { CreateChatDto, UpdateChatDto, SendMessageDto, ChatListQueryDto } from './dto/chat.dto';
 import { AuthenticatedUser, ChatResponse, ChatDetailResponse, ChatAnalytics } from './interfaces/chat.interfaces';
 
 @Controller('chat')
-@UseGuards(JwtAuthGuard, RateLimitGuard)
+@UseGuards(JwtAuthGuard, RateLimitGuard, CSRFProtectionGuard)
 export class ChatController {
     constructor(
         private readonly chatService: ChatService,

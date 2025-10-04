@@ -59,6 +59,10 @@ export class RedisService {
         return this.client.incr(key);
     }
 
+    async decr(key: string): Promise<number> {
+        return this.client.decr(key);
+    }
+
     async expire(key: string, seconds: number): Promise<number> {
         return this.client.expire(key, seconds);
     }

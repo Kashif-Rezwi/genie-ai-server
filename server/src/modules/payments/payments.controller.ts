@@ -21,6 +21,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AdminRoleGuard } from '../../common/guards/admin-role.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RateLimit, RateLimitGuard } from '../security/guards/rate-limit.guard';
+import { CSRFProtectionGuard, SkipCSRF } from '../security/guards/csrf-protection.guard';
 import {
     CreatePaymentOrderDto,
     VerifyPaymentDto,
@@ -30,7 +31,7 @@ import {
 import { getActivePackages, paymentConfig } from '../../config';
 
 @Controller('payments')
-@UseGuards(JwtAuthGuard, RateLimitGuard)
+@UseGuards(JwtAuthGuard, RateLimitGuard, CSRFProtectionGuard)
 export class PaymentsController {
     private readonly config = paymentConfig();
 
@@ -103,6 +104,7 @@ export class PaymentsController {
 
     // Webhook endpoint - no auth required
     @Post('webhook/razorpay')
+    @SkipCSRF()
     @HttpCode(HttpStatus.OK)
     async handleRazorpayWebhook(
         @Req() req: RawBodyRequest<Request>,
