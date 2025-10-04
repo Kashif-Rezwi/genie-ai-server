@@ -3,45 +3,34 @@ import { TerminusModule } from '@nestjs/terminus';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MonitoringController } from './monitoring.controller';
 import { LoggingService } from './services/logging.service';
-import { MetricsService } from './services/metrics.service';
 import { HealthService } from './services/health.service';
-import { PerformanceService } from './services/performance.service';
-import { ErrorTrackingService } from './services/error-tracking.service';
-import { AlertingService } from './services/alerting.service';
+import { ErrorService } from './services/error.service';
+import { MetricsService } from './services/metrics.service';
 import { RequestMonitoringMiddleware } from './middleware/request-monitoring.middleware';
-import { ErrorMonitoringMiddleware } from './middleware/error-monitoring.middleware';
-import { SecurityModule } from '../security/security.module';
 import { EmailModule } from '../email/email.module';
-import { User, Chat, Message, Payment } from '../../entities';
+import { User } from '../../entities';
 
 @Global()
 @Module({
     imports: [
         TerminusModule,
-        TypeOrmModule.forFeature([User, Chat, Message, Payment]),
-        SecurityModule,
+        TypeOrmModule.forFeature([User]),
         EmailModule,
     ],
     controllers: [MonitoringController],
     providers: [
         LoggingService,
-        MetricsService,
         HealthService,
-        PerformanceService,
-        ErrorTrackingService,
-        AlertingService,
+        ErrorService,
+        MetricsService,
         RequestMonitoringMiddleware,
-        ErrorMonitoringMiddleware,
     ],
     exports: [
         LoggingService,
-        MetricsService,
         HealthService,
-        PerformanceService,
-        ErrorTrackingService,
-        AlertingService,
+        ErrorService,
+        MetricsService,
         RequestMonitoringMiddleware,
-        ErrorMonitoringMiddleware,
     ],
 })
 export class MonitoringModule {}

@@ -4,7 +4,7 @@ import { RedisService } from '../redis/redis.service';
 import { RateLimitService } from './services/rate-limit.service';
 import { SecurityService } from './services/security.service';
 import { SecurityController } from './security.controller';
-import { LoggerService } from '../../common/services/logger.service';
+import { LoggingService } from '../monitoring/services/logging.service';
 import { User } from '../../entities';
 
 @Global()
@@ -17,7 +17,7 @@ import { User } from '../../entities';
         RedisService,
         RateLimitService,
         SecurityService,
-        LoggerService,
+        LoggingService,
     ],
     exports: [RedisService, RateLimitService, SecurityService],
 })

@@ -6,7 +6,7 @@ import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { securityConfig } from '../../../config';
 import { RedisService } from '../../redis/redis.service';
-import { LoggerService } from '../../../common/services/logger.service';
+import { LoggingService } from '../../monitoring/services/logging.service';
 
 export interface SecurityEvent {
     userId?: string;
@@ -25,7 +25,7 @@ export class SecurityService {
         @InjectRepository(User)
         private readonly userRepository: Repository<User>,
         private readonly redisService: RedisService,
-        private readonly logger: LoggerService,
+        private readonly logger: LoggingService,
     ) {}
 
     async hashPassword(password: string): Promise<string> {
@@ -118,7 +118,7 @@ export class SecurityService {
 
     async logSecurityEvent(event: SecurityEvent): Promise<void> {
         // Use proper logger service
-        this.logger.security(event.event, {
+        this.logger.logInfo(`SECURITY: ${event.event}`, {
             userId: event.userId,
             ip: event.ip,
             userAgent: event.userAgent,
@@ -134,7 +134,7 @@ export class SecurityService {
             await this.redisService.set(key, eventData, 3600); // 1 hour TTL
         } catch (error) {
             // Use proper logger for errors
-            this.logger.warn('security', 'Failed to store security event in Redis', {
+            this.logger.logWarning('Failed to store security event in Redis', {
                 error: error.message,
                 userId: event.userId,
             });

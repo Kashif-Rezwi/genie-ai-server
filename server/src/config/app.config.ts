@@ -12,8 +12,4 @@ export const appConfig = () => ({
         enableHeaders: process.env.SECURITY_HEADERS === 'true',
         enableRateLimiting: process.env.ENABLE_RATE_LIMITING === 'true',
     },
-    monitoring: {
-        performanceEnabled: process.env.PERFORMANCE_MONITORING_ENABLED === 'true',
-        logLevel: process.env.LOG_LEVEL || 'info',
-    },
 });
