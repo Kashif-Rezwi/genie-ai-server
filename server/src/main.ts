@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { appConfig } from './config';
+import helmet from 'helmet';
 
 async function bootstrap() {
     // Create NestJS app instance (like express())
@@ -10,6 +11,34 @@ async function bootstrap() {
 
     // Load app configuration
     const config = appConfig();
+
+    // Trust proxy for HTTPS detection (when behind load balancer)
+    if (config.security.trustProxy) {
+        app.getHttpAdapter().getInstance().set('trust proxy', 1);
+    }
+
+    // Security headers with helmet
+    app.use(helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                styleSrc: ["'self'", "'unsafe-inline'"],
+                scriptSrc: ["'self'"],
+                imgSrc: ["'self'", "data:", "https:"],
+                connectSrc: ["'self'"],
+                fontSrc: ["'self'"],
+                objectSrc: ["'none'"],
+                mediaSrc: ["'self'"],
+                frameSrc: ["'none'"],
+            },
+        },
+        crossOriginEmbedderPolicy: false, // Disable for API compatibility
+        hsts: {
+            maxAge: 31536000,
+            includeSubDomains: true,
+            preload: true
+        }
+    }));
 
     // Enable CORS for cross-origin requests
     app.enableCors(config.cors);

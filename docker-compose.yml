@@ -43,7 +43,7 @@ services:
       POSTGRES_DB: genie_db
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      JWT_SECRET: uTXDLSkkQdEu0u0iaMWqP+IUou/XZbok9er5BH5lpK8kQIPNEz1XZLShxZJ9kZsMkpRtlfn56LPD7PiayGXXJQ==
+      JWT_SECRET: ${JWT_SECRET:-change_this_in_production}
       JWT_EXPIRES_IN: 7d
       PORT: 4000
     depends_on:

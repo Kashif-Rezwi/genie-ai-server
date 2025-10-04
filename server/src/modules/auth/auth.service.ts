@@ -32,6 +32,9 @@ export class AuthService {
     async register(registerDto: RegisterDto): Promise<AuthResponse> {
         const { email, password } = registerDto;
 
+        // Email validation is handled by DTO validation
+        // Password validation is handled by DTO validation with @IsStrongPassword
+
         // Check if user already exists
         const existingUser = await this.usersService.findByEmail(email);
         if (existingUser) {

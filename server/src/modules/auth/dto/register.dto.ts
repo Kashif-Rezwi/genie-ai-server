@@ -1,11 +1,13 @@
 import { IsEmail, IsString, MinLength, MaxLength } from 'class-validator';
+import { IsStrongPassword } from '../../../common/validators/password.validator';
 
 export class RegisterDto {
-    @IsEmail()
+    @IsEmail({}, { message: 'Please provide a valid email address' })
     email: string;
 
     @IsString()
-    @MinLength(6, { message: 'Password must be at least 6 characters long' })
-    @MaxLength(50, { message: 'Password must not exceed 50 characters' })
+    @MinLength(8, { message: 'Password must be at least 8 characters long' })
+    @MaxLength(128, { message: 'Password must not exceed 128 characters' })
+    @IsStrongPassword()
     password: string;
 }
