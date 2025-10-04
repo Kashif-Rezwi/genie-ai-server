@@ -1,0 +1,253 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:15
+    container_name: genie-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./server/database/init-production.sql:/docker-entrypoint-initdb.d/init-production.sql
+      - ./backups:/backups
+    networks:
+      - genie-prod-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+  redis:
+    image: redis:7-alpine
+    container_name: genie-redis-prod
+    restart: always
+    volumes:
+      - redis_prod_data:/data
+      - ./redis/redis-prod.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - genie-prod-network
+    command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  app:
+    build:
+      context: ./server
+      dockerfile: dockerfile
+      args:
+        NODE_ENV: production
+    container_name: genie-app-prod
+    restart: always
+    environment:
+      NODE_ENV: production
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: 7d
+      PORT: 4000
+      # Production-specific environment variables
+      LOG_LEVEL: warn
+      ENABLE_SWAGGER: false
+      RATE_LIMIT_TTL: 60
+      RATE_LIMIT_LIMIT: 1000
+      # Monitoring
+      ENABLE_MONITORING: true
+      ENABLE_APM: true
+      ENABLE_ANALYTICS: true
+      # Security
+      TRUST_PROXY: true
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      # External services
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      # Email
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - genie-prod-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+  nginx:
+    image: nginx:alpine
+    container_name: genie-nginx-prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/production.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - app
+    networks:
+      - genie-prod-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Monitoring stack for production
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: genie-prometheus-prod
+    restart: always
+    volumes:
+      - ./monitoring/prometheus-production.yml:/etc/prometheus/prometheus.yml
+      - prometheus_prod_data:/prometheus
+      - ./backups/prometheus:/backups/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    networks:
+      - genie-prod-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: genie-grafana-prod
+    restart: always
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_SECURITY_DISABLE_GRAVATAR: true
+      GF_ANALYTICS_REPORTING_ENABLED: false
+      GF_ANALYTICS_CHECK_FOR_UPDATES: false
+    volumes:
+      - grafana_prod_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./backups/grafana:/backups/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - genie-prod-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Log aggregation
+  loki:
+    image: grafana/loki:latest
+    container_name: genie-loki-prod
+    restart: always
+    volumes:
+      - ./monitoring/loki-config.yml:/etc/loki/local-config.yaml
+      - loki_prod_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - genie-prod-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Backup service
+  backup:
+    image: postgres:15
+    container_name: genie-backup-prod
+    restart: "no"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: postgres
+    volumes:
+      - ./backups:/backups
+      - ./scripts/backup.sh:/backup.sh
+    networks:
+      - genie-prod-network
+    command: /bin/bash -c "while true; do /backup.sh; sleep 86400; done"
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_prod_data:
+  redis_prod_data:
+  prometheus_prod_data:
+  grafana_prod_data:
+  loki_prod_data:
+
+networks:
+  genie-prod-network:
+    driver: bridge

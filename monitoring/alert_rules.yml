@@ -1,0 +1,297 @@
+groups:
+  - name: genie-ai-alerts
+    rules:
+      # Application Health Alerts
+      - alert: ApplicationDown
+        expr: up{job="genie-ai-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: genie-ai-app
+        annotations:
+          summary: "Genie AI Application is down"
+          description: "The Genie AI application has been down for more than 1 minute."
+          runbook_url: "https://docs.yourapp.com/runbooks/application-down"
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: genie-ai-app
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes."
+          runbook_url: "https://docs.yourapp.com/runbooks/high-error-rate"
+
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 3m
+        labels:
+          severity: warning
+          service: genie-ai-app
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }}s for the last 5 minutes."
+          runbook_url: "https://docs.yourapp.com/runbooks/high-response-time"
+
+      # Database Alerts
+      - alert: DatabaseDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: postgres
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "The PostgreSQL database has been down for more than 1 minute."
+          runbook_url: "https://docs.yourapp.com/runbooks/database-down"
+
+      - alert: DatabaseConnectionsHigh
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+        for: 2m
+        labels:
+          severity: warning
+          service: postgres
+        annotations:
+          summary: "High database connection usage"
+          description: "Database connection usage is {{ $value | humanizePercentage }}."
+          runbook_url: "https://docs.yourapp.com/runbooks/high-db-connections"
+
+      - alert: DatabaseSlowQueries
+        expr: rate(pg_stat_database_tup_returned[5m]) / rate(pg_stat_database_tup_fetched[5m]) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: postgres
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Database query efficiency is low: {{ $value | humanizePercentage }}."
+          runbook_url: "https://docs.yourapp.com/runbooks/slow-db-queries"
+
+      # Redis Alerts
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis cache is down"
+          description: "The Redis cache has been down for more than 1 minute."
+          runbook_url: "https://docs.yourapp.com/runbooks/redis-down"
+
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_config_maxmemory > 0.9
+        for: 2m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}."
+          runbook_url: "https://docs.yourapp.com/runbooks/redis-memory-high"
+
+      - alert: RedisSlowCommands
+        expr: rate(redis_slowlog_length[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Slow Redis commands detected"
+          description: "Redis slow command rate is {{ $value }} commands per second."
+          runbook_url: "https://docs.yourapp.com/runbooks/redis-slow-commands"
+
+      # System Resource Alerts
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}."
+          runbook_url: "https://docs.yourapp.com/runbooks/high-cpu-usage"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}% on {{ $labels.instance }}."
+          runbook_url: "https://docs.yourapp.com/runbooks/high-memory-usage"
+
+      - alert: DiskSpaceLow
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "Low disk space"
+          description: "Disk usage is {{ $value }}% on {{ $labels.instance }} ({{ $labels.mountpoint }})."
+          runbook_url: "https://docs.yourapp.com/runbooks/disk-space-low"
+
+      - alert: DiskSpaceCritical
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 95
+        for: 1m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "Critical disk space"
+          description: "Disk usage is {{ $value }}% on {{ $labels.instance }} ({{ $labels.mountpoint }})."
+          runbook_url: "https://docs.yourapp.com/runbooks/disk-space-critical"
+
+      # Business Metrics Alerts
+      - alert: HighCreditUsage
+        expr: rate(credits_used_total[1h]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "High credit usage detected"
+          description: "Credit usage rate is {{ $value }} credits per hour."
+          runbook_url: "https://docs.yourapp.com/runbooks/high-credit-usage"
+
+      - alert: LowRevenue
+        expr: rate(revenue_total[1h]) < 100
+        for: 30m
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "Low revenue detected"
+          description: "Revenue rate is ${{ $value }} per hour."
+          runbook_url: "https://docs.yourapp.com/runbooks/low-revenue"
+
+      - alert: HighUserRegistration
+        expr: rate(users_registered_total[1h]) > 50
+        for: 5m
+        labels:
+          severity: info
+          service: business
+        annotations:
+          summary: "High user registration rate"
+          description: "User registration rate is {{ $value }} users per hour."
+          runbook_url: "https://docs.yourapp.com/runbooks/high-user-registration"
+
+      # Security Alerts
+      - alert: HighFailedLogins
+        expr: rate(failed_logins_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "High failed login attempts"
+          description: "Failed login rate is {{ $value }} attempts per second."
+          runbook_url: "https://docs.yourapp.com/runbooks/high-failed-logins"
+
+      - alert: BruteForceAttack
+        expr: rate(failed_logins_total[1m]) > 20
+        for: 1m
+        labels:
+          severity: critical
+          service: security
+        annotations:
+          summary: "Potential brute force attack"
+          description: "Failed login rate is {{ $value }} attempts per second."
+          runbook_url: "https://docs.yourapp.com/runbooks/brute-force-attack"
+
+      - alert: HighRateLimitHits
+        expr: rate(rate_limit_exceeded_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "High rate limit hits"
+          description: "Rate limit exceeded rate is {{ $value }} hits per second."
+          runbook_url: "https://docs.yourapp.com/runbooks/high-rate-limit-hits"
+
+      # AI Service Alerts
+      - alert: AIProviderDown
+        expr: up{job="ai-provider"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: ai
+        annotations:
+          summary: "AI provider is down"
+          description: "AI provider {{ $labels.provider }} has been down for more than 2 minutes."
+          runbook_url: "https://docs.yourapp.com/runbooks/ai-provider-down"
+
+      - alert: HighAITokenUsage
+        expr: rate(ai_tokens_used_total[1h]) > 100000
+        for: 5m
+        labels:
+          severity: warning
+          service: ai
+        annotations:
+          summary: "High AI token usage"
+          description: "AI token usage rate is {{ $value }} tokens per hour."
+          runbook_url: "https://docs.yourapp.com/runbooks/high-ai-token-usage"
+
+      - alert: AIResponseTimeHigh
+        expr: histogram_quantile(0.95, rate(ai_request_duration_seconds_bucket[5m])) > 10
+        for: 3m
+        labels:
+          severity: warning
+          service: ai
+        annotations:
+          summary: "High AI response time"
+          description: "95th percentile AI response time is {{ $value }}s."
+          runbook_url: "https://docs.yourapp.com/runbooks/high-ai-response-time"
+
+      # Payment Alerts
+      - alert: PaymentProviderDown
+        expr: up{job="payment-provider"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: payment
+        annotations:
+          summary: "Payment provider is down"
+          description: "Payment provider has been down for more than 2 minutes."
+          runbook_url: "https://docs.yourapp.com/runbooks/payment-provider-down"
+
+      - alert: HighPaymentFailureRate
+        expr: rate(payment_failures_total[5m]) / rate(payment_attempts_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: payment
+        annotations:
+          summary: "High payment failure rate"
+          description: "Payment failure rate is {{ $value | humanizePercentage }}."
+          runbook_url: "https://docs.yourapp.com/runbooks/high-payment-failure-rate"
+
+      # Container Alerts
+      - alert: ContainerRestarting
+        expr: rate(container_restarts_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: container
+        annotations:
+          summary: "Container is restarting"
+          description: "Container {{ $labels.name }} is restarting frequently."
+          runbook_url: "https://docs.yourapp.com/runbooks/container-restarting"
+
+      - alert: ContainerOOMKilled
+        expr: increase(container_oom_kills_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          service: container
+        annotations:
+          summary: "Container OOM killed"
+          description: "Container {{ $labels.name }} was killed due to out of memory."
+          runbook_url: "https://docs.yourapp.com/runbooks/container-oom-killed"

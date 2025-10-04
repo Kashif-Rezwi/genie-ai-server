@@ -1,0 +1,152 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:15
+    container_name: genie-postgres-staging
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}_staging
+    ports:
+      - "5433:5432"  # Different port for staging
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+      - ./server/database/init-staging.sql:/docker-entrypoint-initdb.d/init-staging.sql
+    networks:
+      - genie-staging-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}_staging"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: genie-redis-staging
+    restart: always
+    ports:
+      - "6380:6379"  # Different port for staging
+    volumes:
+      - redis_staging_data:/data
+    networks:
+      - genie-staging-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: ./server
+      dockerfile: dockerfile
+      args:
+        NODE_ENV: staging
+    container_name: genie-app-staging
+    restart: always
+    ports:
+      - "4001:4000"  # Different port for staging
+    environment:
+      NODE_ENV: staging
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}_staging
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: 7d
+      PORT: 4000
+      # Staging-specific environment variables
+      LOG_LEVEL: info
+      ENABLE_SWAGGER: true
+      RATE_LIMIT_TTL: 60
+      RATE_LIMIT_LIMIT: 100
+      # Monitoring
+      ENABLE_MONITORING: true
+      ENABLE_APM: true
+      ENABLE_ANALYTICS: true
+      # Security
+      TRUST_PROXY: true
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    networks:
+      - genie-staging-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  nginx:
+    image: nginx:alpine
+    container_name: genie-nginx-staging
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/staging.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - app
+    networks:
+      - genie-staging-network
+
+  # Monitoring stack for staging
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: genie-prometheus-staging
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus-staging.yml:/etc/prometheus/prometheus.yml
+      - prometheus_staging_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+    networks:
+      - genie-staging-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: genie-grafana-staging
+    restart: always
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - grafana_staging_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - genie-staging-network
+
+volumes:
+  postgres_staging_data:
+  redis_staging_data:
+  prometheus_staging_data:
+  grafana_staging_data:
+
+networks:
+  genie-staging-network:
+    driver: bridge

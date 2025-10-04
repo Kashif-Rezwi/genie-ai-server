@@ -11,6 +11,7 @@ import { SecurityModule } from './modules/security/security.module';
 import { PerformanceModule } from './modules/performance/performance.module';
 import { ApiDocsModule } from './modules/api-docs/api-docs.module';
 import { ScalabilityModule } from './modules/scalability/scalability.module';
+import { ProductionModule } from './modules/production/production.module';
 import { SecurityMiddleware } from './modules/security/middleware/security.middleware';
 import { ValidationMiddleware } from './modules/security/middleware/validation.middleware';
 import { RequestMonitoringMiddleware } from './modules/monitoring/middleware/request-monitoring.middleware';
@@ -41,6 +42,7 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
     MonitoringModule, // Monitoring must be loaded early
     PerformanceModule, // Performance optimization
     ScalabilityModule, // Scalability and orchestration
+    ProductionModule, // Production readiness and deployment
     ApiDocsModule, // API documentation
     AuthModule,
     AIModule,
