@@ -6,8 +6,10 @@ import { LoggingService } from './services/logging.service';
 import { HealthService } from './services/health.service';
 import { ErrorService } from './services/error.service';
 import { MetricsService } from './services/metrics.service';
+import { AlertingService } from './services/alerting.service';
 import { RequestMonitoringMiddleware } from './middleware/request-monitoring.middleware';
 import { EmailModule } from '../email/email.module';
+import { RedisService } from '../redis/redis.service';
 import { User } from '../../entities';
 
 @Global()
@@ -23,13 +25,16 @@ import { User } from '../../entities';
         HealthService,
         ErrorService,
         MetricsService,
+        AlertingService,
         RequestMonitoringMiddleware,
+        RedisService,
     ],
     exports: [
         LoggingService,
         HealthService,
         ErrorService,
         MetricsService,
+        AlertingService,
         RequestMonitoringMiddleware,
     ],
 })

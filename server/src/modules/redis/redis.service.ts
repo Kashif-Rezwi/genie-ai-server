@@ -90,4 +90,8 @@ export class RedisService {
     async zremrangebyscore(key: string, min: string, max: string): Promise<number> {
         return this.client.zremrangebyscore(key, min, max);
     }
+
+    async keys(pattern: string): Promise<string[]> {
+        return this.client.keys(pattern);
+    }
 }
