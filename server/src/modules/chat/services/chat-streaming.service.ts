@@ -1,16 +1,16 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { Response } from 'express';
 import { ChatService } from './chat.service';
 import { MessageService } from './message.service';
 import { AIService } from '../../ai/services/ai.service';
 import { CreditsService } from '../../credits/services/credits.service';
+import { LoggingService } from '../../monitoring/services/logging.service';
 import { SendMessageDto } from '../dto/chat.dto';
 import { StreamingChatResponseDto } from '../dto/message.dto';
 import { getModelConfig, aiProvidersConfig } from '../../../config';
 
 @Injectable()
 export class ChatStreamingService {
-    private readonly logger = new Logger(ChatStreamingService.name);
     private readonly config = aiProvidersConfig();
     private readonly activeStreams = new Map<string, boolean>();
 
@@ -19,6 +19,7 @@ export class ChatStreamingService {
         private readonly messageService: MessageService,
         private readonly aiService: AIService,
         private readonly creditsService: CreditsService,
+        private readonly loggingService: LoggingService,
     ) {}
 
     async streamChatResponse(
@@ -45,18 +46,18 @@ export class ChatStreamingService {
             if (cleanupExecuted) return;
             cleanupExecuted = true;
             this.activeStreams.delete(streamKey);
-            this.logger.log('Stream cleanup executed', { chatId, userId });
+            this.loggingService.logInfo('Stream cleanup executed', { chatId, userId });
         };
 
         // Handle client disconnection
         response.on('close', () => {
             isClientConnected = false;
-            this.logger.log('Client disconnected during streaming', { chatId, userId });
+            this.loggingService.logInfo('Client disconnected during streaming', { chatId, userId });
             cleanup();
         });
 
         response.on('error', (error) => {
-            this.logger.error('Stream response error', { error: error.message, chatId, userId });
+            this.loggingService.logError('Stream response error', error, { chatId, userId });
             isClientConnected = false;
             cleanup();
         });
@@ -129,7 +130,7 @@ export class ChatStreamingService {
             for await (const chunk of stream) {
                 // Check if client is still connected
                 if (!isClientConnected) {
-                    this.logger.log('Client disconnected, stopping stream processing', { chatId, userId });
+                    this.loggingService.logInfo('Client disconnected, stopping stream processing', { chatId, userId });
                     break;
                 }
 
@@ -157,8 +158,7 @@ export class ChatStreamingService {
                     try {
                         this.writeSSEData(response, streamResponse);
                     } catch (writeError) {
-                        this.logger.error('Failed to write SSE data', {
-                            error: writeError.message,
+                        this.loggingService.logError('Failed to write SSE data', writeError, {
                             chatId,
                             userId,
                         });
@@ -197,8 +197,7 @@ export class ChatStreamingService {
                         try {
                             this.writeSSEData(response, finalResponse);
                         } catch (writeError) {
-                            this.logger.error('Failed to write final SSE data', {
-                                error: writeError.message,
+                            this.loggingService.logError('Failed to write final SSE data', writeError, {
                                 chatId,
                                 userId,
                             });
@@ -212,9 +211,7 @@ export class ChatStreamingService {
                 response.end();
             }
         } catch (error) {
-            this.logger.error('Streaming error occurred', {
-                error: error.message,
-                stack: error.stack,
+            this.loggingService.logError('Streaming error occurred', error, {
                 chatId,
                 userId,
                 content: sendMessageDto.content,
@@ -235,8 +232,7 @@ export class ChatStreamingService {
                     this.writeSSEData(response, errorResponse);
                     response.end();
                 } catch (writeError) {
-                    this.logger.error('Failed to write error response', {
-                        error: writeError.message,
+                    this.loggingService.logError('Failed to write error response', writeError, {
                         chatId,
                         userId,
                     });
@@ -288,7 +284,7 @@ export class ChatStreamingService {
         try {
             const { content, model } = sendMessageDto;
 
-            this.logger.log('Processing quick response', {
+            this.loggingService.logInfo('Processing quick response', {
                 chatId,
                 userId,
                 contentLength: content.length,
@@ -323,7 +319,7 @@ export class ChatStreamingService {
                 aiResponse.creditsUsed,
             );
 
-            this.logger.log('Quick response completed successfully', {
+            this.loggingService.logInfo('Quick response completed successfully', {
                 chatId,
                 userId,
                 creditsUsed: aiResponse.creditsUsed,
@@ -336,8 +332,7 @@ export class ChatStreamingService {
                 creditsUsed: aiResponse.creditsUsed,
             };
         } catch (error) {
-            this.logger.error('Quick response failed', {
-                error: error.message,
+            this.loggingService.logError('Quick response failed', error, {
                 stack: error.stack,
                 chatId,
                 userId,

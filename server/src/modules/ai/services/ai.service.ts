@@ -3,6 +3,7 @@ import { AIRequestDto } from '../dto/ai-request.dto';
 import { AIResponseDto } from '../dto/ai-response.dto';
 import { AIProviderFactory } from '../providers/ai-provider.factory';
 import { CreditsService } from '../../credits/services/credits.service';
+import { MetricsService } from '../../monitoring/services/metrics.service';
 import { getModelConfig, AIModelConfig, aiProvidersConfig } from '../../../config';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -13,6 +14,7 @@ export class AIService {
     constructor(
         private readonly providerFactory: AIProviderFactory,
         private readonly creditsService: CreditsService,
+        private readonly metricsService: MetricsService,
     ) {}
 
     // Non-streaming endpoint (collects stream internally)
@@ -56,6 +58,10 @@ export class AIService {
             }
 
             response.creditsUsed = actualCredits;
+            
+            // Record AI request metrics
+            this.metricsService.recordAIRequest(actualCredits);
+            
             return response;
         } catch (error) {
             // Release reservation on any failure
@@ -113,8 +119,9 @@ export class AIService {
 
                     // Confirm reservation with actual amount
                     if (reservationId && totalTokens > 0) {
+                        let actualCredits = 0;
                         try {
-                            const actualCredits = this.calculateCreditsUsed(
+                            actualCredits = this.calculateCreditsUsed(
                                 totalTokens,
                                 modelConfig,
                             );
@@ -141,6 +148,9 @@ export class AIService {
                             };
                         }
                         creditsConfirmed = true;
+                        
+                        // Record AI request metrics for streaming
+                        this.metricsService.recordAIRequest(actualCredits);
                     }
                 }
 
