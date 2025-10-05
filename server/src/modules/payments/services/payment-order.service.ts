@@ -1,7 +1,5 @@
 import {
   Injectable,
-  NotFoundException,
-  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { Payment, PaymentStatus, PaymentMethod, User } from '../../../entities';
@@ -9,6 +7,7 @@ import { RazorpayService } from './razorpay.service';
 import { getPackageById, calculateTotalCredits } from '../../../config';
 import { paymentConfig } from '../../../config';
 import { IPaymentRepository, IUserRepository } from '../../../core/repositories/interfaces';
+import { ResourceNotFoundException, PaymentException, ValidationException } from '../../../common/exceptions';
 import {
   CreatePaymentOrderDto,
   PaymentOrderResponse,
@@ -37,13 +36,16 @@ export class PaymentOrderService {
     // Get user details
     const user = await this.userRepository.findById(userId);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new ResourceNotFoundException('User', 'USER_NOT_FOUND', { userId });
     }
 
     // Get package details
     const package_ = getPackageById(packageId);
     if (!package_ || !package_.isActive) {
-      throw new BadRequestException('Invalid or inactive package');
+      throw new PaymentException('Invalid or inactive package', 'INVALID_PACKAGE', { 
+        packageId,
+        isActive: package_?.isActive
+      });
     }
 
     const totalCredits = calculateTotalCredits(packageId);
@@ -114,7 +116,7 @@ export class PaymentOrderService {
     });
 
     if (!payment) {
-      throw new NotFoundException('Payment not found');
+      throw new ResourceNotFoundException('Payment', 'PAYMENT_NOT_FOUND', { paymentId });
     }
 
     return payment;
@@ -127,7 +129,10 @@ export class PaymentOrderService {
     const payment = await this.getPaymentById(paymentId, userId);
 
     if (payment.status !== PaymentStatus.PENDING) {
-      throw new BadRequestException('Only pending payments can be cancelled');
+      throw new PaymentException('Only pending payments can be cancelled', 'INVALID_PAYMENT_STATUS', { 
+        currentStatus: payment.status,
+        requiredStatus: PaymentStatus.PENDING
+      });
     }
 
     payment.status = PaymentStatus.CANCELLED;

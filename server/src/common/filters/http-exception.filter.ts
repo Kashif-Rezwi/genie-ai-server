@@ -9,6 +9,7 @@ import {
 import { LoggingService } from '../../modules/monitoring/services/logging.service';
 import { ErrorService } from '../../modules/monitoring/services/error.service';
 import { getClientIP } from '../utils/request.utils';
+import { CustomExceptionResponse } from '../exceptions/business.exception';
 
 @Injectable()
 @Catch()
@@ -29,6 +30,17 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const message =
       exception instanceof HttpException ? exception.getResponse() : 'Internal server error';
 
+    // Extract error details for custom exceptions
+    let errorResponse: CustomExceptionResponse | any = message;
+    if (exception instanceof HttpException) {
+      const response = exception.getResponse();
+      if (typeof response === 'object' && response !== null && 'errorCode' in response) {
+        errorResponse = response as CustomExceptionResponse;
+        // Add request ID to custom exception response
+        errorResponse.requestId = (request as any).requestId;
+      }
+    }
+
     // Create error context for logging
     const errorContext = {
       requestId: (request as any).requestId,
@@ -39,6 +51,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       ip: getClientIP(request),
       statusCode: status,
       timestamp: new Date().toISOString(),
+      errorCode: errorResponse?.errorCode,
+      errorDetails: errorResponse?.details,
     };
 
     // Log the error with context
@@ -57,12 +71,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       );
     }
 
+    // Return standardized error response
     response.status(status).json({
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
-      message,
       requestId: (request as any).requestId,
+      ...errorResponse,
     });
   }
 }

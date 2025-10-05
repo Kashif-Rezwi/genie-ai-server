@@ -1,8 +1,5 @@
 import {
   Injectable,
-  NotFoundException,
-  BadRequestException,
-  ConflictException,
   Logger,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
@@ -10,6 +7,7 @@ import { Payment, PaymentStatus, PaymentMethod, User } from '../../../entities';
 import { RazorpayService } from './razorpay.service';
 import { CreditsService } from '../../credits/services/credits.service';
 import { IPaymentRepository, IUserRepository } from '../../../core/repositories/interfaces';
+import { ResourceNotFoundException, PaymentException, ValidationException, ConflictException } from '../../../common/exceptions';
 import {
   VerifyPaymentDto,
   PaymentVerificationResponse,
@@ -39,11 +37,14 @@ export class PaymentVerificationService {
     const payment = await this.paymentRepository.findByRazorpayOrderId(razorpayOrderId);
 
     if (!payment) {
-      throw new NotFoundException('Payment not found');
+      throw new ResourceNotFoundException('Payment', 'PAYMENT_NOT_FOUND', { razorpayOrderId });
     }
 
     if (payment.status === PaymentStatus.COMPLETED) {
-      throw new ConflictException('Payment already completed');
+      throw new ConflictException('Payment already completed', 'PAYMENT_ALREADY_COMPLETED', { 
+        paymentId: payment.id,
+        currentStatus: payment.status
+      });
     }
 
     // Verify Razorpay signature
@@ -56,7 +57,10 @@ export class PaymentVerificationService {
       payment.status = PaymentStatus.FAILED;
       payment.failureReason = 'Invalid signature';
       await this.paymentRepository.update(payment.id, payment);
-      throw new BadRequestException('Invalid payment signature');
+      throw new ValidationException('Invalid payment signature', 'INVALID_PAYMENT_SIGNATURE', { 
+        razorpayOrderId,
+        razorpayPaymentId
+      });
     }
 
     // Get Razorpay payment details
@@ -66,7 +70,10 @@ export class PaymentVerificationService {
       payment.status = PaymentStatus.FAILED;
       payment.failureReason = 'Payment not captured';
       await this.paymentRepository.update(payment.id, payment);
-      throw new BadRequestException('Payment not captured');
+      throw new PaymentException('Payment not captured', 'PAYMENT_NOT_CAPTURED', { 
+        razorpayPaymentId,
+        razorpayStatus: razorpayPayment.status
+      });
     }
 
     // Update payment record
@@ -135,11 +142,14 @@ export class PaymentVerificationService {
     });
 
     if (!payment) {
-      throw new NotFoundException('Payment not found');
+      throw new ResourceNotFoundException('Payment', 'PAYMENT_NOT_FOUND', { paymentId });
     }
 
     if (payment.status !== PaymentStatus.FAILED || !payment.razorpayPaymentId) {
-      throw new BadRequestException('Payment is not in a retryable state');
+      throw new PaymentException('Payment is not in a retryable state', 'PAYMENT_NOT_RETRYABLE', { 
+        currentStatus: payment.status,
+        hasRazorpayPaymentId: !!payment.razorpayPaymentId
+      });
     }
 
     // Check Razorpay payment status
@@ -178,7 +188,10 @@ export class PaymentVerificationService {
       };
     }
 
-    throw new BadRequestException('Payment is still in failed state');
+    throw new PaymentException('Payment is still in failed state', 'PAYMENT_STILL_FAILED', { 
+      paymentId,
+      razorpayStatus: razorpayPayment.status
+    });
   }
 
   /**

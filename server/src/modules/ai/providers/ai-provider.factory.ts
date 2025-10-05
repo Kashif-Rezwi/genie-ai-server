@@ -1,4 +1,5 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { ValidationException } from '../../../common/exceptions';
 import { AIProvider } from './base-ai.provider';
 import { GenericAIProvider } from './generic-ai.provider';
 import { openai } from '@ai-sdk/openai';
@@ -25,7 +26,10 @@ export class AIProviderFactory {
   getProvider(providerName: string): AIProvider {
     const provider = this.providers.get(providerName);
     if (!provider) {
-      throw new BadRequestException(`Provider ${providerName} not supported`);
+      throw new ValidationException(`Provider ${providerName} not supported`, 'UNSUPPORTED_AI_PROVIDER', { 
+        providerName, 
+        supportedProviders: Array.from(this.providers.keys()) 
+      });
     }
     return provider;
   }

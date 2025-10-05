@@ -1,9 +1,6 @@
 import {
   Injectable,
-  NotFoundException,
-  ConflictException,
   Logger,
-  BadRequestException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -11,6 +8,7 @@ import { User, CreditTransaction, TransactionType, CreditAuditLog } from '../../
 import { TransactionMetadataValidator } from '../interfaces/transaction-metadata.interface';
 import { creditConfig } from '../../../config';
 import { IUserRepository, ICreditTransactionRepository, ICreditAuditLogRepository } from '../../../core/repositories/interfaces';
+import { ValidationException, ResourceNotFoundException, CreditException, ConflictException } from '../../../common/exceptions';
 
 /**
  * Service responsible for managing credit transactions
@@ -36,8 +34,8 @@ export class CreditTransactionService {
    * @param description - Description of the transaction
    * @param metadata - Optional metadata for the transaction
    * @returns Promise<void>
-   * @throws BadRequestException - When amount is invalid
-   * @throws NotFoundException - When user is not found
+   * @throws CreditException - When amount is invalid
+   * @throws ResourceNotFoundException - When user is not found
    */
   async addCredits(
     userId: string,
@@ -51,7 +49,7 @@ export class CreditTransactionService {
       const user = await this.userRepository.findById(userId);
 
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new ResourceNotFoundException('User', 'USER_NOT_FOUND', { userId });
       }
 
       const balanceBefore = user.creditsBalance;
@@ -100,8 +98,8 @@ export class CreditTransactionService {
    * @param description - Description of the transaction
    * @param metadata - Optional metadata for the transaction
    * @returns Promise<void>
-   * @throws BadRequestException - When amount is invalid or insufficient credits
-   * @throws NotFoundException - When user is not found
+   * @throws CreditException - When amount is invalid or insufficient credits
+   * @throws ResourceNotFoundException - When user is not found
    */
   async deductCredits(
     userId: string,
@@ -115,13 +113,19 @@ export class CreditTransactionService {
       const user = await this.userRepository.findById(userId);
 
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new ResourceNotFoundException('User', 'USER_NOT_FOUND', { userId });
       }
 
       // Never allow negative balance
       if (user.creditsBalance < amount) {
         throw new ConflictException(
-          `Insufficient credits. Required: ${amount}, Available: ${user.creditsBalance}`
+          `Insufficient credits. Required: ${amount}, Available: ${user.creditsBalance}`,
+          'INSUFFICIENT_CREDITS',
+          {
+            requiredAmount: amount,
+            availableBalance: user.creditsBalance,
+            userId
+          }
         );
       }
 
@@ -188,7 +192,7 @@ export class CreditTransactionService {
     offset: number = 0
   ): Promise<CreditTransaction[]> {
     if (!userId || typeof userId !== 'string') {
-      throw new BadRequestException('Invalid user ID');
+      throw new ValidationException('Invalid user ID', 'INVALID_USER_ID', { providedUserId: userId });
     }
 
     return this.transactionRepository.find({
@@ -206,7 +210,7 @@ export class CreditTransactionService {
    */
   async getTransactionById(transactionId: string): Promise<CreditTransaction | null> {
     if (!transactionId || typeof transactionId !== 'string') {
-      throw new BadRequestException('Invalid transaction ID');
+      throw new ValidationException('Invalid transaction ID', 'INVALID_TRANSACTION_ID', { providedTransactionId: transactionId });
     }
 
     return this.transactionRepository.findOne({
@@ -222,22 +226,41 @@ export class CreditTransactionService {
    */
   private validateCreditAmount(amount: number, operation: 'addition' | 'deduction'): void {
     if (typeof amount !== 'number' || !isFinite(amount)) {
-      throw new BadRequestException('Amount must be a valid number');
+      throw new CreditException('Amount must be a valid number', 'INVALID_AMOUNT_TYPE', { 
+        providedAmount: amount,
+        expectedType: 'number'
+      });
     }
 
     if (amount <= 0) {
-      throw new BadRequestException('Amount must be positive');
+      throw new CreditException('Amount must be positive', 'INVALID_AMOUNT_VALUE', { 
+        providedAmount: amount,
+        minimumValue: 0,
+        operation
+      });
     }
 
     if (amount > this.config.business.maximumTransaction) {
-      throw new BadRequestException(
-        `Amount exceeds maximum allowed: ${this.config.business.maximumTransaction}`
+      throw new CreditException(
+        `Amount exceeds maximum allowed: ${this.config.business.maximumTransaction}`,
+        'AMOUNT_EXCEEDS_MAXIMUM',
+        {
+          providedAmount: amount,
+          maximumAllowed: this.config.business.maximumTransaction,
+          operation
+        }
       );
     }
 
     if (amount < this.config.business.minimumTransaction) {
-      throw new BadRequestException(
-        `Amount below minimum allowed: ${this.config.business.minimumTransaction}`
+      throw new CreditException(
+        `Amount below minimum allowed: ${this.config.business.minimumTransaction}`,
+        'AMOUNT_BELOW_MINIMUM',
+        {
+          providedAmount: amount,
+          minimumAllowed: this.config.business.minimumTransaction,
+          operation
+        }
       );
     }
   }

@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Redis } from 'ioredis';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { User } from '../../../entities';
 import { creditConfig } from '../../../config';
 import { IUserRepository } from '../../../core/repositories/interfaces';
+import { ValidationException, ResourceNotFoundException, CreditException } from '../../../common/exceptions';
 
 /**
  * Service responsible for managing credit balance operations
@@ -29,15 +30,15 @@ export class CreditBalanceService {
    * Get user's current credit balance with caching
    * @param userId - The user's ID
    * @returns Promise<number> - The user's credit balance
-   * @throws BadRequestException - When userId is invalid
-   * @throws NotFoundException - When user is not found
+   * @throws ValidationException - When userId is invalid
+   * @throws ResourceNotFoundException - When user is not found
    */
   async getBalance(userId: string): Promise<number> {
     const startTime = Date.now();
 
     if (!userId || typeof userId !== 'string') {
       this.logger.warn(`Invalid user ID provided to getBalance: ${userId}`);
-      throw new BadRequestException('Invalid user ID');
+      throw new ValidationException('Invalid user ID', 'INVALID_USER_ID', { providedUserId: userId });
     }
 
     this.logger.debug(`Getting balance for user ${userId}`);
@@ -86,7 +87,7 @@ export class CreditBalanceService {
 
     if (!user) {
       this.logger.warn(`User not found: ${userId}`);
-      throw new NotFoundException('User not found');
+      throw new ResourceNotFoundException('User', 'USER_NOT_FOUND', { userId });
     }
 
     const duration = Date.now() - startTime;
@@ -114,11 +115,15 @@ export class CreditBalanceService {
    */
   async updateBalance(userId: string, newBalance: number): Promise<void> {
     if (!userId || typeof userId !== 'string') {
-      throw new BadRequestException('Invalid user ID');
+      throw new ValidationException('Invalid user ID', 'INVALID_USER_ID', { providedUserId: userId });
     }
 
     if (typeof newBalance !== 'number' || newBalance < 0) {
-      throw new BadRequestException('Invalid balance amount');
+      throw new CreditException('Invalid balance amount', 'INVALID_BALANCE_AMOUNT', { 
+        providedBalance: newBalance,
+        expectedType: 'number',
+        minimumValue: 0
+      });
     }
 
     await this.userRepository.update(userId, { creditsBalance: newBalance });

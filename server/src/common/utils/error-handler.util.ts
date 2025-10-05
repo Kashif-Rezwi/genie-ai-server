@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { LoggingService } from '../../modules/monitoring/services/logging.service';
+import { CustomExceptionResponse } from '../exceptions/business.exception';
 
 /**
  * Standardized error handling utility
@@ -21,6 +22,9 @@ export class ErrorHandlerUtil {
     loggingService: LoggingService,
     serviceName: string,
   ): void {
+    // Extract error details if it's a custom exception
+    const errorDetails = this.extractErrorDetails(error);
+    
     // Log error with structured context
     loggingService.logError(
       `Error in ${serviceName}`,
@@ -31,11 +35,37 @@ export class ErrorHandlerUtil {
         errorName: error.constructor.name,
         errorMessage: error.message,
         stack: error.stack,
+        ...errorDetails,
       },
     );
 
     // Log to console for immediate visibility during development
     this.logger.error(`[${serviceName}] ${error.message}`, error.stack);
+  }
+
+  /**
+   * Extract error details from custom exceptions
+   * @param error - Error object
+   * @private
+   */
+  private static extractErrorDetails(error: Error): any {
+    try {
+      // Check if it's a custom exception with response data
+      if ('getResponse' in error && typeof error.getResponse === 'function') {
+        const response = error.getResponse();
+        if (typeof response === 'object' && response !== null) {
+          return {
+            errorCode: (response as CustomExceptionResponse).errorCode,
+            errorDetails: (response as CustomExceptionResponse).details,
+            errorTimestamp: (response as CustomExceptionResponse).timestamp,
+          };
+        }
+      }
+    } catch (e) {
+      // Ignore extraction errors
+    }
+    
+    return {};
   }
 
   /**

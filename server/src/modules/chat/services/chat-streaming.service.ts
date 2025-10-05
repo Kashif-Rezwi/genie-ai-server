@@ -1,9 +1,10 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Response } from 'express';
 import { ChatService } from './chat.service';
 import { MessageService } from './message.service';
 import { AIService } from '../../ai/services/ai.service';
 import { CreditsService } from '../../credits/services/credits.service';
+import { BusinessException, ValidationException } from '../../../common/exceptions';
 import { LoggingService } from '../../monitoring/services/logging.service';
 import { SendMessageDto } from '../dto/chat.dto';
 import { StreamingChatResponseDto } from '../dto/message.dto';
@@ -35,8 +36,10 @@ export class ChatStreamingService {
 
     // Check if there's already an active stream for this chat
     if (this.activeStreams.has(streamKey)) {
-      throw new BadRequestException(
-        'Another message is already being processed for this chat. Please wait.'
+      throw new BusinessException(
+        'Another message is already being processed for this chat. Please wait.',
+        'CHAT_ALREADY_PROCESSING',
+        { chatId }
       );
     }
 
@@ -88,7 +91,7 @@ export class ChatStreamingService {
       const modelConfig = getModelConfig(modelId);
 
       if (!modelConfig) {
-        throw new BadRequestException(`Model ${modelId} not supported`);
+        throw new ValidationException(`Model ${modelId} not supported`, 'MODEL_NOT_SUPPORTED', { modelId });
       }
 
       // Step 6: Check credits for paid models

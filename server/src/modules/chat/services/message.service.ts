@@ -1,8 +1,6 @@
 import {
   Injectable,
-  NotFoundException,
   ForbiddenException,
-  BadRequestException,
 } from '@nestjs/common';
 import { DataSource, MoreThan } from 'typeorm';
 import { Chat, Message, MessageRole } from '../../../entities';
@@ -14,6 +12,7 @@ import {
 } from '../interfaces/chat.interfaces';
 import { MessageResponseDto } from '../dto/message.dto';
 import { IChatRepository, IMessageRepository } from '../../../core/repositories/interfaces';
+import { ResourceNotFoundException, BusinessException, ValidationException } from '../../../common/exceptions';
 
 @Injectable()
 export class MessageService {
@@ -28,7 +27,7 @@ export class MessageService {
     const chat = await this.chatRepository.findById(chatId);
 
     if (!chat || chat.userId !== userId) {
-      throw new NotFoundException('Chat not found');
+      throw new ResourceNotFoundException('Chat', 'CHAT_NOT_FOUND', { chatId });
     }
 
     // Check for duplicate message in last 5 minutes
@@ -40,8 +39,10 @@ export class MessageService {
     );
 
     if (recentMessage) {
-      throw new BadRequestException(
-        'Duplicate message detected. Please wait before sending the same message again.'
+      throw new BusinessException(
+        'Duplicate message detected. Please wait before sending the same message again.',
+        'DUPLICATE_MESSAGE_DETECTED',
+        { chatId, content: content.substring(0, 50) + '...' }
       );
     }
 
@@ -64,7 +65,7 @@ export class MessageService {
     const chat = await this.chatRepository.findById(chatId);
 
     if (!chat || chat.userId !== userId) {
-      throw new NotFoundException('Chat not found');
+      throw new ResourceNotFoundException('Chat', 'CHAT_NOT_FOUND', { chatId });
     }
 
     return this.messageRepository.create({
@@ -86,7 +87,7 @@ export class MessageService {
     const chat = await this.chatRepository.findById(chatId);
 
     if (!chat || chat.userId !== userId) {
-      throw new NotFoundException('Chat not found');
+      throw new ResourceNotFoundException('Chat', 'CHAT_NOT_FOUND', { chatId });
     }
 
     const [messages, total] = await Promise.all([
@@ -111,7 +112,7 @@ export class MessageService {
     const chat = await this.chatRepository.findById(chatId);
 
     if (!chat || chat.userId !== userId) {
-      throw new NotFoundException('Chat not found');
+      throw new ResourceNotFoundException('Chat', 'CHAT_NOT_FOUND', { chatId });
     }
 
     // Get messages for the chat
@@ -130,7 +131,7 @@ export class MessageService {
     const message = await this.messageRepository.findById(messageId);
 
     if (!message) {
-      throw new NotFoundException('Message not found');
+      throw new ResourceNotFoundException('Message', 'MESSAGE_NOT_FOUND', { messageId });
     }
 
     // Get chat to verify ownership
@@ -147,7 +148,7 @@ export class MessageService {
     const chat = await this.chatRepository.findById(chatId);
 
     if (!chat || chat.userId !== userId) {
-      throw new NotFoundException('Chat not found');
+      throw new ResourceNotFoundException('Chat', 'CHAT_NOT_FOUND', { chatId });
     }
 
     // Get all messages for the chat

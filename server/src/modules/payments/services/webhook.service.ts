@@ -1,9 +1,10 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Payment, PaymentStatus } from '../../../entities';
 import { RazorpayService } from './razorpay.service';
 import { CreditsService } from '../../credits/services/credits.service';
 import { RazorpayWebhookEvent } from '../interfaces/webhook.interface';
+import { PaymentException, ValidationException } from '../../../common/exceptions';
 import { IPaymentRepository } from '../../../core/repositories/interfaces';
 
 @Injectable()
@@ -31,7 +32,9 @@ export class WebhookService {
 
         if (!isValid) {
           this.logger.warn('Invalid webhook signature received');
-          throw new BadRequestException('Invalid webhook signature');
+          throw new ValidationException('Invalid webhook signature', 'INVALID_WEBHOOK_SIGNATURE', { 
+            signature: signature.substring(0, 10) + '...'
+          });
         }
 
         const event: RazorpayWebhookEvent = JSON.parse(body);
@@ -203,11 +206,16 @@ export class WebhookService {
     });
 
     if (!payment) {
-      throw new BadRequestException('Payment not found');
+      throw new PaymentException('Payment not found', 'PAYMENT_NOT_FOUND', { 
+        razorpayOrderId: (event as any)?.payload?.payment?.entity?.order_id || 'unknown'
+      });
     }
 
     if (payment.status !== PaymentStatus.FAILED || !payment.razorpayPaymentId) {
-      throw new BadRequestException('Payment is not in a retryable state');
+      throw new PaymentException('Payment is not in a retryable state', 'PAYMENT_NOT_RETRYABLE', { 
+        currentStatus: payment.status,
+        hasRazorpayPaymentId: !!payment.razorpayPaymentId
+      });
     }
 
     // Fetch latest payment status from Razorpay

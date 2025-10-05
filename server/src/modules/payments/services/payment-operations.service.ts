@@ -1,7 +1,5 @@
 import {
   Injectable,
-  NotFoundException,
-  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
@@ -9,6 +7,7 @@ import { Payment, PaymentStatus, PaymentMethod } from '../../../entities';
 import { RazorpayService } from './razorpay.service';
 import { CreditsService } from '../../credits/services/credits.service';
 import { IPaymentRepository } from '../../../core/repositories/interfaces';
+import { ResourceNotFoundException, PaymentException, ValidationException } from '../../../common/exceptions';
 
 @Injectable()
 export class PaymentOperationsService {
@@ -36,25 +35,36 @@ export class PaymentOperationsService {
     const payment = await this.paymentRepository.findById(paymentId);
 
     if (!payment) {
-      throw new NotFoundException('Payment not found');
+      throw new ResourceNotFoundException('Payment', 'PAYMENT_NOT_FOUND', { paymentId });
     }
 
     if (payment.status !== PaymentStatus.COMPLETED) {
-      throw new BadRequestException('Only completed payments can be refunded');
+      throw new PaymentException('Only completed payments can be refunded', 'INVALID_PAYMENT_STATUS', { 
+        currentStatus: payment.status,
+        requiredStatus: PaymentStatus.COMPLETED
+      });
     }
 
     if (payment.method !== PaymentMethod.RAZORPAY) {
-      throw new BadRequestException('Only Razorpay payments can be refunded');
+      throw new PaymentException('Only Razorpay payments can be refunded', 'INVALID_PAYMENT_METHOD', { 
+        currentMethod: payment.method,
+        requiredMethod: PaymentMethod.RAZORPAY
+      });
     }
 
     if (!payment.razorpayPaymentId) {
-      throw new BadRequestException('Razorpay payment ID not found');
+      throw new PaymentException('Razorpay payment ID not found', 'MISSING_RAZORPAY_PAYMENT_ID', { 
+        paymentId: payment.id
+      });
     }
 
     const amountToRefund = refundAmount || payment.amount;
 
     if (amountToRefund > payment.amount) {
-      throw new BadRequestException('Refund amount cannot exceed payment amount');
+      throw new PaymentException('Refund amount cannot exceed payment amount', 'REFUND_AMOUNT_EXCEEDS_PAYMENT', { 
+        refundAmount: amountToRefund,
+        paymentAmount: payment.amount
+      });
     }
 
     // Create Razorpay refund
@@ -194,7 +204,7 @@ export class PaymentOperationsService {
     });
 
     if (!payment) {
-      throw new NotFoundException('Payment not found');
+      throw new ResourceNotFoundException('Payment', 'PAYMENT_NOT_FOUND', { paymentId });
     }
 
     payment.status = status;

@@ -1,4 +1,5 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { ValidationException, RateLimitException } from '../../../common/exceptions';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import { RedisService } from '../../redis/redis.service';
 import { getRateLimitConfig } from '../../../config';
@@ -89,7 +90,10 @@ export class RateLimitService {
     const rateLimiter = this.rateLimiters.get(limiterName);
 
     if (!rateLimiter) {
-      throw new BadRequestException(`Rate limiter ${limiterName} not found`);
+      throw new ValidationException(`Rate limiter ${limiterName} not found`, 'RATE_LIMITER_NOT_FOUND', { 
+        limiterName, 
+        availableLimiters: Array.from(this.rateLimiters.keys()) 
+      });
     }
 
     try {
@@ -97,7 +101,11 @@ export class RateLimitService {
     } catch (rateLimitRes) {
       if (rateLimitRes instanceof RateLimiterRes) {
         const timeToReset = Math.round(rateLimitRes.msBeforeNext / 1000) || 1;
-        throw new BadRequestException(`Rate limit exceeded. Try again in ${timeToReset} seconds`);
+        throw new RateLimitException(`Rate limit exceeded. Try again in ${timeToReset} seconds`, 'RATE_LIMIT_EXCEEDED', { 
+          timeToReset, 
+          limiterName, 
+          key 
+        });
       }
       // Redis connection error - allow request but log warning
       this.logger.logWarning(`Redis rate limiting failed for ${limiterName}`, {
@@ -158,7 +166,7 @@ export class RateLimitService {
         tier,
       };
     } catch (error) {
-      if (error instanceof BadRequestException) {
+      if (error instanceof RateLimitException) {
         const tier = await this.getUserTier(userId);
         return {
           allowed: false,
@@ -202,7 +210,10 @@ export class RateLimitService {
     const rateLimiter = this.rateLimiters.get(limiterName);
 
     if (!rateLimiter) {
-      throw new BadRequestException(`Rate limiter ${limiterName} not found`);
+      throw new ValidationException(`Rate limiter ${limiterName} not found`, 'RATE_LIMITER_NOT_FOUND', { 
+        limiterName, 
+        availableLimiters: Array.from(this.rateLimiters.keys()) 
+      });
     }
 
     const res = await rateLimiter.get(key);

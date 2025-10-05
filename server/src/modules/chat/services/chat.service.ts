@@ -1,14 +1,13 @@
 import {
   Injectable,
-  NotFoundException,
   ForbiddenException,
-  BadRequestException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Chat, Message, MessageRole, User } from '../../../entities';
 import { CreateChatDto, UpdateChatDto, ChatListQueryDto } from '../dto/chat.dto';
 import { ChatResponse, ChatDetailResponse, ChatStats } from '../interfaces/chat.interfaces';
 import { IChatRepository, IMessageRepository, IUserRepository } from '../../../core/repositories/interfaces';
+import { ResourceNotFoundException, BusinessException } from '../../../common/exceptions';
 
 @Injectable()
 export class ChatService {
@@ -23,7 +22,7 @@ export class ChatService {
     // Verify user exists
     const user = await this.userRepository.findById(userId);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new ResourceNotFoundException('User', 'USER_NOT_FOUND', { userId });
     }
 
     const savedChat = await this.chatRepository.create({
@@ -92,7 +91,7 @@ export class ChatService {
     const chat = await this.chatRepository.findById(chatId);
 
     if (!chat || chat.userId !== userId) {
-      throw new NotFoundException('Chat not found');
+      throw new ResourceNotFoundException('Chat', 'CHAT_NOT_FOUND', { chatId });
     }
 
     // Get messages with pagination to avoid loading all messages
@@ -126,7 +125,7 @@ export class ChatService {
     const chat = await this.chatRepository.findById(chatId);
 
     if (!chat || chat.userId !== userId) {
-      throw new NotFoundException('Chat not found');
+      throw new ResourceNotFoundException('Chat', 'CHAT_NOT_FOUND', { chatId });
     }
 
     return this.chatRepository.update(chatId, updateChatDto);
@@ -136,7 +135,7 @@ export class ChatService {
     const chat = await this.chatRepository.findById(chatId);
 
     if (!chat || chat.userId !== userId) {
-      throw new NotFoundException('Chat not found');
+      throw new ResourceNotFoundException('Chat', 'CHAT_NOT_FOUND', { chatId });
     }
 
     // Messages will be deleted automatically due to CASCADE delete
@@ -210,7 +209,7 @@ export class ChatService {
     const chat = await this.chatRepository.findById(chatId);
 
     if (!chat || chat.userId !== userId) {
-      throw new NotFoundException('Chat not found');
+      throw new ResourceNotFoundException('Chat', 'CHAT_NOT_FOUND', { chatId });
     }
 
     const [messages, total] = await Promise.all([

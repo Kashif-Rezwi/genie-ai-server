@@ -12,13 +12,13 @@ import {
   Req,
   HttpCode,
   HttpStatus,
-  BadRequestException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { PaymentsService } from './services/payments.service';
 import { WebhookService } from './services/webhook.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AdminRoleGuard } from '../../common/guards/admin-role.guard';
+import { ValidationException } from '../../common/exceptions';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RateLimit, RateLimitGuard } from '../security/guards/rate-limit.guard';
 import { CSRFProtectionGuard, SkipCSRF } from '../security/guards/csrf-protection.guard';
@@ -120,7 +120,9 @@ export class PaymentsController {
     const body = req.rawBody?.toString() || '';
 
     if (!signature) {
-      throw new BadRequestException('Missing webhook signature');
+      throw new ValidationException('Missing webhook signature', 'MISSING_WEBHOOK_SIGNATURE', { 
+        requiredHeader: 'x-razorpay-signature'
+      });
     }
 
     return this.webhookService.handleRazorpayWebhook(body, signature);

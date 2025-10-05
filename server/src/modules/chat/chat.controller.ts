@@ -12,13 +12,13 @@ import {
   Res,
   HttpCode,
   HttpStatus,
-  BadRequestException,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ChatService } from './services/chat.service';
 import { MessageService } from './services/message.service';
 import { ChatStreamingService } from './services/chat-streaming.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { BusinessException } from '../../common/exceptions';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RateLimit, RateLimitGuard } from '../security/guards/rate-limit.guard';
 import { CSRFProtectionGuard } from '../security/guards/csrf-protection.guard';
@@ -205,7 +205,9 @@ export class ChatController {
     const lastUserMessage = messages.reverse().find(m => m.role === 'user');
 
     if (!lastUserMessage) {
-      throw new BadRequestException('No user message found to regenerate response');
+      throw new BusinessException('No user message found to regenerate response', 'NO_USER_MESSAGE_FOUND', { 
+        chatId
+      });
     }
 
     const sendMessageDto: SendMessageDto = {

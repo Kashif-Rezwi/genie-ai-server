@@ -1,12 +1,12 @@
 import {
   Injectable,
-  BadRequestException,
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
 const Razorpay = require('razorpay');
 import * as crypto from 'crypto';
 import { paymentConfig } from '../../../config';
+import { PaymentException, ValidationException } from '../../../common/exceptions';
 
 export interface RazorpayOrder {
   id: string;
@@ -71,7 +71,7 @@ export class RazorpayService {
       return (await this.razorpay.orders.fetch(orderId)) as RazorpayOrder;
     } catch (error) {
       this.logger.error('Failed to fetch Razorpay order:', error);
-      throw new BadRequestException('Invalid order ID');
+      throw new ValidationException('Invalid order ID', 'INVALID_ORDER_ID', { orderId });
     }
   }
 
@@ -80,7 +80,7 @@ export class RazorpayService {
       return await this.razorpay.payments.fetch(paymentId);
     } catch (error) {
       this.logger.error('Failed to fetch Razorpay payment:', error);
-      throw new BadRequestException('Invalid payment ID');
+      throw new ValidationException('Invalid payment ID', 'INVALID_PAYMENT_ID', { paymentId });
     }
   }
 
