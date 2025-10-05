@@ -5,7 +5,6 @@ import { MetricsService } from '../monitoring/services/metrics.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { EmailService } from '../email/email.service';
-
 export interface JwtPayload {
   sub: string;
   email: string;

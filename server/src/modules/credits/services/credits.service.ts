@@ -3,7 +3,6 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CreditBalanceService } from './credit-balance.service';
 import { CreditTransactionService } from './credit-transaction.service';
 import { CreditReservationService, CreditReservation } from './credit-reservation.service';
-
 /**
  * Main credits service that orchestrates credit operations
  * This is a refactored version that delegates to specialized services

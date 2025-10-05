@@ -6,7 +6,6 @@ import { CreditsService } from '../../credits/services/credits.service';
 import { MetricsService } from '../../monitoring/services/metrics.service';
 import { getModelConfig, AIModelConfig, aiProvidersConfig } from '../../../config';
 import { v4 as uuidv4 } from 'uuid';
-
 @Injectable()
 export class AIService {
   private readonly config = aiProvidersConfig();

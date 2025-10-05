@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { LoggingService } from './logging.service';
-
 export interface MetricsData {
   requests: {
     total: number;

@@ -8,7 +8,6 @@ import { CreateChatDto, UpdateChatDto, ChatListQueryDto } from '../dto/chat.dto'
 import { ChatResponse, ChatDetailResponse, ChatStats } from '../interfaces/chat.interfaces';
 import { IChatRepository, IMessageRepository, IUserRepository } from '../../../core/repositories/interfaces';
 import { ResourceNotFoundException, BusinessException } from '../../../common/exceptions';
-
 @Injectable()
 export class ChatService {
   constructor(

@@ -17,6 +17,12 @@ import { ErrorService } from '../modules/monitoring/services/error.service';
 import { HealthService } from '../modules/monitoring/services/health.service';
 import { AlertingService } from '../modules/monitoring/services/alerting.service';
 
+// Service Interfaces
+export * from './interfaces/services';
+
+// Service Mocks (for testing)
+export * from './mocks/services';
+
 /**
  * Core Module
  * Provides shared services and repositories across the application
