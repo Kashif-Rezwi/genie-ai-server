@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductionReadinessController } from './production-readiness.controller';
 import { SecurityAuditService } from '../security/services/security-audit.service';
 import { HealthService } from '../monitoring/services/health.service';
@@ -9,9 +8,7 @@ import { LoggingService } from '../monitoring/services/logging.service';
 import { RedisService } from '../redis/redis.service';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([]),
-  ],
+  imports: [],
   controllers: [ProductionReadinessController],
   providers: [
     SecurityAuditService,

@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { Payment, PaymentStatus, PaymentMethod, User } from '../../../entities';
 import { RazorpayService } from './razorpay.service';
 import { CreditsService } from '../../credits/services/credits.service';
@@ -8,6 +7,7 @@ import { PaymentOrderService } from './payment-order.service';
 import { PaymentVerificationService } from './payment-verification.service';
 import { PaymentAnalyticsService, PaymentAnalytics } from './payment-analytics.service';
 import { PaymentOperationsService } from './payment-operations.service';
+import { IPaymentRepository, IUserRepository } from '../../../core/repositories/interfaces';
 import {
   CreatePaymentOrderDto,
   VerifyPaymentDto,
@@ -25,10 +25,8 @@ export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
 
   constructor(
-    @InjectRepository(Payment)
-    private readonly paymentRepository: Repository<Payment>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly paymentRepository: IPaymentRepository,
+    private readonly userRepository: IUserRepository,
     private readonly razorpayService: RazorpayService,
     private readonly creditsService: CreditsService,
     private readonly dataSource: DataSource,

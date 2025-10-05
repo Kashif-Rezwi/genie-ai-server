@@ -1,18 +1,17 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { Payment, PaymentStatus } from '../../../entities';
 import { RazorpayService } from './razorpay.service';
 import { CreditsService } from '../../credits/services/credits.service';
 import { RazorpayWebhookEvent } from '../interfaces/webhook.interface';
+import { IPaymentRepository } from '../../../core/repositories/interfaces';
 
 @Injectable()
 export class WebhookService {
   private readonly logger = new Logger(WebhookService.name);
 
   constructor(
-    @InjectRepository(Payment)
-    private readonly paymentRepository: Repository<Payment>,
+    private readonly paymentRepository: IPaymentRepository,
     private readonly razorpayService: RazorpayService,
     private readonly creditsService: CreditsService,
     private readonly dataSource: DataSource

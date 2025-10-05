@@ -5,12 +5,12 @@ import {
   Logger,
   BadRequestException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { User, CreditTransaction, TransactionType, CreditAuditLog } from '../../../entities';
 import { TransactionMetadataValidator } from '../interfaces/transaction-metadata.interface';
 import { creditConfig } from '../../../config';
+import { IUserRepository, ICreditTransactionRepository, ICreditAuditLogRepository } from '../../../core/repositories/interfaces';
 
 /**
  * Service responsible for managing credit transactions
@@ -22,12 +22,9 @@ export class CreditTransactionService {
   private readonly config = creditConfig();
 
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    @InjectRepository(CreditTransaction)
-    private readonly transactionRepository: Repository<CreditTransaction>,
-    @InjectRepository(CreditAuditLog)
-    private readonly auditRepository: Repository<CreditAuditLog>,
+    private readonly userRepository: IUserRepository,
+    private readonly transactionRepository: ICreditTransactionRepository,
+    private readonly auditRepository: ICreditAuditLogRepository,
     private readonly dataSource: DataSource,
     private readonly eventEmitter: EventEmitter2
   ) {}
@@ -51,10 +48,7 @@ export class CreditTransactionService {
     this.validateCreditAmount(amount, 'addition');
 
     await this.dataSource.transaction(async manager => {
-      const user = await manager.findOne(User, {
-        where: { id: userId },
-        lock: { mode: 'pessimistic_write' },
-      });
+      const user = await this.userRepository.findById(userId);
 
       if (!user) {
         throw new NotFoundException('User not found');
@@ -62,9 +56,9 @@ export class CreditTransactionService {
 
       const balanceBefore = user.creditsBalance;
       user.creditsBalance += amount;
-      await manager.save(user);
+      await this.userRepository.update(userId, user);
 
-      const transaction = manager.create(CreditTransaction, {
+      const transaction = await this.transactionRepository.create({
         userId,
         type: TransactionType.PURCHASE,
         amount,
@@ -72,17 +66,15 @@ export class CreditTransactionService {
         description,
         metadata: metadata ? TransactionMetadataValidator.validate(metadata) : {},
       });
-      const savedTransaction = await manager.save(transaction);
-
       // Create audit log
-      await this.createAuditLog(manager, {
+      await this.auditRepository.create({
         userId,
-        transactionId: savedTransaction.id,
+        transactionId: transaction.id,
         action: 'credit_added',
-        details: {
-          amount,
-          balanceBefore,
-          balanceAfter: user.creditsBalance,
+        amount,
+        balanceBefore,
+        balanceAfter: user.creditsBalance,
+        context: {
           description,
         },
       });
@@ -120,10 +112,7 @@ export class CreditTransactionService {
     this.validateCreditAmount(amount, 'deduction');
 
     await this.dataSource.transaction(async manager => {
-      const user = await manager.findOne(User, {
-        where: { id: userId },
-        lock: { mode: 'pessimistic_write' },
-      });
+      const user = await this.userRepository.findById(userId);
 
       if (!user) {
         throw new NotFoundException('User not found');
@@ -148,9 +137,9 @@ export class CreditTransactionService {
 
       const balanceBefore = user.creditsBalance;
       user.creditsBalance = newBalance;
-      await manager.save(user);
+      await this.userRepository.update(userId, user);
 
-      const transaction = manager.create(CreditTransaction, {
+      const transaction = await this.transactionRepository.create({
         userId,
         type: TransactionType.USAGE,
         amount: -amount,
@@ -158,17 +147,16 @@ export class CreditTransactionService {
         description,
         metadata: metadata ? TransactionMetadataValidator.validate(metadata) : {},
       });
-      const savedTransaction = await manager.save(transaction);
 
       // Create audit log
-      await this.createAuditLog(manager, {
+      await this.auditRepository.create({
         userId,
-        transactionId: savedTransaction.id,
+        transactionId: transaction.id,
         action: 'credit_deducted',
-        details: {
-          amount,
-          balanceBefore,
-          balanceAfter: user.creditsBalance,
+        amount,
+        balanceBefore,
+        balanceAfter: user.creditsBalance,
+        context: {
           description,
         },
       });

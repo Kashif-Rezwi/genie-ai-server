@@ -1,6 +1,5 @@
 import { Module, Global } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { MonitoringController } from './monitoring.controller';
 import { APMController } from './controllers/apm.controller';
 import { AnalyticsController } from './controllers/analytics.controller';
@@ -20,13 +19,11 @@ import { BusinessAlertsService } from './services/business-alerts.service';
 import { RequestMonitoringMiddleware } from './middleware/request-monitoring.middleware';
 import { EmailModule } from '../email/email.module';
 import { RedisService } from '../redis/redis.service';
-import { User, CreditTransaction, Payment, Chat, Message } from '../../entities';
 
 @Global()
 @Module({
   imports: [
     TerminusModule, 
-    TypeOrmModule.forFeature([User, CreditTransaction, Payment, Chat, Message]), 
     EmailModule
   ],
   controllers: [

@@ -1,9 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Redis } from 'ioredis';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { User } from '../../../entities';
+import { IUserRepository } from '../../../core/repositories/interfaces';
 
 export interface ScalingMetrics {
   cpuUsage: number;
@@ -113,7 +112,7 @@ export class ScalabilityService {
 
   constructor(
     @InjectRedis() private readonly redis: Redis,
-    @InjectRepository(User) private readonly userRepository: Repository<User>,
+    private readonly userRepository: IUserRepository,
   ) {}
 
   /**

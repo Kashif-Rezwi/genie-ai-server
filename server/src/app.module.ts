@@ -3,6 +3,9 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 
+// Core Module
+import { CoreModule } from './core/core.module';
+
 // Feature Modules
 import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -36,6 +39,9 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
     TypeOrmModule.forRootAsync({
       useFactory: databaseConfig,
     }),
+
+    // Core Module (must be loaded first for repositories)
+    CoreModule,
 
     // Feature Modules (dependency order)
     SecurityModule, // Security must be loaded first

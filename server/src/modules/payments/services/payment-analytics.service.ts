@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { Payment, PaymentStatus } from '../../../entities';
+import { IPaymentRepository } from '../../../core/repositories/interfaces';
 
 export interface PaymentAnalytics {
   totalRevenue: number;
@@ -31,8 +30,7 @@ export class PaymentAnalyticsService {
   private readonly logger = new Logger(PaymentAnalyticsService.name);
 
   constructor(
-    @InjectRepository(Payment)
-    private readonly paymentRepository: Repository<Payment>,
+    private readonly paymentRepository: IPaymentRepository,
   ) {}
 
   /**
@@ -42,13 +40,12 @@ export class PaymentAnalyticsService {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const payments = await this.paymentRepository
-      .createQueryBuilder('payment')
-      .where('payment.createdAt >= :startDate', { startDate })
-      .getMany();
+    // Get all payments and filter by date (simplified approach)
+    const payments = await this.paymentRepository.findAll();
+    const filteredPayments = payments.filter(p => p.createdAt >= startDate);
 
-    const successfulPayments = payments.filter(p => p.status === PaymentStatus.COMPLETED);
-    const failedPayments = payments.filter(p => p.status === PaymentStatus.FAILED);
+    const successfulPayments = filteredPayments.filter(p => p.status === PaymentStatus.COMPLETED);
+    const failedPayments = filteredPayments.filter(p => p.status === PaymentStatus.FAILED);
 
     const totalRevenue = successfulPayments.reduce((sum, p) => sum + p.amount, 0);
     const averageOrderValue = successfulPayments.length > 0 ? totalRevenue / successfulPayments.length : 0;

@@ -4,19 +4,18 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { Payment, PaymentStatus, PaymentMethod } from '../../../entities';
 import { RazorpayService } from './razorpay.service';
 import { CreditsService } from '../../credits/services/credits.service';
+import { IPaymentRepository } from '../../../core/repositories/interfaces';
 
 @Injectable()
 export class PaymentOperationsService {
   private readonly logger = new Logger(PaymentOperationsService.name);
 
   constructor(
-    @InjectRepository(Payment)
-    private readonly paymentRepository: Repository<Payment>,
+    private readonly paymentRepository: IPaymentRepository,
     private readonly razorpayService: RazorpayService,
     private readonly creditsService: CreditsService,
     private readonly dataSource: DataSource
@@ -34,9 +33,7 @@ export class PaymentOperationsService {
     refundId?: string;
     message: string;
   }> {
-    const payment = await this.paymentRepository.findOne({
-      where: { id: paymentId },
-    });
+    const payment = await this.paymentRepository.findById(paymentId);
 
     if (!payment) {
       throw new NotFoundException('Payment not found');
@@ -85,7 +82,7 @@ export class PaymentOperationsService {
         },
       };
 
-      await queryRunner.manager.save(payment);
+      await this.paymentRepository.update(payment.id, payment);
 
       // Deduct credits from user account
       if (payment.creditTransactionId) {
@@ -132,27 +129,29 @@ export class PaymentOperationsService {
     limit: number;
     totalPages: number;
   }> {
-    const queryBuilder = this.paymentRepository
-      .createQueryBuilder('payment')
-      .where('payment.userId = :userId', { userId });
-
+    // Get all payments for user and filter in memory (simplified approach)
+    const allPayments = await this.paymentRepository.findByUserId(userId);
+    
+    let filteredPayments = allPayments;
+    
     if (status) {
-      queryBuilder.andWhere('payment.status = :status', { status });
+      filteredPayments = filteredPayments.filter(p => p.status === status);
     }
-
+    
     if (startDate) {
-      queryBuilder.andWhere('payment.createdAt >= :startDate', { startDate });
+      filteredPayments = filteredPayments.filter(p => p.createdAt >= startDate);
     }
-
+    
     if (endDate) {
-      queryBuilder.andWhere('payment.createdAt <= :endDate', { endDate });
+      filteredPayments = filteredPayments.filter(p => p.createdAt <= endDate);
     }
-
-    const [payments, total] = await queryBuilder
-      .orderBy('payment.createdAt', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getManyAndCount();
+    
+    // Sort by creation date (newest first)
+    filteredPayments.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    
+    // Apply pagination
+    const total = filteredPayments.length;
+    const payments = filteredPayments.slice((page - 1) * limit, page * limit);
 
     const totalPages = Math.ceil(total / limit);
 

@@ -1,11 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Redis } from 'ioredis';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { User } from '../../../entities';
 import { creditConfig } from '../../../config';
+import { IUserRepository } from '../../../core/repositories/interfaces';
 
 /**
  * Service responsible for managing credit balance operations
@@ -21,8 +20,7 @@ export class CreditBalanceService {
   private redisLastCheck: Date = new Date();
 
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly userRepository: IUserRepository,
     @InjectRedis() private readonly redis: Redis,
     private readonly eventEmitter: EventEmitter2
   ) {}
@@ -84,10 +82,7 @@ export class CreditBalanceService {
     }
 
     // Database fallback
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      select: ['id', 'creditsBalance'],
-    });
+    const user = await this.userRepository.findById(userId);
 
     if (!user) {
       this.logger.warn(`User not found: ${userId}`);

@@ -5,11 +5,11 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { Payment, PaymentStatus, PaymentMethod, User } from '../../../entities';
 import { RazorpayService } from './razorpay.service';
 import { CreditsService } from '../../credits/services/credits.service';
+import { IPaymentRepository, IUserRepository } from '../../../core/repositories/interfaces';
 import {
   VerifyPaymentDto,
   PaymentVerificationResponse,
@@ -20,10 +20,8 @@ export class PaymentVerificationService {
   private readonly logger = new Logger(PaymentVerificationService.name);
 
   constructor(
-    @InjectRepository(Payment)
-    private readonly paymentRepository: Repository<Payment>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly paymentRepository: IPaymentRepository,
+    private readonly userRepository: IUserRepository,
     private readonly razorpayService: RazorpayService,
     private readonly creditsService: CreditsService,
     private readonly dataSource: DataSource
@@ -38,9 +36,7 @@ export class PaymentVerificationService {
     const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = verifyDto;
 
     // Get payment record
-    const payment = await this.paymentRepository.findOne({
-      where: { razorpayOrderId },
-    });
+    const payment = await this.paymentRepository.findByRazorpayOrderId(razorpayOrderId);
 
     if (!payment) {
       throw new NotFoundException('Payment not found');
@@ -59,7 +55,7 @@ export class PaymentVerificationService {
     if (!isValid) {
       payment.status = PaymentStatus.FAILED;
       payment.failureReason = 'Invalid signature';
-      await this.paymentRepository.save(payment);
+      await this.paymentRepository.update(payment.id, payment);
       throw new BadRequestException('Invalid payment signature');
     }
 
@@ -69,7 +65,7 @@ export class PaymentVerificationService {
     if (razorpayPayment.status !== 'captured') {
       payment.status = PaymentStatus.FAILED;
       payment.failureReason = 'Payment not captured';
-      await this.paymentRepository.save(payment);
+      await this.paymentRepository.update(payment.id, payment);
       throw new BadRequestException('Payment not captured');
     }
 
@@ -88,7 +84,7 @@ export class PaymentVerificationService {
 
     try {
       // Save payment
-      await queryRunner.manager.save(payment);
+      await this.paymentRepository.update(payment.id, payment);
 
       // Add credits to user account
       await this.creditsService.addCredits(
@@ -101,7 +97,7 @@ export class PaymentVerificationService {
       // Update payment with credit transaction ID (we'll need to get this from the transaction service)
       // For now, we'll set a placeholder
       payment.creditTransactionId = `credit_${Date.now()}`;
-      await queryRunner.manager.save(payment);
+      await this.paymentRepository.update(payment.id, payment);
 
       await queryRunner.commitTransaction();
 

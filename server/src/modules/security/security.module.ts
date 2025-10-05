@@ -1,5 +1,4 @@
 import { Module, Global } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { RedisService } from '../redis/redis.service';
 import { RateLimitService } from './services/rate-limit.service';
 import { RateLimitMonitoringService } from './services/rate-limit-monitoring.service';
@@ -17,11 +16,10 @@ import { SecurityAuditService } from './services/security-audit.service';
 import { SecurityVulnerabilityService } from './services/security-vulnerability.service';
 import { SecurityCheckService } from './services/security-check.service';
 import { SecurityComplianceService } from './services/security-compliance.service';
-import { User } from '../../entities';
 
 @Global()
 @Module({
-  imports: [TypeOrmModule.forFeature([User])],
+  imports: [],
   controllers: [SecurityController],
   providers: [
     RedisService,

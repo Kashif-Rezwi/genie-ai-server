@@ -1,16 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { User, CreditTransaction, TransactionType } from '../../../entities';
 import { CreditsService } from './credits.service';
+import { IUserRepository, ICreditTransactionRepository } from '../../../core/repositories/interfaces';
 
 @Injectable()
 export class CreditsAnalyticsService {
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    @InjectRepository(CreditTransaction)
-    private readonly transactionRepository: Repository<CreditTransaction>,
+    private readonly userRepository: IUserRepository,
+    private readonly transactionRepository: ICreditTransactionRepository,
     private readonly creditsService: CreditsService
   ) {}
 
@@ -21,16 +18,17 @@ export class CreditsAnalyticsService {
     totalCreditsInCirculation: number;
     totalTransactions: number;
   }> {
-    const totalUsers = await this.userRepository.count();
-    const creditsResult = await this.userRepository
-      .createQueryBuilder('user')
-      .select('SUM(user.creditsBalance)', 'total')
-      .getRawOne();
-    const totalTransactions = await this.transactionRepository.count();
+    const [totalUsers, users, totalTransactions] = await Promise.all([
+      this.userRepository.count(),
+      this.userRepository.findAll(),
+      this.transactionRepository.count(),
+    ]);
+
+    const totalCreditsInCirculation = users.reduce((sum: number, user: User) => sum + user.creditsBalance, 0);
 
     return {
       totalUsers,
-      totalCreditsInCirculation: parseFloat(creditsResult.total) || 0,
+      totalCreditsInCirculation,
       totalTransactions,
     };
   }
@@ -44,23 +42,21 @@ export class CreditsAnalyticsService {
     // Use CreditsService for consistent balance retrieval (with caching)
     const balance = await this.creditsService.getBalance(userId);
 
-    const stats = await this.transactionRepository
-      .createQueryBuilder('t')
-      .select([
-        'SUM(CASE WHEN t.type = :purchase THEN t.amount ELSE 0 END) as totalPurchased',
-        'SUM(CASE WHEN t.type = :usage THEN ABS(t.amount) ELSE 0 END) as totalUsed',
-        'COUNT(*) as transactionCount',
-      ])
-      .where('t.userId = :userId', { userId })
-      .setParameter('purchase', TransactionType.PURCHASE)
-      .setParameter('usage', TransactionType.USAGE)
-      .getRawOne();
+    const transactions = await this.transactionRepository.findByUserId(userId);
+    
+    const totalPurchased = transactions
+      .filter(t => t.type === TransactionType.PURCHASE)
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    const totalUsed = transactions
+      .filter(t => t.type === TransactionType.USAGE)
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
     return {
       balance,
-      totalPurchased: parseFloat(stats.totalPurchased) || 0,
-      totalUsed: parseFloat(stats.totalUsed) || 0,
-      transactionCount: parseInt(stats.transactionCount) || 0,
+      totalPurchased,
+      totalUsed,
+      transactionCount: transactions.length,
     };
   }
 

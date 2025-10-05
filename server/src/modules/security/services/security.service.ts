@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { User } from '../../../entities';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { securityConfig } from '../../../config';
 import { RedisService } from '../../redis/redis.service';
 import { LoggingService } from '../../monitoring/services/logging.service';
+import { IUserRepository } from '../../../core/repositories/interfaces';
 
 export interface SecurityEvent {
   userId?: string;
@@ -22,8 +21,7 @@ export class SecurityService {
   private readonly config = securityConfig();
 
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly userRepository: IUserRepository,
     private readonly redisService: RedisService,
     private readonly logger: LoggingService
   ) {}

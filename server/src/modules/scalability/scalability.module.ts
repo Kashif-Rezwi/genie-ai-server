@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { RedisService } from '../redis/redis.service';
 import { ScalabilityService } from './services/scalability.service';
@@ -10,11 +9,9 @@ import { KubernetesConfigService } from './services/kubernetes-config.service';
 import { DockerConfigService } from './services/docker-config.service';
 import { OrchestrationStatsService } from './services/orchestration-stats.service';
 import { ScalabilityController } from './scalability.controller';
-import { User } from '../../entities';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
     ScheduleModule.forRoot(),
   ],
   controllers: [ScalabilityController],

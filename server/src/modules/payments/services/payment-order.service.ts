@@ -4,12 +4,11 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { Payment, PaymentStatus, PaymentMethod, User } from '../../../entities';
 import { RazorpayService } from './razorpay.service';
 import { getPackageById, calculateTotalCredits } from '../../../config';
 import { paymentConfig } from '../../../config';
+import { IPaymentRepository, IUserRepository } from '../../../core/repositories/interfaces';
 import {
   CreatePaymentOrderDto,
   PaymentOrderResponse,
@@ -21,10 +20,8 @@ export class PaymentOrderService {
   private readonly config = paymentConfig();
 
   constructor(
-    @InjectRepository(Payment)
-    private readonly paymentRepository: Repository<Payment>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly paymentRepository: IPaymentRepository,
+    private readonly userRepository: IUserRepository,
     private readonly razorpayService: RazorpayService,
   ) {}
 
@@ -38,7 +35,7 @@ export class PaymentOrderService {
     const { packageId, notes } = createOrderDto;
 
     // Get user details
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -69,7 +66,7 @@ export class PaymentOrderService {
     );
 
     // Save payment record
-    const payment = this.paymentRepository.create({
+    const payment = await this.paymentRepository.create({
       userId,
       razorpayOrderId: razorpayOrder.id,
       packageId,
@@ -86,8 +83,6 @@ export class PaymentOrderService {
         notes,
       },
     });
-
-    await this.paymentRepository.save(payment);
 
     this.logger.log(`Payment order created for user ${userId}, package ${packageId}`);
 

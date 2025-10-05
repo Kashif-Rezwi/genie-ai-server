@@ -4,42 +4,37 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { Chat, Message, MessageRole, User } from '../../../entities';
 import { CreateChatDto, UpdateChatDto, ChatListQueryDto } from '../dto/chat.dto';
 import { ChatResponse, ChatDetailResponse, ChatStats } from '../interfaces/chat.interfaces';
+import { IChatRepository, IMessageRepository, IUserRepository } from '../../../core/repositories/interfaces';
 
 @Injectable()
 export class ChatService {
   constructor(
-    @InjectRepository(Chat)
-    private readonly chatRepository: Repository<Chat>,
-    @InjectRepository(Message)
-    private readonly messageRepository: Repository<Message>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly chatRepository: IChatRepository,
+    private readonly messageRepository: IMessageRepository,
+    private readonly userRepository: IUserRepository,
     private readonly dataSource: DataSource
   ) {}
 
   async createChat(userId: string, createChatDto: CreateChatDto): Promise<Chat> {
     // Verify user exists
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    const chat = this.chatRepository.create({
+    const savedChat = await this.chatRepository.create({
       title: createChatDto.title,
       systemPrompt: createChatDto.systemPrompt,
       userId,
     });
 
-    const savedChat = await this.chatRepository.save(chat);
-
     // Add system message if system prompt is provided
     if (createChatDto.systemPrompt) {
-      await this.messageRepository.save({
+      await this.messageRepository.create({
         chatId: savedChat.id,
         role: MessageRole.SYSTEM,
         content: createChatDto.systemPrompt,
@@ -56,42 +51,36 @@ export class ChatService {
   ): Promise<{ chats: ChatResponse[]; total: number }> {
     const { limit = 20, offset = 0, search } = query;
 
-    const queryBuilder = this.chatRepository
-      .createQueryBuilder('chat')
-      .leftJoin('chat.messages', 'message')
-      .where('chat.userId = :userId', { userId })
-      .select([
-        'chat.id',
-        'chat.title',
-        'chat.systemPrompt',
-        'chat.createdAt',
-        'chat.updatedAt',
-        'COUNT(message.id) as messageCount',
-        'MAX(message.createdAt) as lastMessageAt',
-      ])
-      .groupBy('chat.id, chat.title, chat.systemPrompt, chat.createdAt, chat.updatedAt')
-      .orderBy('COALESCE(MAX(message.createdAt), chat.createdAt)', 'DESC');
+    let chats: Chat[];
+    let total: number;
 
     if (search) {
-      queryBuilder.andWhere('chat.title ILIKE :search', { search: `%${search}%` });
+      chats = await this.chatRepository.findByTitleSearch(userId, search);
+      total = chats.length;
+    } else {
+      chats = await this.chatRepository.findByUserId(userId, offset, limit);
+      total = await this.chatRepository.countByUserId(userId);
     }
 
-    const [rawChats, total] = await Promise.all([
-      queryBuilder.offset(offset).limit(limit).getRawMany(),
-      queryBuilder.getCount(),
-    ]);
+    // Get message counts and last message times for each chat
+    const chatsWithStats: ChatResponse[] = await Promise.all(
+      chats.map(async (chat) => {
+        const messageCount = await this.messageRepository.countByChatId(chat.id);
+        const lastMessage = await this.messageRepository.findRecentByChatId(chat.id, 1);
+        
+        return {
+          id: chat.id,
+          title: chat.title,
+          systemPrompt: chat.systemPrompt,
+          messageCount,
+          lastMessageAt: lastMessage[0]?.createdAt,
+          createdAt: chat.createdAt,
+          updatedAt: chat.updatedAt,
+        };
+      })
+    );
 
-    const chats: ChatResponse[] = rawChats.map(raw => ({
-      id: raw.chat_id,
-      title: raw.chat_title,
-      systemPrompt: raw.chat_systemPrompt,
-      messageCount: parseInt(raw.messageCount),
-      lastMessageAt: raw.lastMessageAt ? new Date(raw.lastMessageAt) : undefined,
-      createdAt: new Date(raw.chat_createdAt),
-      updatedAt: new Date(raw.chat_updatedAt),
-    }));
-
-    return { chats, total };
+    return { chats: chatsWithStats, total };
   }
 
   async getChatById(
@@ -100,29 +89,16 @@ export class ChatService {
     limit: number = 50
   ): Promise<ChatDetailResponse> {
     // First, verify chat exists and belongs to user
-    const chat = await this.chatRepository.findOne({
-      where: { id: chatId, userId },
-      select: ['id', 'title', 'systemPrompt', 'createdAt', 'updatedAt'],
-    });
+    const chat = await this.chatRepository.findById(chatId);
 
-    if (!chat) {
+    if (!chat || chat.userId !== userId) {
       throw new NotFoundException('Chat not found');
     }
 
     // Get messages with pagination to avoid loading all messages
     const [messages, totalCreditsUsed] = await Promise.all([
-      this.messageRepository.find({
-        where: { chatId },
-        order: { createdAt: 'ASC' },
-        take: limit,
-        select: ['id', 'role', 'content', 'model', 'creditsUsed', 'createdAt'],
-      }),
-      this.messageRepository
-        .createQueryBuilder('message')
-        .select('SUM(message.creditsUsed)', 'total')
-        .where('message.chatId = :chatId', { chatId })
-        .getRawOne()
-        .then(result => parseFloat(result.total) || 0),
+      this.messageRepository.findByChatId(chatId, 0, limit),
+      this.messageRepository.getTotalCreditsUsedByChat(chatId),
     ]);
 
     // Map messages to response format
@@ -147,29 +123,24 @@ export class ChatService {
   }
 
   async updateChat(chatId: string, userId: string, updateChatDto: UpdateChatDto): Promise<Chat> {
-    const chat = await this.chatRepository.findOne({
-      where: { id: chatId, userId },
-    });
+    const chat = await this.chatRepository.findById(chatId);
 
-    if (!chat) {
+    if (!chat || chat.userId !== userId) {
       throw new NotFoundException('Chat not found');
     }
 
-    Object.assign(chat, updateChatDto);
-    return this.chatRepository.save(chat);
+    return this.chatRepository.update(chatId, updateChatDto);
   }
 
   async deleteChat(chatId: string, userId: string): Promise<void> {
-    const chat = await this.chatRepository.findOne({
-      where: { id: chatId, userId },
-    });
+    const chat = await this.chatRepository.findById(chatId);
 
-    if (!chat) {
+    if (!chat || chat.userId !== userId) {
       throw new NotFoundException('Chat not found');
     }
 
     // Messages will be deleted automatically due to CASCADE delete
-    await this.chatRepository.remove(chat);
+    await this.chatRepository.delete(chatId);
   }
 
   async generateChatTitle(firstMessage: string): Promise<string> {
@@ -213,20 +184,12 @@ export class ChatService {
   }
 
   async getChatStats(userId: string): Promise<ChatStats> {
-    const stats = await this.chatRepository
-      .createQueryBuilder('chat')
-      .leftJoin('chat.messages', 'message')
-      .where('chat.userId = :userId', { userId })
-      .select([
-        'COUNT(DISTINCT chat.id) as totalChats',
-        'COUNT(message.id) as totalMessages',
-        'COALESCE(SUM(message.creditsUsed), 0) as totalCreditsUsed',
-      ])
-      .getRawOne();
+    const [totalChats, totalMessages, totalCreditsUsed] = await Promise.all([
+      this.chatRepository.countByUserId(userId),
+      this.messageRepository.countByUserId(userId),
+      this.messageRepository.getTotalCreditsUsedByUserId(userId),
+    ]);
 
-    const totalChats = parseInt(stats.totalChats) || 0;
-    const totalMessages = parseInt(stats.totalMessages) || 0;
-    const totalCreditsUsed = parseFloat(stats.totalCreditsUsed) || 0;
     const averageMessagesPerChat = totalChats > 0 ? totalMessages / totalChats : 0;
 
     return {
@@ -244,24 +207,15 @@ export class ChatService {
     offset: number = 0
   ): Promise<{ messages: any[]; total: number; hasMore: boolean }> {
     // Verify chat belongs to user
-    const chat = await this.chatRepository.findOne({
-      where: { id: chatId, userId },
-      select: ['id'],
-    });
+    const chat = await this.chatRepository.findById(chatId);
 
-    if (!chat) {
+    if (!chat || chat.userId !== userId) {
       throw new NotFoundException('Chat not found');
     }
 
     const [messages, total] = await Promise.all([
-      this.messageRepository.find({
-        where: { chatId },
-        order: { createdAt: 'ASC' },
-        skip: offset,
-        take: limit,
-        select: ['id', 'role', 'content', 'model', 'creditsUsed', 'createdAt'],
-      }),
-      this.messageRepository.count({ where: { chatId } }),
+      this.messageRepository.findByChatId(chatId, offset, limit),
+      this.messageRepository.countByChatId(chatId),
     ]);
 
     return {

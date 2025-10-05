@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -11,11 +10,9 @@ import { CreditTransactionService } from './services/credit-transaction.service'
 import { CreditReservationService } from './services/credit-reservation.service';
 import { CreditCleanupTask } from './tasks/credit-cleanup.task';
 import { SecurityModule } from '../security/security.module';
-import { User, CreditTransaction, CreditAuditLog } from '../../entities';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, CreditTransaction, CreditAuditLog]),
     SecurityModule,
     RedisModule.forRoot({
       type: 'single',

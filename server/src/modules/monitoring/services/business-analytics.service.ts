@@ -1,13 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { RedisService } from '../../redis/redis.service';
 import { LoggingService } from './logging.service';
 import { User } from '../../../entities/user.entity';
-import { CreditTransaction } from '../../../entities/credit-transaction.entity';
+import { CreditTransaction, TransactionType } from '../../../entities/credit-transaction.entity';
 import { Payment } from '../../../entities/payment.entity';
 import { Chat } from '../../../entities/chat.entity';
 import { Message } from '../../../entities/message.entity';
+import { IUserRepository, ICreditTransactionRepository, IPaymentRepository, IChatRepository, IMessageRepository } from '../../../core/repositories/interfaces';
 
 export interface BusinessMetrics {
   users: {
@@ -101,16 +100,11 @@ export class BusinessAnalyticsService {
   private readonly maxInsights = 1000;
 
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    @InjectRepository(CreditTransaction)
-    private readonly creditTransactionRepository: Repository<CreditTransaction>,
-    @InjectRepository(Payment)
-    private readonly paymentRepository: Repository<Payment>,
-    @InjectRepository(Chat)
-    private readonly chatRepository: Repository<Chat>,
-    @InjectRepository(Message)
-    private readonly messageRepository: Repository<Message>,
+    private readonly userRepository: IUserRepository,
+    private readonly creditTransactionRepository: ICreditTransactionRepository,
+    private readonly paymentRepository: IPaymentRepository,
+    private readonly chatRepository: IChatRepository,
+    private readonly messageRepository: IMessageRepository,
     private readonly redisService: RedisService,
     private readonly loggingService: LoggingService,
   ) {}
@@ -365,91 +359,73 @@ export class BusinessAnalyticsService {
   // Helper methods for calculating metrics
 
   private async getActiveUsers(since: Date): Promise<number> {
-    const result = await this.userRepository
-      .createQueryBuilder('user')
-      .where('user.lastLoginAt >= :since', { since })
-      .getCount();
-    return result;
+    const users = await this.userRepository.findAll();
+    return users.filter(user => user.updatedAt >= since).length;
   }
 
   private async getNewUsers(since: Date): Promise<number> {
-    const result = await this.userRepository
-      .createQueryBuilder('user')
-      .where('user.createdAt >= :since', { since })
-      .getCount();
-    return result;
+    const users = await this.userRepository.findAll();
+    return users.filter(user => user.createdAt >= since).length;
   }
 
   private async getChurnedUsers(since: Date): Promise<number> {
-    const result = await this.userRepository
-      .createQueryBuilder('user')
-      .where('user.lastLoginAt < :since', { since })
-      .andWhere('user.createdAt < :since', { since })
-      .getCount();
-    return result;
+    const users = await this.userRepository.findAll();
+    return users.filter(user => 
+      user.updatedAt < since && 
+      user.createdAt < since
+    ).length;
   }
 
   private async getTotalRevenue(): Promise<number> {
-    const result = await this.paymentRepository
-      .createQueryBuilder('payment')
-      .select('SUM(payment.amount)', 'total')
-      .where('payment.status = :status', { status: 'completed' })
-      .getRawOne();
-    return parseFloat(result.total) || 0;
+    const payments = await this.paymentRepository.findAll();
+    return payments
+      .filter(p => p.status === 'completed')
+      .reduce((sum, p) => sum + p.amount, 0);
   }
 
   private async getRevenueForPeriod(start: Date, end: Date): Promise<number> {
-    const result = await this.paymentRepository
-      .createQueryBuilder('payment')
-      .select('SUM(payment.amount)', 'total')
-      .where('payment.status = :status', { status: 'completed' })
-      .andWhere('payment.createdAt >= :start', { start })
-      .andWhere('payment.createdAt <= :end', { end })
-      .getRawOne();
-    return parseFloat(result.total) || 0;
+    const payments = await this.paymentRepository.findAll();
+    return payments
+      .filter(p => p.status === 'completed' && p.createdAt >= start && p.createdAt <= end)
+      .reduce((sum, p) => sum + p.amount, 0);
   }
 
   private async getRevenueByPackage(start: Date, end: Date): Promise<Record<string, number>> {
-    const results = await this.paymentRepository
-      .createQueryBuilder('payment')
-      .select('payment.packageId', 'packageId')
-      .addSelect('SUM(payment.amount)', 'total')
-      .where('payment.status = :status', { status: 'completed' })
-      .andWhere('payment.createdAt >= :start', { start })
-      .andWhere('payment.createdAt <= :end', { end })
-      .groupBy('payment.packageId')
-      .getRawMany();
-
-    return results.reduce((acc, result) => {
-      acc[result.packageId] = parseFloat(result.total);
+    const payments = await this.paymentRepository.findAll();
+    const filteredPayments = payments.filter(p => 
+      p.status === 'completed' && 
+      p.createdAt >= start && 
+      p.createdAt <= end
+    );
+    
+    const results = filteredPayments.reduce((acc: Record<string, number>, payment) => {
+      const packageId = payment.packageId || 'unknown';
+      acc[packageId] = (acc[packageId] || 0) + payment.amount;
       return acc;
-    }, {} as Record<string, number>);
+    }, {});
+
+    return results;
   }
 
   private async getTotalCreditsUsed(since?: Date, until?: Date): Promise<number> {
-    let query = this.creditTransactionRepository
-      .createQueryBuilder('transaction')
-      .select('SUM(transaction.amount)', 'total')
-      .where('transaction.type = :type', { type: 'USAGE' });
-
+    const transactions = await this.creditTransactionRepository.findAll();
+    let filteredTransactions = transactions.filter(t => t.type === TransactionType.USAGE);
+    
     if (since) {
-      query = query.andWhere('transaction.createdAt >= :since', { since });
+      filteredTransactions = filteredTransactions.filter(t => t.createdAt >= since);
     }
     if (until) {
-      query = query.andWhere('transaction.createdAt <= :until', { until });
+      filteredTransactions = filteredTransactions.filter(t => t.createdAt <= until);
     }
-
-    const result = await query.getRawOne();
-    return parseFloat(result.total) || 0;
+    
+    return filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
   }
 
   private async getTotalCreditsPurchased(): Promise<number> {
-    const result = await this.creditTransactionRepository
-      .createQueryBuilder('transaction')
-      .select('SUM(transaction.amount)', 'total')
-      .where('transaction.type = :type', { type: 'PURCHASE' })
-      .getRawOne();
-    return parseFloat(result.total) || 0;
+    const transactions = await this.creditTransactionRepository.findAll();
+    return transactions
+      .filter(t => t.type === TransactionType.PURCHASE)
+      .reduce((sum, t) => sum + t.amount, 0);
   }
 
   private async getCreditsByModel(start: Date, end: Date): Promise<Record<string, number>> {
@@ -463,22 +439,20 @@ export class BusinessAnalyticsService {
   }
 
   private async getMessagesPerUser(start: Date, end: Date): Promise<number> {
-    const messageCount = await this.messageRepository
-      .createQueryBuilder('message')
-      .where('message.createdAt >= :start', { start })
-      .andWhere('message.createdAt <= :end', { end })
-      .getCount();
+    const messages = await this.messageRepository.findAll();
+    const messageCount = messages.filter(m => 
+      m.createdAt >= start && m.createdAt <= end
+    ).length;
 
     const userCount = await this.userRepository.count();
     return userCount > 0 ? messageCount / userCount : 0;
   }
 
   private async getChatsPerUser(start: Date, end: Date): Promise<number> {
-    const chatCount = await this.chatRepository
-      .createQueryBuilder('chat')
-      .where('chat.createdAt >= :start', { start })
-      .andWhere('chat.createdAt <= :end', { end })
-      .getCount();
+    const chats = await this.chatRepository.findAll();
+    const chatCount = chats.filter(c => 
+      c.createdAt >= start && c.createdAt <= end
+    ).length;
 
     const userCount = await this.userRepository.count();
     return userCount > 0 ? chatCount / userCount : 0;
