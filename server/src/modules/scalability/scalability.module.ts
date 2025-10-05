@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
-import { RedisService } from '../redis/redis.service';
 import { ScalabilityService } from './services/scalability.service';
 import { LoadBalancerService } from './services/load-balancer.service';
 import { AutoScalingService } from './services/auto-scaling.service';
@@ -16,7 +15,6 @@ import { ScalabilityController } from './scalability.controller';
   ],
   controllers: [ScalabilityController],
   providers: [
-    RedisService,
     ScalabilityService,
     LoadBalancerService,
     AutoScalingService,
@@ -26,7 +24,6 @@ import { ScalabilityController } from './scalability.controller';
     OrchestrationStatsService,
   ],
   exports: [
-    RedisService,
     ScalabilityService,
     LoadBalancerService,
     AutoScalingService,

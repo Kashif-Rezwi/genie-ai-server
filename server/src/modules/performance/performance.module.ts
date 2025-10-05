@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { RedisModule } from '@nestjs-modules/ioredis';
 import { ScheduleModule } from '@nestjs/schedule';
 import { QueryCacheService } from './services/query-cache.service';
 import { BackgroundJobService } from './services/background-job.service';
@@ -9,7 +8,6 @@ import { PerformanceService } from './services/performance.service';
 
 @Module({
   imports: [
-    RedisModule,
     ScheduleModule.forRoot(),
   ],
   controllers: [PerformanceController],

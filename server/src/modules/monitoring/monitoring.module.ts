@@ -6,11 +6,6 @@ import { AnalyticsController } from './controllers/analytics.controller';
 import { PerformanceController } from './controllers/performance.controller';
 import { CostMonitoringController } from './controllers/cost-monitoring.controller';
 import { BusinessAlertsController } from './controllers/business-alerts.controller';
-import { LoggingService } from './services/logging.service';
-import { HealthService } from './services/health.service';
-import { ErrorService } from './services/error.service';
-import { MetricsService } from './services/metrics.service';
-import { AlertingService } from './services/alerting.service';
 import { APMService } from './services/apm.service';
 import { BusinessAnalyticsService } from './services/business-analytics.service';
 import { PerformanceRegressionService } from './services/performance-regression.service';
@@ -18,7 +13,6 @@ import { CostMonitoringService } from './services/cost-monitoring.service';
 import { BusinessAlertsService } from './services/business-alerts.service';
 import { RequestMonitoringMiddleware } from './middleware/request-monitoring.middleware';
 import { EmailModule } from '../email/email.module';
-import { RedisService } from '../redis/redis.service';
 
 @Global()
 @Module({
@@ -35,25 +29,14 @@ import { RedisService } from '../redis/redis.service';
     BusinessAlertsController,
   ],
   providers: [
-    LoggingService,
-    HealthService,
-    ErrorService,
-    MetricsService,
-    AlertingService,
     APMService,
     BusinessAnalyticsService,
     PerformanceRegressionService,
     CostMonitoringService,
     BusinessAlertsService,
     RequestMonitoringMiddleware,
-    RedisService,
   ],
   exports: [
-    LoggingService,
-    HealthService,
-    ErrorService,
-    MetricsService,
-    AlertingService,
     APMService,
     BusinessAnalyticsService,
     PerformanceRegressionService,
