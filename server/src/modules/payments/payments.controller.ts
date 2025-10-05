@@ -72,7 +72,14 @@ export class PaymentsController {
     @CurrentUser() user: any,
     @Query(ValidationPipe) query: PaymentHistoryQueryDto
   ) {
-    return this.paymentsService.getPaymentHistory(user.id, query);
+    return this.paymentsService.getPaymentHistory(
+      user.id,
+      query.page || 1,
+      query.limit || 10,
+      query.status as any,
+      query.startDate,
+      query.endDate
+    );
   }
 
   @Get('stats')
@@ -153,7 +160,11 @@ export class PaymentsController {
     @Param('paymentId') paymentId: string,
     @Body(ValidationPipe) refundDto: RefundPaymentDto
   ) {
-    return this.paymentsService.refundPayment(paymentId, user.id, refundDto);
+    return this.paymentsService.refundPayment(
+      paymentId,
+      refundDto.amount,
+      refundDto.reason
+    );
   }
 
   @Get('health')

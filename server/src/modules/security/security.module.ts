@@ -13,6 +13,10 @@ import { AuditLoggingService } from './services/audit-logging.service';
 import { ContentSecurityPolicyService } from './services/content-security-policy.service';
 import { SecurityController } from './security.controller';
 import { LoggingService } from '../monitoring/services/logging.service';
+import { SecurityAuditService } from './services/security-audit.service';
+import { SecurityVulnerabilityService } from './services/security-vulnerability.service';
+import { SecurityCheckService } from './services/security-check.service';
+import { SecurityComplianceService } from './services/security-compliance.service';
 import { User } from '../../entities';
 
 @Global()
@@ -31,6 +35,10 @@ import { User } from '../../entities';
     BruteForceProtectionService,
     AuditLoggingService,
     ContentSecurityPolicyService,
+    SecurityAuditService,
+    SecurityVulnerabilityService,
+    SecurityCheckService,
+    SecurityComplianceService,
     LoggingService,
   ],
   exports: [
@@ -45,6 +53,10 @@ import { User } from '../../entities';
     BruteForceProtectionService,
     AuditLoggingService,
     ContentSecurityPolicyService,
+    SecurityAuditService,
+    SecurityVulnerabilityService,
+    SecurityCheckService,
+    SecurityComplianceService,
   ],
 })
 export class SecurityModule {}

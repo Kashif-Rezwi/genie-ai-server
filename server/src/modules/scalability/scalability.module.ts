@@ -6,6 +6,9 @@ import { ScalabilityService } from './services/scalability.service';
 import { LoadBalancerService } from './services/load-balancer.service';
 import { AutoScalingService } from './services/auto-scaling.service';
 import { ContainerOrchestrationService } from './services/container-orchestration.service';
+import { KubernetesConfigService } from './services/kubernetes-config.service';
+import { DockerConfigService } from './services/docker-config.service';
+import { OrchestrationStatsService } from './services/orchestration-stats.service';
 import { ScalabilityController } from './scalability.controller';
 import { User } from '../../entities';
 
@@ -21,6 +24,9 @@ import { User } from '../../entities';
     LoadBalancerService,
     AutoScalingService,
     ContainerOrchestrationService,
+    KubernetesConfigService,
+    DockerConfigService,
+    OrchestrationStatsService,
   ],
   exports: [
     RedisService,
@@ -28,6 +34,9 @@ import { User } from '../../entities';
     LoadBalancerService,
     AutoScalingService,
     ContainerOrchestrationService,
+    KubernetesConfigService,
+    DockerConfigService,
+    OrchestrationStatsService,
   ],
 })
 export class ScalabilityModule {}

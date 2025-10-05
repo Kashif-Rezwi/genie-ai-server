@@ -2,7 +2,11 @@ import { Module, Global } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MonitoringController } from './monitoring.controller';
-import { AdvancedMonitoringController } from './advanced-monitoring.controller';
+import { APMController } from './controllers/apm.controller';
+import { AnalyticsController } from './controllers/analytics.controller';
+import { PerformanceController } from './controllers/performance.controller';
+import { CostMonitoringController } from './controllers/cost-monitoring.controller';
+import { BusinessAlertsController } from './controllers/business-alerts.controller';
 import { LoggingService } from './services/logging.service';
 import { HealthService } from './services/health.service';
 import { ErrorService } from './services/error.service';
@@ -25,7 +29,14 @@ import { User, CreditTransaction, Payment, Chat, Message } from '../../entities'
     TypeOrmModule.forFeature([User, CreditTransaction, Payment, Chat, Message]), 
     EmailModule
   ],
-  controllers: [MonitoringController, AdvancedMonitoringController],
+  controllers: [
+    MonitoringController, 
+    APMController,
+    AnalyticsController,
+    PerformanceController,
+    CostMonitoringController,
+    BusinessAlertsController,
+  ],
   providers: [
     LoggingService,
     HealthService,
