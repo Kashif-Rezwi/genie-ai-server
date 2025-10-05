@@ -8,7 +8,7 @@ import { IMessageRepository } from './interfaces/message.repository.interface';
 export class MessageRepository implements IMessageRepository {
   constructor(
     @InjectRepository(Message)
-    private readonly messageRepository: Repository<Message>,
+    private readonly messageRepository: Repository<Message>
   ) {}
 
   async findById(id: string): Promise<Message | null> {
@@ -83,7 +83,7 @@ export class MessageRepository implements IMessageRepository {
       .select('SUM(message.creditsUsed)', 'total')
       .where('message.chatId = :chatId', { chatId })
       .getRawOne();
-    
+
     return parseFloat(result.total) || 0;
   }
 
@@ -102,7 +102,7 @@ export class MessageRepository implements IMessageRepository {
       .select('SUM(message.creditsUsed)', 'total')
       .where('chat.userId = :userId', { userId })
       .getRawOne();
-    
+
     return parseFloat(result.total) || 0;
   }
 }

@@ -60,7 +60,7 @@ export class BackgroundJobService {
     try {
       // Store job data with 1 hour TTL
       await this.redis.setex(`job:${jobId}`, 3600, JSON.stringify(job));
-      
+
       // Add to pending queue
       await this.redis.lpush(this.jobQueue, jobId);
 
@@ -80,7 +80,7 @@ export class BackgroundJobService {
     try {
       // Process up to 5 jobs per batch
       const jobIds = await this.redis.lrange(this.jobQueue, 0, 4);
-      
+
       for (const jobId of jobIds) {
         await this.processJob(jobId);
       }
@@ -139,14 +139,14 @@ export class BackgroundJobService {
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async cleanupOldJobs(): Promise<void> {
     try {
-      const cutoffTime = Date.now() - (24 * 60 * 60 * 1000); // 24 hours ago
-      
+      const cutoffTime = Date.now() - 24 * 60 * 60 * 1000; // 24 hours ago
+
       // Clean up completed jobs
       await this.cleanupQueue(this.completedQueue, cutoffTime);
-      
+
       // Clean up failed jobs
       await this.cleanupQueue(this.failedQueue, cutoffTime);
-      
+
       this.logger.log('Old jobs cleaned up successfully');
     } catch (error) {
       this.logger.error('Failed to cleanup old jobs:', error);
@@ -167,7 +167,7 @@ export class BackgroundJobService {
       }
 
       const job: Job = JSON.parse(jobData);
-      
+
       // Check if processor exists
       const processor = this.processors.get(job.type);
       if (!processor) {
@@ -213,7 +213,7 @@ export class BackgroundJobService {
       if (job.retryCount < 3) {
         job.status = 'pending';
         await this.redis.setex(`job:${jobId}`, 3600, JSON.stringify(job));
-        
+
         // Add back to queue with delay
         setTimeout(() => {
           this.redis.lpush(this.jobQueue, jobId);
@@ -225,8 +225,11 @@ export class BackgroundJobService {
         job.status = 'failed';
         await this.redis.setex(`job:${jobId}`, 3600, JSON.stringify(job));
         await this.moveJobToQueue(jobId, this.failedQueue);
-        
-        this.logger.error(`Job ${jobId} failed permanently after ${job.retryCount} retries:`, error);
+
+        this.logger.error(
+          `Job ${jobId} failed permanently after ${job.retryCount} retries:`,
+          error
+        );
       }
     } catch (cleanupError) {
       this.logger.error(`Failed to handle job error for ${jobId}:`, cleanupError);
@@ -241,7 +244,7 @@ export class BackgroundJobService {
   private async moveJobToQueue(jobId: string, targetQueue: string): Promise<void> {
     // Remove from pending queue
     await this.redis.lrem(this.jobQueue, 0, jobId);
-    
+
     // Add to target queue
     await this.redis.lpush(targetQueue, jobId);
   }

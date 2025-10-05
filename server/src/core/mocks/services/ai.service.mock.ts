@@ -22,10 +22,7 @@ export class MockAIService implements IAIService {
     };
   }
 
-  async *streamResponse(
-    userId: string,
-    request: AIRequestDto
-  ): AsyncGenerator<any, void, unknown> {
+  async *streamResponse(userId: string, request: AIRequestDto): AsyncGenerator<any, void, unknown> {
     const words = this.mockResponse.split(' ');
     for (let i = 0; i < words.length; i++) {
       yield {

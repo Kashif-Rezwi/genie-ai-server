@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 const Razorpay = require('razorpay');
 import * as crypto from 'crypto';
 import { paymentConfig } from '../../../config';
@@ -26,7 +22,7 @@ export interface RazorpayPaymentVerification {
 export class RazorpayService {
   private readonly logger = new Logger(RazorpayService.name);
   private readonly config = paymentConfig();
-  private razorpay: InstanceType<typeof Razorpay>;
+  private readonly razorpay: InstanceType<typeof Razorpay>;
 
   constructor() {
     if (
@@ -88,7 +84,7 @@ export class RazorpayService {
     try {
       const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = verification;
 
-      const body = razorpay_order_id + '|' + razorpay_payment_id;
+      const body = `${razorpay_order_id}|${razorpay_payment_id}`;
       const expectedSignature = crypto
         .createHmac('sha256', this.config.razorpay.keySecret!)
         .update(body.toString())

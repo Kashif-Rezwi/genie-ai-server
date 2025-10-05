@@ -39,10 +39,7 @@ export class SecurityCheckService {
     }
 
     Object.assign(check, updates);
-    this.loggingService.log(
-      `Security check ${checkId} updated`,
-      'security',
-    );
+    this.loggingService.log(`Security check ${checkId} updated`, 'security');
     return true;
   }
 
@@ -124,10 +121,10 @@ export class SecurityCheckService {
       // Update check status
       check.last_run = Date.now();
       check.last_result = vulnerabilities.length > 0 ? 'fail' : 'pass';
-      check.last_message = vulnerabilities.length > 0 ? 
-        `${vulnerabilities.length} vulnerabilities found` : 
-        'No vulnerabilities found';
-
+      check.last_message =
+        vulnerabilities.length > 0
+          ? `${vulnerabilities.length} vulnerabilities found`
+          : 'No vulnerabilities found';
     } catch (error) {
       this.logger.error(`Security check ${check.name} failed: ${error.message}`);
       check.last_result = 'fail';
@@ -211,7 +208,7 @@ export class SecurityCheckService {
         description: 'Check for exposed secrets in environment',
         category: 'configuration',
         enabled: true,
-      },
+      }
     );
   }
 
@@ -450,12 +447,10 @@ export class SecurityCheckService {
     // Check for common secret patterns in environment variables
     const envVars = process.env;
     const secretPatterns = ['password', 'secret', 'key', 'token', 'auth'];
-    
+
     for (const [key, value] of Object.entries(envVars)) {
-      const isSecret = secretPatterns.some(pattern => 
-        key.toLowerCase().includes(pattern)
-      );
-      
+      const isSecret = secretPatterns.some(pattern => key.toLowerCase().includes(pattern));
+
       if (isSecret && value && value.length < 8) {
         vulnerabilities.push({
           id: this.generateId(),

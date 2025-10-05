@@ -1,9 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Redis } from 'ioredis';
-import { KubernetesConfigService, ContainerConfig, ServiceConfig } from './kubernetes-config.service';
+import {
+  KubernetesConfigService,
+  ContainerConfig,
+  ServiceConfig,
+} from './kubernetes-config.service';
 import { DockerConfigService } from './docker-config.service';
-import { OrchestrationStatsService, DeploymentStatus, ServiceStatus, OrchestrationStats } from './orchestration-stats.service';
+import {
+  OrchestrationStatsService,
+  DeploymentStatus,
+  ServiceStatus,
+  OrchestrationStats,
+} from './orchestration-stats.service';
 
 // Re-export interfaces for external use
 export { ContainerConfig, ServiceConfig } from './kubernetes-config.service';
@@ -21,7 +30,7 @@ export class ContainerOrchestrationService {
     @InjectRedis() private readonly redis: Redis,
     private readonly kubernetesConfigService: KubernetesConfigService,
     private readonly dockerConfigService: DockerConfigService,
-    private readonly statsService: OrchestrationStatsService,
+    private readonly statsService: OrchestrationStatsService
   ) {}
 
   /**

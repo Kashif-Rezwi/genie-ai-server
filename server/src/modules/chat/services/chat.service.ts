@@ -1,12 +1,13 @@
-import {
-  Injectable,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Chat, Message, MessageRole, User } from '../../../entities';
 import { CreateChatDto, UpdateChatDto, ChatListQueryDto } from '../dto/chat.dto';
 import { ChatResponse, ChatDetailResponse, ChatStats } from '../interfaces/chat.interfaces';
-import { IChatRepository, IMessageRepository, IUserRepository } from '../../../core/repositories/interfaces';
+import {
+  IChatRepository,
+  IMessageRepository,
+  IUserRepository,
+} from '../../../core/repositories/interfaces';
 import { ResourceNotFoundException, BusinessException } from '../../../common/exceptions';
 @Injectable()
 export class ChatService {
@@ -62,10 +63,10 @@ export class ChatService {
 
     // Get message counts and last message times for each chat
     const chatsWithStats: ChatResponse[] = await Promise.all(
-      chats.map(async (chat) => {
+      chats.map(async chat => {
         const messageCount = await this.messageRepository.countByChatId(chat.id);
         const lastMessage = await this.messageRepository.findRecentByChatId(chat.id, 1);
-        
+
         return {
           id: chat.id,
           title: chat.title,

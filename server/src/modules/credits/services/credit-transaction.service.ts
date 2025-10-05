@@ -1,14 +1,20 @@
-import {
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { User, CreditTransaction, TransactionType, CreditAuditLog } from '../../../entities';
 import { TransactionMetadataValidator } from '../interfaces/transaction-metadata.interface';
 import { creditConfig } from '../../../config';
-import { IUserRepository, ICreditTransactionRepository, ICreditAuditLogRepository } from '../../../core/repositories/interfaces';
-import { ValidationException, ResourceNotFoundException, CreditException, ConflictException } from '../../../common/exceptions';
+import {
+  IUserRepository,
+  ICreditTransactionRepository,
+  ICreditAuditLogRepository,
+} from '../../../core/repositories/interfaces';
+import {
+  ValidationException,
+  ResourceNotFoundException,
+  CreditException,
+  ConflictException,
+} from '../../../common/exceptions';
 
 /**
  * Service responsible for managing credit transactions
@@ -124,7 +130,7 @@ export class CreditTransactionService {
           {
             requiredAmount: amount,
             availableBalance: user.creditsBalance,
-            userId
+            userId,
           }
         );
       }
@@ -192,7 +198,9 @@ export class CreditTransactionService {
     offset: number = 0
   ): Promise<CreditTransaction[]> {
     if (!userId || typeof userId !== 'string') {
-      throw new ValidationException('Invalid user ID', 'INVALID_USER_ID', { providedUserId: userId });
+      throw new ValidationException('Invalid user ID', 'INVALID_USER_ID', {
+        providedUserId: userId,
+      });
     }
 
     return this.transactionRepository.find({
@@ -210,7 +218,9 @@ export class CreditTransactionService {
    */
   async getTransactionById(transactionId: string): Promise<CreditTransaction | null> {
     if (!transactionId || typeof transactionId !== 'string') {
-      throw new ValidationException('Invalid transaction ID', 'INVALID_TRANSACTION_ID', { providedTransactionId: transactionId });
+      throw new ValidationException('Invalid transaction ID', 'INVALID_TRANSACTION_ID', {
+        providedTransactionId: transactionId,
+      });
     }
 
     return this.transactionRepository.findOne({
@@ -226,17 +236,17 @@ export class CreditTransactionService {
    */
   private validateCreditAmount(amount: number, operation: 'addition' | 'deduction'): void {
     if (typeof amount !== 'number' || !isFinite(amount)) {
-      throw new CreditException('Amount must be a valid number', 'INVALID_AMOUNT_TYPE', { 
+      throw new CreditException('Amount must be a valid number', 'INVALID_AMOUNT_TYPE', {
         providedAmount: amount,
-        expectedType: 'number'
+        expectedType: 'number',
       });
     }
 
     if (amount <= 0) {
-      throw new CreditException('Amount must be positive', 'INVALID_AMOUNT_VALUE', { 
+      throw new CreditException('Amount must be positive', 'INVALID_AMOUNT_VALUE', {
         providedAmount: amount,
         minimumValue: 0,
-        operation
+        operation,
       });
     }
 
@@ -247,7 +257,7 @@ export class CreditTransactionService {
         {
           providedAmount: amount,
           maximumAllowed: this.config.business.maximumTransaction,
-          operation
+          operation,
         }
       );
     }
@@ -259,7 +269,7 @@ export class CreditTransactionService {
         {
           providedAmount: amount,
           minimumAllowed: this.config.business.minimumTransaction,
-          operation
+          operation,
         }
       );
     }

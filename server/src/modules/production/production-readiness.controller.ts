@@ -2,7 +2,11 @@ import { Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard, Roles, UserRole } from '../security/guards/roles.guard';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
-import { SecurityAuditService, SecurityVulnerability, SecurityAuditReport } from '../security/services/security-audit.service';
+import {
+  SecurityAuditService,
+  SecurityVulnerability,
+  SecurityAuditReport,
+} from '../security/services/security-audit.service';
 import { HealthService } from '../monitoring/services/health.service';
 import { MetricsService } from '../monitoring/services/metrics.service';
 import { AlertingService } from '../monitoring/services/alerting.service';
@@ -15,7 +19,7 @@ export class ProductionReadinessController {
     private readonly securityAuditService: SecurityAuditService,
     private readonly healthService: HealthService,
     private readonly metricsService: MetricsService,
-    private readonly alertingService: AlertingService,
+    private readonly alertingService: AlertingService
   ) {}
 
   /**
@@ -70,7 +74,7 @@ export class ProductionReadinessController {
   @Post('security-audit')
   async runSecurityAudit(): Promise<ApiResponseDto> {
     const auditReport = await this.securityAuditService.runSecurityAudit();
-    
+
     return {
       success: true,
       message: 'Security audit completed successfully',
@@ -85,7 +89,7 @@ export class ProductionReadinessController {
   @Get('security/vulnerabilities')
   async getSecurityVulnerabilities(): Promise<ApiResponseDto> {
     const vulnerabilities = this.securityAuditService.getVulnerabilities();
-    
+
     return {
       success: true,
       message: 'Security vulnerabilities retrieved successfully',
@@ -100,7 +104,7 @@ export class ProductionReadinessController {
   @Get('security/audit-reports')
   async getSecurityAuditReports(): Promise<ApiResponseDto> {
     const reports = this.securityAuditService.getAuditReports();
-    
+
     return {
       success: true,
       message: 'Security audit reports retrieved successfully',
@@ -258,7 +262,7 @@ export class ProductionReadinessController {
     health: any,
     metrics: any,
     activeAlerts: any[],
-    latestAudit: SecurityAuditReport | null,
+    latestAudit: SecurityAuditReport | null
   ): number {
     let score = 0;
     let totalChecks = 0;
@@ -298,7 +302,7 @@ export class ProductionReadinessController {
     health: any,
     metrics: any,
     activeAlerts: any[],
-    latestAudit: SecurityAuditReport | null,
+    latestAudit: SecurityAuditReport | null
   ): string[] {
     const recommendations: string[] = [];
 

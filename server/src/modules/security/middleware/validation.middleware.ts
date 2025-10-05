@@ -22,7 +22,7 @@ export class ValidationMiddleware implements NestMiddleware {
         throw error;
       }
       // If RequestSizeService fails, fall back to basic size check
-      const maxSize = this.config.request.maxSize;
+      const { maxSize } = this.config.request;
       if (req.headers['content-length'] && parseInt(req.headers['content-length']) > maxSize) {
         throw new BadRequestException('Request entity too large');
       }

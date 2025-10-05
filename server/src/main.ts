@@ -60,7 +60,7 @@ async function bootstrap() {
   }
 
   // Start server on configured port
-  const port = config.port;
+  const { port } = config;
   await app.listen(port);
 
   // Log startup info

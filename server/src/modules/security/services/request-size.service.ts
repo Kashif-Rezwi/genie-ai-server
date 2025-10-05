@@ -142,7 +142,7 @@ export class RequestSizeService {
 
   private getConfigForEndpoint(endpoint: string): RequestSizeConfig {
     // Try exact match first
-    let config = this.endpointConfigs.get(endpoint);
+    const config = this.endpointConfigs.get(endpoint);
 
     if (config) {
       return config;

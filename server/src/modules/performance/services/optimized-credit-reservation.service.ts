@@ -33,7 +33,7 @@ export class OptimizedCreditReservationService {
 
   constructor(
     @InjectRedis() private readonly redis: Redis,
-    private readonly queryCache: QueryCacheService,
+    private readonly queryCache: QueryCacheService
   ) {}
 
   /**
@@ -48,7 +48,7 @@ export class OptimizedCreditReservationService {
     userId: string,
     amount: number,
     ttlSeconds: number = 300,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, any>
   ): Promise<OptimizedReservation> {
     const reservationId = this.generateReservationId();
     const now = new Date();
@@ -202,14 +202,16 @@ export class OptimizedCreditReservationService {
    * @returns Promise<number> - Total reserved credits
    */
   async getTotalReservedCredits(userId: string): Promise<number> {
-    return this.queryCache.getOrSet(
-      `user_reserved_credits:${userId}`,
-      async () => {
-        const totals = await this.redis.hgetall(`${this.userReservationsPrefix}${userId}:totals`);
-        return parseInt(totals.reserved || '0', 10);
-      },
-      { ttl: 60 } // 1 minute cache
-    ).then(result => result.data);
+    return this.queryCache
+      .getOrSet(
+        `user_reserved_credits:${userId}`,
+        async () => {
+          const totals = await this.redis.hgetall(`${this.userReservationsPrefix}${userId}:totals`);
+          return parseInt(totals.reserved || '0', 10);
+        },
+        { ttl: 60 } // 1 minute cache
+      )
+      .then(result => result.data);
   }
 
   /**
@@ -218,24 +220,28 @@ export class OptimizedCreditReservationService {
    * @returns Promise<OptimizedReservation[]> - Active reservations
    */
   async getUserReservations(userId: string): Promise<OptimizedReservation[]> {
-    return this.queryCache.getOrSet(
-      `user_reservations:${userId}`,
-      async () => {
-        const reservationIds = await this.redis.smembers(`${this.userReservationsPrefix}${userId}`);
-        if (reservationIds.length === 0) return [];
+    return this.queryCache
+      .getOrSet(
+        `user_reservations:${userId}`,
+        async () => {
+          const reservationIds = await this.redis.smembers(
+            `${this.userReservationsPrefix}${userId}`
+          );
+          if (reservationIds.length === 0) return [];
 
-        const reservations: OptimizedReservation[] = [];
-        for (const id of reservationIds) {
-          const reservation = await this.getReservation(id);
-          if (reservation && reservation.status === 'pending') {
-            reservations.push(reservation);
+          const reservations: OptimizedReservation[] = [];
+          for (const id of reservationIds) {
+            const reservation = await this.getReservation(id);
+            if (reservation && reservation.status === 'pending') {
+              reservations.push(reservation);
+            }
           }
-        }
 
-        return reservations;
-      },
-      { ttl: 30 } // 30 seconds cache
-    ).then(result => result.data);
+          return reservations;
+        },
+        { ttl: 30 } // 30 seconds cache
+      )
+      .then(result => result.data);
   }
 
   /**
@@ -247,7 +253,7 @@ export class OptimizedCreditReservationService {
       const now = Date.now();
       const pattern = `${this.reservationPrefix}*`;
       const keys = await this.redis.keys(pattern);
-      
+
       let cleanedCount = 0;
       const pipeline = this.redis.pipeline();
 
@@ -256,7 +262,7 @@ export class OptimizedCreditReservationService {
         if (!reservationData) continue;
 
         const reservation: OptimizedReservation = JSON.parse(reservationData);
-        
+
         if (reservation.expiresAt.getTime() < now && reservation.status === 'pending') {
           // Mark as expired
           reservation.status = 'expired';
@@ -297,28 +303,32 @@ export class OptimizedCreditReservationService {
    * @returns Promise<ReservationStats> - Reservation statistics
    */
   async getReservationStats(userId: string): Promise<ReservationStats> {
-    return this.queryCache.getOrSet(
-      `reservation_stats:${userId}`,
-      async () => {
-        const [totals, stats] = await Promise.all([
-          this.redis.hgetall(`${this.userReservationsPrefix}${userId}:totals`),
-          this.redis.hgetall(`${this.statsPrefix}${userId}`),
-        ]);
+    return this.queryCache
+      .getOrSet(
+        `reservation_stats:${userId}`,
+        async () => {
+          const [totals, stats] = await Promise.all([
+            this.redis.hgetall(`${this.userReservationsPrefix}${userId}:totals`),
+            this.redis.hgetall(`${this.statsPrefix}${userId}`),
+          ]);
 
-        const totalReserved = parseInt(totals.reserved || '0', 10);
-        const activeReservations = await this.redis.scard(`${this.userReservationsPrefix}${userId}`);
-        const expiredReservations = parseInt(stats.expiredReservations || '0', 10);
-        const totalReservations = parseInt(stats.totalReservations || '0', 10);
+          const totalReserved = parseInt(totals.reserved || '0', 10);
+          const activeReservations = await this.redis.scard(
+            `${this.userReservationsPrefix}${userId}`
+          );
+          const expiredReservations = parseInt(stats.expiredReservations || '0', 10);
+          const totalReservations = parseInt(stats.totalReservations || '0', 10);
 
-        return {
-          totalReserved,
-          activeReservations,
-          expiredReservations,
-          averageReservationTime: totalReservations > 0 ? 0 : 0, // Would need more complex tracking
-        };
-      },
-      { ttl: 300 } // 5 minutes cache
-    ).then(result => result.data);
+          return {
+            totalReserved,
+            activeReservations,
+            expiredReservations,
+            averageReservationTime: totalReservations > 0 ? 0 : 0, // Would need more complex tracking
+          };
+        },
+        { ttl: 300 } // 5 minutes cache
+      )
+      .then(result => result.data);
   }
 
   /**

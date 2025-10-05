@@ -1,13 +1,14 @@
-import {
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Payment, PaymentStatus, PaymentMethod } from '../../../entities';
 import { RazorpayService } from './razorpay.service';
 import { CreditsService } from '../../credits/services/credits.service';
 import { IPaymentRepository } from '../../../core/repositories/interfaces';
-import { ResourceNotFoundException, PaymentException, ValidationException } from '../../../common/exceptions';
+import {
+  ResourceNotFoundException,
+  PaymentException,
+  ValidationException,
+} from '../../../common/exceptions';
 
 @Injectable()
 export class PaymentOperationsService {
@@ -39,32 +40,44 @@ export class PaymentOperationsService {
     }
 
     if (payment.status !== PaymentStatus.COMPLETED) {
-      throw new PaymentException('Only completed payments can be refunded', 'INVALID_PAYMENT_STATUS', { 
-        currentStatus: payment.status,
-        requiredStatus: PaymentStatus.COMPLETED
-      });
+      throw new PaymentException(
+        'Only completed payments can be refunded',
+        'INVALID_PAYMENT_STATUS',
+        {
+          currentStatus: payment.status,
+          requiredStatus: PaymentStatus.COMPLETED,
+        }
+      );
     }
 
     if (payment.method !== PaymentMethod.RAZORPAY) {
-      throw new PaymentException('Only Razorpay payments can be refunded', 'INVALID_PAYMENT_METHOD', { 
-        currentMethod: payment.method,
-        requiredMethod: PaymentMethod.RAZORPAY
-      });
+      throw new PaymentException(
+        'Only Razorpay payments can be refunded',
+        'INVALID_PAYMENT_METHOD',
+        {
+          currentMethod: payment.method,
+          requiredMethod: PaymentMethod.RAZORPAY,
+        }
+      );
     }
 
     if (!payment.razorpayPaymentId) {
-      throw new PaymentException('Razorpay payment ID not found', 'MISSING_RAZORPAY_PAYMENT_ID', { 
-        paymentId: payment.id
+      throw new PaymentException('Razorpay payment ID not found', 'MISSING_RAZORPAY_PAYMENT_ID', {
+        paymentId: payment.id,
       });
     }
 
     const amountToRefund = refundAmount || payment.amount;
 
     if (amountToRefund > payment.amount) {
-      throw new PaymentException('Refund amount cannot exceed payment amount', 'REFUND_AMOUNT_EXCEEDS_PAYMENT', { 
-        refundAmount: amountToRefund,
-        paymentAmount: payment.amount
-      });
+      throw new PaymentException(
+        'Refund amount cannot exceed payment amount',
+        'REFUND_AMOUNT_EXCEEDS_PAYMENT',
+        {
+          refundAmount: amountToRefund,
+          paymentAmount: payment.amount,
+        }
+      );
     }
 
     // Create Razorpay refund
@@ -141,24 +154,24 @@ export class PaymentOperationsService {
   }> {
     // Get all payments for user and filter in memory (simplified approach)
     const allPayments = await this.paymentRepository.findByUserId(userId);
-    
+
     let filteredPayments = allPayments;
-    
+
     if (status) {
       filteredPayments = filteredPayments.filter(p => p.status === status);
     }
-    
+
     if (startDate) {
       filteredPayments = filteredPayments.filter(p => p.createdAt >= startDate);
     }
-    
+
     if (endDate) {
       filteredPayments = filteredPayments.filter(p => p.createdAt <= endDate);
     }
-    
+
     // Sort by creation date (newest first)
     filteredPayments.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    
+
     // Apply pagination
     const total = filteredPayments.length;
     const payments = filteredPayments.slice((page - 1) * limit, page * limit);
@@ -224,10 +237,7 @@ export class PaymentOperationsService {
   /**
    * Get payments by status
    */
-  async getPaymentsByStatus(
-    status: PaymentStatus,
-    limit: number = 100
-  ): Promise<Payment[]> {
+  async getPaymentsByStatus(status: PaymentStatus, limit: number = 100): Promise<Payment[]> {
     const payments = await this.paymentRepository.find({
       where: { status },
       order: { createdAt: 'DESC' },

@@ -5,12 +5,7 @@ import { SecurityAuditService } from '../security/services/security-audit.servic
 @Module({
   imports: [],
   controllers: [ProductionReadinessController],
-  providers: [
-    SecurityAuditService,
-  ],
-  exports: [
-    SecurityAuditService,
-    ProductionReadinessController,
-  ],
+  providers: [SecurityAuditService],
+  exports: [SecurityAuditService, ProductionReadinessController],
 })
 export class ProductionModule {}

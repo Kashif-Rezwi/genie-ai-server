@@ -44,7 +44,7 @@ export class PerUserRateLimitService {
         'auth:register': { windowMs: 60 * 60 * 1000, maxRequests: 3 }, // 3 attempts per hour
         'ai:chat': { windowMs: 60 * 60 * 1000, maxRequests: 100 }, // 100 requests per hour
         'credits:balance': { windowMs: 60 * 1000, maxRequests: 10 }, // 10 requests per minute
-        'default': { windowMs: 60 * 60 * 1000, maxRequests: 100 }, // 100 requests per hour
+        default: { windowMs: 60 * 60 * 1000, maxRequests: 100 }, // 100 requests per hour
       },
     },
     premium: {
@@ -54,7 +54,7 @@ export class PerUserRateLimitService {
         'auth:register': { windowMs: 60 * 60 * 1000, maxRequests: 5 }, // 5 attempts per hour
         'ai:chat': { windowMs: 60 * 60 * 1000, maxRequests: 1000 }, // 1000 requests per hour
         'credits:balance': { windowMs: 60 * 1000, maxRequests: 30 }, // 30 requests per minute
-        'default': { windowMs: 60 * 60 * 1000, maxRequests: 1000 }, // 1000 requests per hour
+        default: { windowMs: 60 * 60 * 1000, maxRequests: 1000 }, // 1000 requests per hour
       },
     },
     admin: {
@@ -64,7 +64,7 @@ export class PerUserRateLimitService {
         'auth:register': { windowMs: 60 * 60 * 1000, maxRequests: 20 }, // 20 attempts per hour
         'ai:chat': { windowMs: 60 * 60 * 1000, maxRequests: 10000 }, // 10000 requests per hour
         'credits:balance': { windowMs: 60 * 1000, maxRequests: 100 }, // 100 requests per minute
-        'default': { windowMs: 60 * 60 * 1000, maxRequests: 10000 }, // 10000 requests per hour
+        default: { windowMs: 60 * 60 * 1000, maxRequests: 10000 }, // 10000 requests per hour
       },
     },
   };
@@ -81,33 +81,33 @@ export class PerUserRateLimitService {
   async checkRateLimit(
     userId: string,
     endpoint: string,
-    userTier: string = 'free',
+    userTier: string = 'free'
   ): Promise<RateLimitResult> {
     try {
       const tierConfig = this.tierConfigs[userTier] || this.tierConfigs.free;
       const config = tierConfig.limits[endpoint] || tierConfig.limits.default;
-      
+
       const key = this.generateKey(userId, endpoint);
       const now = Date.now();
       const windowStart = now - config.windowMs;
 
       // Use Redis pipeline for atomic operations
       const pipeline = this.redis.pipeline();
-      
+
       // Remove expired entries
       pipeline.zremrangebyscore(key, 0, windowStart);
-      
+
       // Count current requests
       pipeline.zcard(key);
-      
+
       // Add current request
       pipeline.zadd(key, now, `${now}-${Math.random()}`);
-      
+
       // Set expiration
       pipeline.expire(key, Math.ceil(config.windowMs / 1000));
-      
+
       const results = await pipeline.exec();
-      
+
       if (!results || results.some(result => result[0] !== null)) {
         this.logger.warn(`Rate limit check failed for user ${userId}`);
         return this.createErrorResult(config);
@@ -115,10 +115,10 @@ export class PerUserRateLimitService {
 
       const currentCount = results[1][1] as number;
       const allowed = currentCount <= config.maxRequests;
-      
+
       const resetTime = now + config.windowMs;
       const remaining = Math.max(0, config.maxRequests - currentCount);
-      
+
       if (!allowed) {
         this.logger.warn(`Rate limit exceeded for user ${userId} on endpoint ${endpoint}`);
       }
@@ -146,12 +146,12 @@ export class PerUserRateLimitService {
   async getRateLimitStatus(
     userId: string,
     endpoint: string,
-    userTier: string = 'free',
+    userTier: string = 'free'
   ): Promise<RateLimitResult> {
     try {
       const tierConfig = this.tierConfigs[userTier] || this.tierConfigs.free;
       const config = tierConfig.limits[endpoint] || tierConfig.limits.default;
-      
+
       const key = this.generateKey(userId, endpoint);
       const now = Date.now();
       const windowStart = now - config.windowMs;
@@ -160,9 +160,9 @@ export class PerUserRateLimitService {
       const pipeline = this.redis.pipeline();
       pipeline.zremrangebyscore(key, 0, windowStart);
       pipeline.zcard(key);
-      
+
       const results = await pipeline.exec();
-      
+
       if (!results || results.some(result => result[0] !== null)) {
         return this.createErrorResult(config);
       }
@@ -195,7 +195,7 @@ export class PerUserRateLimitService {
     try {
       const key = this.generateKey(userId, endpoint);
       await this.redis.del(key);
-      
+
       this.logger.log(`Rate limit reset for user ${userId} on endpoint ${endpoint}`);
       return true;
     } catch (error) {
@@ -212,7 +212,7 @@ export class PerUserRateLimitService {
    */
   async getAllRateLimits(
     userId: string,
-    userTier: string = 'free',
+    userTier: string = 'free'
   ): Promise<Record<string, RateLimitResult>> {
     try {
       const tierConfig = this.tierConfigs[userTier] || this.tierConfigs.free;
@@ -240,7 +240,7 @@ export class PerUserRateLimitService {
       // Clear existing rate limits when tier changes
       const pattern = `${this.keyPrefix}${userId}:*`;
       const keys = await this.redis.keys(pattern);
-      
+
       if (keys.length > 0) {
         await this.redis.del(...keys);
       }

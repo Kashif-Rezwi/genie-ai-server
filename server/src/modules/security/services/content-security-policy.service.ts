@@ -56,38 +56,14 @@ export class ContentSecurityPolicyService {
           'https://fonts.googleapis.com',
           'https://cdn.jsdelivr.net',
         ],
-        'img-src': [
-          "'self'",
-          'data:',
-          'https:',
-          'blob:',
-        ],
-        'font-src': [
-          "'self'",
-          'https://fonts.gstatic.com',
-          'data:',
-        ],
-        'connect-src': [
-          "'self'",
-          'ws://localhost:*',
-          'wss://localhost:*',
-          'https://api.*',
-        ],
-        'media-src': [
-          "'self'",
-          'data:',
-          'blob:',
-        ],
+        'img-src': ["'self'", 'data:', 'https:', 'blob:'],
+        'font-src': ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        'connect-src': ["'self'", 'ws://localhost:*', 'wss://localhost:*', 'https://api.*'],
+        'media-src': ["'self'", 'data:', 'blob:'],
         'object-src': ["'none'"],
-        'child-src': [
-          "'self'",
-          'blob:',
-        ],
+        'child-src': ["'self'", 'blob:'],
         'frame-src': ["'none'"],
-        'worker-src': [
-          "'self'",
-          'blob:',
-        ],
+        'worker-src': ["'self'", 'blob:'],
         'frame-ancestors': ["'none'"],
         'form-action': ["'self'"],
         'base-uri': ["'self'"],
@@ -112,37 +88,14 @@ export class ContentSecurityPolicyService {
           'https://fonts.googleapis.com',
           'https://cdn.jsdelivr.net',
         ],
-        'img-src': [
-          "'self'",
-          'data:',
-          'https://secure.gravatar.com',
-          'https://api.dicebear.com',
-        ],
-        'font-src': [
-          "'self'",
-          'https://fonts.gstatic.com',
-          'data:',
-        ],
-        'connect-src': [
-          "'self'",
-          'https://api.*',
-          'wss://api.*',
-        ],
-        'media-src': [
-          "'self'",
-          'data:',
-          'blob:',
-        ],
+        'img-src': ["'self'", 'data:', 'https://secure.gravatar.com', 'https://api.dicebear.com'],
+        'font-src': ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        'connect-src': ["'self'", 'https://api.*', 'wss://api.*'],
+        'media-src': ["'self'", 'data:', 'blob:'],
         'object-src': ["'none'"],
-        'child-src': [
-          "'self'",
-          'blob:',
-        ],
+        'child-src': ["'self'", 'blob:'],
         'frame-src': ["'none'"],
-        'worker-src': [
-          "'self'",
-          'blob:',
-        ],
+        'worker-src': ["'self'", 'blob:'],
         'frame-ancestors': ["'none'"],
         'form-action': ["'self'"],
         'base-uri': ["'self'"],
@@ -150,10 +103,7 @@ export class ContentSecurityPolicyService {
         'upgrade-insecure-requests': true,
         'block-all-mixed-content': true,
         'require-trusted-types-for': ["'script'"],
-        'trusted-types': [
-          "'none'",
-          'default',
-        ],
+        'trusted-types': ["'none'", 'default'],
       },
       reportOnly: false,
     },
@@ -191,10 +141,10 @@ export class ContentSecurityPolicyService {
     try {
       const baseConfig = this.defaultConfigs[environment] || this.defaultConfigs.production;
       const config = this.mergeConfigs(baseConfig, customConfig);
-      
+
       const directives = this.buildDirectives(config.directives);
       const header = this.buildHeader(directives, config);
-      
+
       return header;
     } catch (error) {
       this.logger.error(`Get CSP header error for environment ${environment}:`, error);
@@ -216,10 +166,10 @@ export class ContentSecurityPolicyService {
         reportOnly: true,
         reportUri: reportUri || '/api/security/csp-report',
       };
-      
+
       const directives = this.buildDirectives(config.directives);
       const header = this.buildHeader(directives, config);
-      
+
       return header;
     } catch (error) {
       this.logger.error(`Get CSP report-only header error:`, error);
@@ -235,11 +185,25 @@ export class ContentSecurityPolicyService {
    */
   validateDirective(directive: string, values: string[]): boolean {
     const validDirectives = [
-      'default-src', 'script-src', 'style-src', 'img-src', 'font-src',
-      'connect-src', 'media-src', 'object-src', 'child-src', 'frame-src',
-      'worker-src', 'frame-ancestors', 'form-action', 'base-uri',
-      'manifest-src', 'upgrade-insecure-requests', 'block-all-mixed-content',
-      'require-trusted-types-for', 'trusted-types',
+      'default-src',
+      'script-src',
+      'style-src',
+      'img-src',
+      'font-src',
+      'connect-src',
+      'media-src',
+      'object-src',
+      'child-src',
+      'frame-src',
+      'worker-src',
+      'frame-ancestors',
+      'form-action',
+      'base-uri',
+      'manifest-src',
+      'upgrade-insecure-requests',
+      'block-all-mixed-content',
+      'require-trusted-types-for',
+      'trusted-types',
     ];
 
     if (!validDirectives.includes(directive)) {
@@ -266,11 +230,11 @@ export class ContentSecurityPolicyService {
     return (req: any, res: any, next: any) => {
       if (req.method === 'POST' && req.path === '/api/security/csp-report') {
         let body = '';
-        
+
         req.on('data', (chunk: Buffer) => {
           body += chunk.toString();
         });
-        
+
         req.on('end', () => {
           try {
             const report = JSON.parse(body);
@@ -328,7 +292,9 @@ export class ContentSecurityPolicyService {
       parts.push(`report-uri ${config.reportUri}`);
     }
 
-    const headerName = config.reportOnly ? 'Content-Security-Policy-Report-Only' : 'Content-Security-Policy';
+    const headerName = config.reportOnly
+      ? 'Content-Security-Policy-Report-Only'
+      : 'Content-Security-Policy';
     return `${headerName}: ${parts.join('; ')}`;
   }
 
@@ -369,9 +335,20 @@ export class ContentSecurityPolicyService {
    */
   private validateSourceValue(value: string): boolean {
     const validSources = [
-      "'self'", "'unsafe-inline'", "'unsafe-eval'", "'unsafe-hashes'",
-      "'strict-dynamic'", "'none'", "data:", "blob:", "mediastream:",
-      "filesystem:", "https:", "http:", "ws:", "wss:",
+      "'self'",
+      "'unsafe-inline'",
+      "'unsafe-eval'",
+      "'unsafe-hashes'",
+      "'strict-dynamic'",
+      "'none'",
+      'data:',
+      'blob:',
+      'mediastream:',
+      'filesystem:',
+      'https:',
+      'http:',
+      'ws:',
+      'wss:',
     ];
 
     // Check for quoted values
@@ -422,7 +399,7 @@ export class ContentSecurityPolicyService {
       };
 
       this.logger.warn('CSP Violation detected:', violation);
-      
+
       // In production, you would send this to a monitoring service
       // For now, we just log it
     } catch (error) {

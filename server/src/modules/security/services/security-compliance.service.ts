@@ -24,7 +24,7 @@ export class SecurityComplianceService {
       info: 1,
     };
 
-    const weightedScore = 
+    const weightedScore =
       vulnerabilityCounts.critical * weights.critical +
       vulnerabilityCounts.high * weights.high +
       vulnerabilityCounts.medium * weights.medium +
@@ -34,7 +34,7 @@ export class SecurityComplianceService {
     // Convert to 0-100 scale (lower is better)
     const maxPossibleScore = 100;
     const score = Math.max(0, maxPossibleScore - weightedScore);
-    
+
     this.logger.log(`Calculated overall security score: ${score}`);
     return Math.round(score);
   }
@@ -56,15 +56,16 @@ export class SecurityComplianceService {
       'insufficient_logging',
     ];
 
-    const owaspVulnerabilities = vulnerabilities.filter(vuln => 
-      owaspCategories.some(category => 
-        vuln.title.toLowerCase().includes(category) ||
-        vuln.description.toLowerCase().includes(category)
+    const owaspVulnerabilities = vulnerabilities.filter(vuln =>
+      owaspCategories.some(
+        category =>
+          vuln.title.toLowerCase().includes(category) ||
+          vuln.description.toLowerCase().includes(category)
       )
     );
 
-    const criticalHighCount = owaspVulnerabilities.filter(v => 
-      v.type === 'critical' || v.type === 'high'
+    const criticalHighCount = owaspVulnerabilities.filter(
+      v => v.type === 'critical' || v.type === 'high'
     ).length;
 
     // Score based on critical/high OWASP vulnerabilities
@@ -87,12 +88,12 @@ export class SecurityComplianceService {
       'configuration',
     ];
 
-    const pciVulnerabilities = vulnerabilities.filter(vuln => 
+    const pciVulnerabilities = vulnerabilities.filter(vuln =>
       pciCategories.includes(vuln.category)
     );
 
-    const criticalHighCount = pciVulnerabilities.filter(v => 
-      v.type === 'critical' || v.type === 'high'
+    const criticalHighCount = pciVulnerabilities.filter(
+      v => v.type === 'critical' || v.type === 'high'
     ).length;
 
     // PCI DSS requires zero critical/high vulnerabilities
@@ -106,18 +107,14 @@ export class SecurityComplianceService {
    * Calculate GDPR compliance score
    */
   calculateGDPRScore(vulnerabilities: SecurityVulnerability[]): number {
-    const gdprCategories = [
-      'data_protection',
-      'authentication',
-      'authorization',
-    ];
+    const gdprCategories = ['data_protection', 'authentication', 'authorization'];
 
-    const gdprVulnerabilities = vulnerabilities.filter(vuln => 
+    const gdprVulnerabilities = vulnerabilities.filter(vuln =>
       gdprCategories.includes(vuln.category)
     );
 
-    const criticalHighCount = gdprVulnerabilities.filter(v => 
-      v.type === 'critical' || v.type === 'high'
+    const criticalHighCount = gdprVulnerabilities.filter(
+      v => v.type === 'critical' || v.type === 'high'
     ).length;
 
     // GDPR compliance based on data protection vulnerabilities
@@ -134,7 +131,7 @@ export class SecurityComplianceService {
   generateComplianceRecommendations(
     owaspScore: number,
     pciScore: number,
-    gdprScore: number,
+    gdprScore: number
   ): string[] {
     const recommendations: string[] = [];
 
@@ -143,7 +140,9 @@ export class SecurityComplianceService {
     }
 
     if (pciScore < 100) {
-      recommendations.push('Resolve critical and high-severity vulnerabilities for PCI DSS compliance');
+      recommendations.push(
+        'Resolve critical and high-severity vulnerabilities for PCI DSS compliance'
+      );
     }
 
     if (gdprScore < 80) {
@@ -163,7 +162,7 @@ export class SecurityComplianceService {
   getComplianceStatus(
     owaspScore: number,
     pciScore: number,
-    gdprScore: number,
+    gdprScore: number
   ): {
     overall: 'compliant' | 'partial' | 'non_compliant';
     owasp: 'compliant' | 'partial' | 'non_compliant';

@@ -6,7 +6,13 @@ import { CreditTransaction, TransactionType } from '../../../entities/credit-tra
 import { Payment } from '../../../entities/payment.entity';
 import { Chat } from '../../../entities/chat.entity';
 import { Message } from '../../../entities/message.entity';
-import { IUserRepository, ICreditTransactionRepository, IPaymentRepository, IChatRepository, IMessageRepository } from '../../../core/repositories/interfaces';
+import {
+  IUserRepository,
+  ICreditTransactionRepository,
+  IPaymentRepository,
+  IChatRepository,
+  IMessageRepository,
+} from '../../../core/repositories/interfaces';
 
 export interface BusinessMetrics {
   users: {
@@ -106,7 +112,7 @@ export class BusinessAnalyticsService {
     private readonly chatRepository: IChatRepository,
     private readonly messageRepository: IMessageRepository,
     private readonly redisService: RedisService,
-    private readonly loggingService: LoggingService,
+    private readonly loggingService: LoggingService
   ) {}
 
   /**
@@ -160,13 +166,14 @@ export class BusinessAnalyticsService {
     ]);
 
     // AI metrics
-    const [totalAiRequests, aiRequestsPerUser, avgTokensPerRequest, modelUsage, aiResponseTime] = await Promise.all([
-      this.getTotalAiRequests(oneMonthAgo, now),
-      this.getAiRequestsPerUser(oneMonthAgo, now),
-      this.getAverageTokensPerRequest(oneMonthAgo, now),
-      this.getModelUsage(oneMonthAgo, now),
-      this.getAiResponseTime(oneMonthAgo, now),
-    ]);
+    const [totalAiRequests, aiRequestsPerUser, avgTokensPerRequest, modelUsage, aiResponseTime] =
+      await Promise.all([
+        this.getTotalAiRequests(oneMonthAgo, now),
+        this.getAiRequestsPerUser(oneMonthAgo, now),
+        this.getAverageTokensPerRequest(oneMonthAgo, now),
+        this.getModelUsage(oneMonthAgo, now),
+        this.getAiResponseTime(oneMonthAgo, now),
+      ]);
 
     // Support metrics (placeholder - would need support ticket system)
     const supportMetrics = {
@@ -203,28 +210,29 @@ export class BusinessAnalyticsService {
         totalUsed: totalCreditsUsed,
         totalPurchased: totalCreditsPurchased,
         averagePerUser: totalUsers > 0 ? totalCreditsUsed / totalUsers : 0,
-        utilizationRate: totalCreditsPurchased > 0 ? (totalCreditsUsed / totalCreditsPurchased) * 100 : 0,
+        utilizationRate:
+          totalCreditsPurchased > 0 ? (totalCreditsUsed / totalCreditsPurchased) * 100 : 0,
         byModel: creditsByModel,
       },
       engagement: {
         averageSessionDuration: avgSessionDuration,
-        messagesPerUser: messagesPerUser,
-        chatsPerUser: chatsPerUser,
+        messagesPerUser,
+        chatsPerUser,
         dailyActiveUsers: dau,
         weeklyActiveUsers: wau,
         monthlyActiveUsers: mau,
       },
       conversion: {
-        signupToFirstPurchase: signupToFirstPurchase,
-        trialToPaid: trialToPaid,
-        freeToPaid: freeToPaid,
+        signupToFirstPurchase,
+        trialToPaid,
+        freeToPaid,
         overall: overallConversion,
       },
       ai: {
         totalRequests: totalAiRequests,
         requestsPerUser: aiRequestsPerUser,
         averageTokensPerRequest: avgTokensPerRequest,
-        modelUsage: modelUsage,
+        modelUsage,
         responseTime: aiResponseTime,
       },
       support: supportMetrics,
@@ -234,11 +242,16 @@ export class BusinessAnalyticsService {
   /**
    * Get business trends
    */
-  async getBusinessTrends(period: 'hour' | 'day' | 'week' | 'month' = 'day'): Promise<BusinessTrend[]> {
+  async getBusinessTrends(
+    period: 'hour' | 'day' | 'week' | 'month' = 'day'
+  ): Promise<BusinessTrend[]> {
     const trends: BusinessTrend[] = [];
     const now = new Date();
     const currentPeriod = this.getPeriodStart(now, period);
-    const previousPeriod = this.getPeriodStart(new Date(currentPeriod.getTime() - this.getPeriodDuration(period)), period);
+    const previousPeriod = this.getPeriodStart(
+      new Date(currentPeriod.getTime() - this.getPeriodDuration(period)),
+      period
+    );
 
     // Revenue trend
     const currentRevenue = await this.getRevenueForPeriod(currentPeriod, now);
@@ -282,7 +295,10 @@ export class BusinessAnalyticsService {
         confidence: 85,
         timestamp: Date.now(),
         data: { growth: metrics.revenue.growth.day },
-        recommendations: ['Continue current marketing strategies', 'Consider scaling infrastructure'],
+        recommendations: [
+          'Continue current marketing strategies',
+          'Consider scaling infrastructure',
+        ],
       });
     }
 
@@ -297,7 +313,10 @@ export class BusinessAnalyticsService {
         confidence: 90,
         timestamp: Date.now(),
         data: { engagementRate: metrics.engagement.dailyActiveUsers / metrics.users.total },
-        recommendations: ['Maintain current engagement strategies', 'Consider gamification features'],
+        recommendations: [
+          'Maintain current engagement strategies',
+          'Consider gamification features',
+        ],
       });
     }
 
@@ -312,7 +331,11 @@ export class BusinessAnalyticsService {
         confidence: 80,
         timestamp: Date.now(),
         data: { conversionRate: metrics.conversion.overall },
-        recommendations: ['Review pricing strategy', 'Improve onboarding flow', 'Add free trial period'],
+        recommendations: [
+          'Review pricing strategy',
+          'Improve onboarding flow',
+          'Add free trial period',
+        ],
       });
     }
 
@@ -327,7 +350,11 @@ export class BusinessAnalyticsService {
         confidence: 75,
         timestamp: Date.now(),
         data: { responseTime: metrics.ai.responseTime.average },
-        recommendations: ['Optimize AI model performance', 'Consider caching strategies', 'Review infrastructure capacity'],
+        recommendations: [
+          'Optimize AI model performance',
+          'Consider caching strategies',
+          'Review infrastructure capacity',
+        ],
       });
     }
 
@@ -351,9 +378,7 @@ export class BusinessAnalyticsService {
    * Get insights by type
    */
   getInsightsByType(type: BusinessInsight['type'], limit = 50): BusinessInsight[] {
-    return this.insights
-      .filter(insight => insight.type === type)
-      .slice(-limit);
+    return this.insights.filter(insight => insight.type === type).slice(-limit);
   }
 
   // Helper methods for calculating metrics
@@ -370,17 +395,12 @@ export class BusinessAnalyticsService {
 
   private async getChurnedUsers(since: Date): Promise<number> {
     const users = await this.userRepository.findAll();
-    return users.filter(user => 
-      user.updatedAt < since && 
-      user.createdAt < since
-    ).length;
+    return users.filter(user => user.updatedAt < since && user.createdAt < since).length;
   }
 
   private async getTotalRevenue(): Promise<number> {
     const payments = await this.paymentRepository.findAll();
-    return payments
-      .filter(p => p.status === 'completed')
-      .reduce((sum, p) => sum + p.amount, 0);
+    return payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0);
   }
 
   private async getRevenueForPeriod(start: Date, end: Date): Promise<number> {
@@ -392,12 +412,10 @@ export class BusinessAnalyticsService {
 
   private async getRevenueByPackage(start: Date, end: Date): Promise<Record<string, number>> {
     const payments = await this.paymentRepository.findAll();
-    const filteredPayments = payments.filter(p => 
-      p.status === 'completed' && 
-      p.createdAt >= start && 
-      p.createdAt <= end
+    const filteredPayments = payments.filter(
+      p => p.status === 'completed' && p.createdAt >= start && p.createdAt <= end
     );
-    
+
     const results = filteredPayments.reduce((acc: Record<string, number>, payment) => {
       const packageId = payment.packageId || 'unknown';
       acc[packageId] = (acc[packageId] || 0) + payment.amount;
@@ -410,14 +428,14 @@ export class BusinessAnalyticsService {
   private async getTotalCreditsUsed(since?: Date, until?: Date): Promise<number> {
     const transactions = await this.creditTransactionRepository.findAll();
     let filteredTransactions = transactions.filter(t => t.type === TransactionType.USAGE);
-    
+
     if (since) {
       filteredTransactions = filteredTransactions.filter(t => t.createdAt >= since);
     }
     if (until) {
       filteredTransactions = filteredTransactions.filter(t => t.createdAt <= until);
     }
-    
+
     return filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
   }
 
@@ -440,9 +458,7 @@ export class BusinessAnalyticsService {
 
   private async getMessagesPerUser(start: Date, end: Date): Promise<number> {
     const messages = await this.messageRepository.findAll();
-    const messageCount = messages.filter(m => 
-      m.createdAt >= start && m.createdAt <= end
-    ).length;
+    const messageCount = messages.filter(m => m.createdAt >= start && m.createdAt <= end).length;
 
     const userCount = await this.userRepository.count();
     return userCount > 0 ? messageCount / userCount : 0;
@@ -450,9 +466,7 @@ export class BusinessAnalyticsService {
 
   private async getChatsPerUser(start: Date, end: Date): Promise<number> {
     const chats = await this.chatRepository.findAll();
-    const chatCount = chats.filter(c => 
-      c.createdAt >= start && c.createdAt <= end
-    ).length;
+    const chatCount = chats.filter(c => c.createdAt >= start && c.createdAt <= end).length;
 
     const userCount = await this.userRepository.count();
     return userCount > 0 ? chatCount / userCount : 0;
@@ -511,7 +525,10 @@ export class BusinessAnalyticsService {
     return {};
   }
 
-  private async getAiResponseTime(start: Date, end: Date): Promise<{ average: number; p95: number; p99: number }> {
+  private async getAiResponseTime(
+    start: Date,
+    end: Date
+  ): Promise<{ average: number; p95: number; p99: number }> {
     // This would need to be implemented based on response time tracking
     return { average: 0, p95: 0, p99: 0 };
   }
@@ -549,17 +566,27 @@ export class BusinessAnalyticsService {
 
   private getPeriodDuration(period: 'hour' | 'day' | 'week' | 'month'): number {
     switch (period) {
-      case 'hour': return 60 * 60 * 1000;
-      case 'day': return 24 * 60 * 60 * 1000;
-      case 'week': return 7 * 24 * 60 * 60 * 1000;
-      case 'month': return 30 * 24 * 60 * 60 * 1000;
+      case 'hour':
+        return 60 * 60 * 1000;
+      case 'day':
+        return 24 * 60 * 60 * 1000;
+      case 'week':
+        return 7 * 24 * 60 * 60 * 1000;
+      case 'month':
+        return 30 * 24 * 60 * 60 * 1000;
     }
   }
 
-  private calculateTrend(metric: string, current: number, previous: number, period: string): BusinessTrend {
+  private calculateTrend(
+    metric: string,
+    current: number,
+    previous: number,
+    period: string
+  ): BusinessTrend {
     const change = current - previous;
     const changePercent = previous > 0 ? (change / previous) * 100 : 0;
-    const trend: 'up' | 'down' | 'stable' = changePercent > 5 ? 'up' : changePercent < -5 ? 'down' : 'stable';
+    const trend: 'up' | 'down' | 'stable' =
+      changePercent > 5 ? 'up' : changePercent < -5 ? 'down' : 'stable';
 
     return {
       metric,

@@ -37,14 +37,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
       if (typeof response === 'object' && response !== null && 'errorCode' in response) {
         errorResponse = response as CustomExceptionResponse;
         // Add request ID to custom exception response
-        errorResponse.requestId = (request as any).requestId;
+        errorResponse.requestId = request.requestId;
       }
     }
 
     // Create error context for logging
     const errorContext = {
-      requestId: (request as any).requestId,
-      userId: (request as any).user?.id,
+      requestId: request.requestId,
+      userId: request.user?.id,
       method: request.method,
       url: request.url,
       userAgent: request.get('User-Agent'),
@@ -76,7 +76,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
-      requestId: (request as any).requestId,
+      requestId: request.requestId,
       ...errorResponse,
     });
   }

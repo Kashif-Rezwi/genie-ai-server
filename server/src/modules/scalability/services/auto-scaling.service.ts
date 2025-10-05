@@ -66,7 +66,7 @@ export class AutoScalingService {
 
   constructor(
     @InjectRedis() private readonly redis: Redis,
-    private readonly scalabilityService: ScalabilityService,
+    private readonly scalabilityService: ScalabilityService
   ) {}
 
   /**
@@ -77,11 +77,7 @@ export class AutoScalingService {
   async initialize(config: Partial<AutoScalingConfig> = {}): Promise<void> {
     try {
       const finalConfig = { ...this.defaultConfig, ...config };
-      await this.redis.setex(
-        `${this.configPrefix}main`,
-        86400,
-        JSON.stringify(finalConfig),
-      );
+      await this.redis.setex(`${this.configPrefix}main`, 86400, JSON.stringify(finalConfig));
 
       this.logger.log('Auto-scaling initialized', finalConfig);
     } catch (error) {
@@ -99,7 +95,7 @@ export class AutoScalingService {
       const config = await this.getConfig();
       config.enabled = true;
       await this.updateConfig(config);
-      
+
       this.logger.log('Auto-scaling enabled');
     } catch (error) {
       this.logger.error('Error enabling auto-scaling:', error);
@@ -116,7 +112,7 @@ export class AutoScalingService {
       const config = await this.getConfig();
       config.enabled = false;
       await this.updateConfig(config);
-      
+
       this.logger.log('Auto-scaling disabled');
     } catch (error) {
       this.logger.error('Error disabling auto-scaling:', error);
@@ -148,12 +144,8 @@ export class AutoScalingService {
    */
   async updateConfig(config: AutoScalingConfig): Promise<void> {
     try {
-      await this.redis.setex(
-        `${this.configPrefix}main`,
-        86400,
-        JSON.stringify(config),
-      );
-      
+      await this.redis.setex(`${this.configPrefix}main`, 86400, JSON.stringify(config));
+
       this.logger.log('Auto-scaling configuration updated');
     } catch (error) {
       this.logger.error('Error updating auto-scaling config:', error);
@@ -171,9 +163,8 @@ export class AutoScalingService {
       const totalEvents = events.length;
       const successfulScales = events.filter(e => e.success && e.action !== 'no_action').length;
       const failedScales = events.filter(e => !e.success).length;
-      const averageConfidence = events.length > 0 
-        ? events.reduce((sum, e) => sum + e.confidence, 0) / events.length 
-        : 0;
+      const averageConfidence =
+        events.length > 0 ? events.reduce((sum, e) => sum + e.confidence, 0) / events.length : 0;
 
       const lastScaleEvent = events.find(e => e.action !== 'no_action');
       const lastScaleTime = lastScaleEvent ? lastScaleEvent.timestamp : null;
@@ -213,7 +204,7 @@ export class AutoScalingService {
 
       // Sort by timestamp (newest first)
       keys.sort((a, b) => b.localeCompare(a));
-      
+
       const limitedKeys = keys.slice(0, limit);
 
       for (const key of limitedKeys) {
@@ -238,14 +229,14 @@ export class AutoScalingService {
   async triggerScalingDecision(): Promise<ScalingEvent> {
     try {
       const config = await this.getConfig();
-      
+
       if (!config.enabled) {
         throw new Error('Auto-scaling is disabled');
       }
 
       const decision = await this.scalabilityService.makeScalingDecision();
       const event = await this.executeScalingDecision(decision);
-      
+
       return event;
     } catch (error) {
       this.logger.error('Error triggering scaling decision:', error);
@@ -262,12 +253,12 @@ export class AutoScalingService {
     try {
       const config = await this.getConfig();
       const eventId = this.generateEventId();
-      
+
       let success = false;
       let error: string | undefined;
 
       // Check cooldown periods
-      if (decision.action !== 'no_action' && await this.isInCooldown(decision.action)) {
+      if (decision.action !== 'no_action' && (await this.isInCooldown(decision.action))) {
         const event: ScalingEvent = {
           id: eventId,
           timestamp: new Date(),
@@ -287,14 +278,16 @@ export class AutoScalingService {
       // Validate scaling limits
       if (decision.action === 'scale_up' && decision.recommendedInstances > config.maxInstances) {
         decision.recommendedInstances = config.maxInstances;
-      } else if (decision.action === 'scale_down' && decision.recommendedInstances < config.minInstances) {
+      } else if (
+        decision.action === 'scale_down' &&
+        decision.recommendedInstances < config.minInstances
+      ) {
         decision.recommendedInstances = config.minInstances;
       }
 
       // Check confidence thresholds
-      const threshold = decision.action === 'scale_up' 
-        ? config.scaleUpThreshold 
-        : config.scaleDownThreshold;
+      const threshold =
+        decision.action === 'scale_up' ? config.scaleUpThreshold : config.scaleDownThreshold;
 
       if (decision.confidence < threshold) {
         const event: ScalingEvent = {
@@ -320,14 +313,14 @@ export class AutoScalingService {
         } else if (decision.action === 'scale_down') {
           await this.scaleDown(decision.recommendedInstances);
         }
-        
+
         success = true;
-        
+
         // Set cooldown
         if (decision.action !== 'no_action') {
           await this.setCooldown(decision.action);
         }
-        
+
         this.logger.log(`Scaling ${decision.action} executed successfully`, {
           currentInstances: decision.currentInstances,
           targetInstances: decision.recommendedInstances,
@@ -369,7 +362,7 @@ export class AutoScalingService {
       // In a real implementation, this would call your orchestration platform
       // For now, we'll just update the instance count in Redis
       await this.redis.setex('scaling:instance_count', 3600, targetInstances.toString());
-      
+
       this.logger.log(`Scaled up to ${targetInstances} instances`);
     } catch (error) {
       this.logger.error('Error scaling up:', error);
@@ -387,7 +380,7 @@ export class AutoScalingService {
       // In a real implementation, this would call your orchestration platform
       // For now, we'll just update the instance count in Redis
       await this.redis.setex('scaling:instance_count', 3600, targetInstances.toString());
-      
+
       this.logger.log(`Scaled down to ${targetInstances} instances`);
     } catch (error) {
       this.logger.error('Error scaling down:', error);
@@ -404,11 +397,11 @@ export class AutoScalingService {
     try {
       const cooldownKey = `${this.cooldownPrefix}${action}`;
       const cooldownEnd = await this.redis.get(cooldownKey);
-      
+
       if (!cooldownEnd) {
         return false;
       }
-      
+
       return Date.now() < parseInt(cooldownEnd);
     } catch (error) {
       this.logger.error(`Error checking cooldown for ${action}:`, error);
@@ -424,14 +417,17 @@ export class AutoScalingService {
   private async setCooldown(action: 'scale_up' | 'scale_down'): Promise<void> {
     try {
       const config = await this.getConfig();
-      const cooldownDuration = action === 'scale_up' 
-        ? config.scaleUpCooldown 
-        : config.scaleDownCooldown;
-      
+      const cooldownDuration =
+        action === 'scale_up' ? config.scaleUpCooldown : config.scaleDownCooldown;
+
       const cooldownKey = `${this.cooldownPrefix}${action}`;
       const cooldownEnd = Date.now() + cooldownDuration;
-      
-      await this.redis.setex(cooldownKey, Math.ceil(cooldownDuration / 1000), cooldownEnd.toString());
+
+      await this.redis.setex(
+        cooldownKey,
+        Math.ceil(cooldownDuration / 1000),
+        cooldownEnd.toString()
+      );
     } catch (error) {
       this.logger.error(`Error setting cooldown for ${action}:`, error);
     }
@@ -495,13 +491,13 @@ export class AutoScalingService {
   async scheduledScalingCheck(): Promise<void> {
     try {
       const config = await this.getConfig();
-      
+
       if (!config.enabled) {
         return;
       }
 
       this.logger.debug('Running scheduled scaling check');
-      
+
       const decision = await this.scalabilityService.makeScalingDecision();
       await this.executeScalingDecision(decision);
     } catch (error) {
@@ -517,7 +513,7 @@ export class AutoScalingService {
   async scheduledHealthCheck(): Promise<void> {
     try {
       const config = await this.getConfig();
-      
+
       if (!config.enabled) {
         return;
       }

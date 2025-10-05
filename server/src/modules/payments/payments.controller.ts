@@ -120,8 +120,8 @@ export class PaymentsController {
     const body = req.rawBody?.toString() || '';
 
     if (!signature) {
-      throw new ValidationException('Missing webhook signature', 'MISSING_WEBHOOK_SIGNATURE', { 
-        requiredHeader: 'x-razorpay-signature'
+      throw new ValidationException('Missing webhook signature', 'MISSING_WEBHOOK_SIGNATURE', {
+        requiredHeader: 'x-razorpay-signature',
       });
     }
 
@@ -162,11 +162,7 @@ export class PaymentsController {
     @Param('paymentId') paymentId: string,
     @Body(ValidationPipe) refundDto: RefundPaymentDto
   ) {
-    return this.paymentsService.refundPayment(
-      paymentId,
-      refundDto.amount,
-      refundDto.reason
-    );
+    return this.paymentsService.refundPayment(paymentId, refundDto.amount, refundDto.reason);
   }
 
   @Get('health')

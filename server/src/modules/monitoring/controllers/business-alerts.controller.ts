@@ -53,10 +53,7 @@ export class BusinessAlertsController {
   }
 
   @Put('rules/:id')
-  async updateAlertRule(
-    @Param('id') id: string,
-    @Body() ruleData: any
-  ): Promise<ApiResponseDto> {
+  async updateAlertRule(@Param('id') id: string, @Body() ruleData: any): Promise<ApiResponseDto> {
     const rule = this.businessAlertsService.updateRule(id, ruleData);
     if (!rule) {
       return {

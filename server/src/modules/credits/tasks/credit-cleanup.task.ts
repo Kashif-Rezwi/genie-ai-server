@@ -26,9 +26,7 @@ export class CreditCleanupTask {
     // This is a compatibility issue that needs to be addressed
 
     const duration = Date.now() - startTime;
-    this.logger.log(
-      `Cleanup completed: ${results} cleaned, duration: ${duration}ms`
-    );
+    this.logger.log(`Cleanup completed: ${results} cleaned, duration: ${duration}ms`);
   }
 
   private async handleFailedCleanup(reservationId: string): Promise<void> {

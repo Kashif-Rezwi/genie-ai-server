@@ -31,14 +31,7 @@ export * from './mocks/services';
 @Global()
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      User,
-      Chat,
-      Message,
-      CreditTransaction,
-      Payment,
-      CreditAuditLog,
-    ]),
+    TypeOrmModule.forFeature([User, Chat, Message, CreditTransaction, Payment, CreditAuditLog]),
     // Redis configuration for shared services
     RedisModule.forRoot({
       type: 'single',
@@ -73,7 +66,7 @@ export * from './mocks/services';
     CreditTransactionRepository,
     PaymentRepository,
     CreditAuditLogRepository,
-    
+
     // Shared Services
     RedisService,
     LoggingService,
@@ -90,7 +83,7 @@ export * from './mocks/services';
     CreditTransactionRepository,
     PaymentRepository,
     CreditAuditLogRepository,
-    
+
     // Export shared services for use in other modules
     RedisService,
     LoggingService,

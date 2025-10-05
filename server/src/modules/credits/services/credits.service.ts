@@ -15,7 +15,7 @@ export class CreditsService {
     private readonly balanceService: CreditBalanceService,
     private readonly transactionService: CreditTransactionService,
     private readonly reservationService: CreditReservationService,
-    private readonly eventEmitter: EventEmitter2,
+    private readonly eventEmitter: EventEmitter2
   ) {}
 
   /**
@@ -39,7 +39,7 @@ export class CreditsService {
     userId: string,
     amount: number,
     description: string,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, any>
   ): Promise<void> {
     await this.transactionService.addCredits(userId, amount, description, metadata);
   }
@@ -56,7 +56,7 @@ export class CreditsService {
     userId: string,
     amount: number,
     description: string,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, any>
   ): Promise<void> {
     await this.transactionService.deductCredits(userId, amount, description, metadata);
   }
@@ -99,7 +99,7 @@ export class CreditsService {
     userId: string,
     amount: number,
     ttlSeconds: number = 300,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, any>
   ): Promise<CreditReservation> {
     return this.reservationService.createReservation(userId, amount, ttlSeconds, metadata);
   }
@@ -168,13 +168,13 @@ export class CreditsService {
   async reserveCredits(
     userId: string,
     amount: number,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, any>
   ): Promise<string> {
     const reservation = await this.reservationService.createReservation(
       userId,
       amount,
       300, // 5 minutes default
-      metadata,
+      metadata
     );
     return reservation.id;
   }
@@ -191,7 +191,7 @@ export class CreditsService {
     userId: string,
     amount: number,
     description: string,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, any>
   ): Promise<void> {
     // For MVP, just call regular addCredits
     // In production, you'd implement proper idempotency logic

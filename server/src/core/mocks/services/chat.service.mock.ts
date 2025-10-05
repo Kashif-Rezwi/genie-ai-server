@@ -1,14 +1,14 @@
-import { 
-  IChatService, 
-  Chat, 
-  Message, 
-  CreateChatDto, 
-  UpdateChatDto, 
+import {
+  IChatService,
+  Chat,
+  Message,
+  CreateChatDto,
+  UpdateChatDto,
   ChatListQueryDto,
   ChatResponse,
   ChatDetailResponse,
   ChatStats,
-  MessageResponse
+  MessageResponse,
 } from '../../interfaces/services';
 
 /**
@@ -38,7 +38,7 @@ export class MockChatService implements IChatService {
     if (!chat) {
       throw new Error('Chat not found');
     }
-    
+
     const messages = this.mockMessages.filter(m => m.chatId === chatId);
     return {
       id: chat.id,
@@ -110,9 +110,7 @@ export class MockChatService implements IChatService {
 
   async getChatStats(userId: string): Promise<ChatStats> {
     const userChats = this.mockChats.filter(c => c.userId === userId);
-    const userMessages = this.mockMessages.filter(m => 
-      userChats.some(c => c.id === m.chatId)
-    );
+    const userMessages = this.mockMessages.filter(m => userChats.some(c => c.id === m.chatId));
 
     return {
       totalChats: userChats.length,

@@ -5,7 +5,11 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { User } from '../../../entities';
 import { creditConfig } from '../../../config';
 import { IUserRepository } from '../../../core/repositories/interfaces';
-import { ValidationException, ResourceNotFoundException, CreditException } from '../../../common/exceptions';
+import {
+  ValidationException,
+  ResourceNotFoundException,
+  CreditException,
+} from '../../../common/exceptions';
 
 /**
  * Service responsible for managing credit balance operations
@@ -38,7 +42,9 @@ export class CreditBalanceService {
 
     if (!userId || typeof userId !== 'string') {
       this.logger.warn(`Invalid user ID provided to getBalance: ${userId}`);
-      throw new ValidationException('Invalid user ID', 'INVALID_USER_ID', { providedUserId: userId });
+      throw new ValidationException('Invalid user ID', 'INVALID_USER_ID', {
+        providedUserId: userId,
+      });
     }
 
     this.logger.debug(`Getting balance for user ${userId}`);
@@ -115,14 +121,16 @@ export class CreditBalanceService {
    */
   async updateBalance(userId: string, newBalance: number): Promise<void> {
     if (!userId || typeof userId !== 'string') {
-      throw new ValidationException('Invalid user ID', 'INVALID_USER_ID', { providedUserId: userId });
+      throw new ValidationException('Invalid user ID', 'INVALID_USER_ID', {
+        providedUserId: userId,
+      });
     }
 
     if (typeof newBalance !== 'number' || newBalance < 0) {
-      throw new CreditException('Invalid balance amount', 'INVALID_BALANCE_AMOUNT', { 
+      throw new CreditException('Invalid balance amount', 'INVALID_BALANCE_AMOUNT', {
         providedBalance: newBalance,
         expectedType: 'number',
-        minimumValue: 0
+        minimumValue: 0,
       });
     }
 

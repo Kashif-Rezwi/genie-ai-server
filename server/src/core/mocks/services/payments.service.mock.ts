@@ -1,4 +1,4 @@
-import { 
+import {
   IPaymentsService,
   CreatePaymentOrderDto,
   VerifyPaymentDto,
@@ -6,7 +6,7 @@ import {
   PaymentVerificationResponse,
   PaymentHistoryQueryDto,
   PaymentHistoryResponse,
-  PaymentAnalytics
+  PaymentAnalytics,
 } from '../../interfaces/services';
 
 /**

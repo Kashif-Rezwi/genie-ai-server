@@ -8,11 +8,7 @@ import { CreditsModule } from '../credits/credits.module';
 import { SecurityModule } from '../security/security.module';
 
 @Module({
-  imports: [
-    AIModule,
-    CreditsModule,
-    SecurityModule,
-  ],
+  imports: [AIModule, CreditsModule, SecurityModule],
   controllers: [ChatController],
   providers: [ChatService, MessageService, ChatStreamingService],
   exports: [ChatService, MessageService],

@@ -37,9 +37,7 @@ export class MemoryOptimizationService {
   private gcTime = 0;
   private readonly thresholds: PerformanceThresholds['memory'];
 
-  constructor(
-    private readonly queryCache: QueryCacheService,
-  ) {
+  constructor(private readonly queryCache: QueryCacheService) {
     this.thresholds = performanceConfig().memory;
     // Monitor garbage collection
     if (global.gc) {
@@ -85,7 +83,7 @@ export class MemoryOptimizationService {
    */
   isOptimizationNeeded(): boolean {
     const metrics = this.getMemoryMetrics();
-    return metrics.heap.percentage > (this.thresholds.usageThreshold * 100);
+    return metrics.heap.percentage > this.thresholds.usageThreshold * 100;
   }
 
   /**
@@ -270,12 +268,12 @@ export class MemoryOptimizationService {
    */
   private formatBytes(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
-    
+
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   }
 
   /**
@@ -290,7 +288,8 @@ export class MemoryOptimizationService {
       recommendations.push('Consider increasing heap size or optimizing memory usage');
     }
 
-    if (metrics.external > 50 * 1024 * 1024) { // 50MB
+    if (metrics.external > 50 * 1024 * 1024) {
+      // 50MB
       recommendations.push('Review external memory usage (buffers, streams)');
     }
 
@@ -298,7 +297,8 @@ export class MemoryOptimizationService {
       recommendations.push('Optimize object creation and disposal patterns');
     }
 
-    if (metrics.rss > 500 * 1024 * 1024) { // 500MB
+    if (metrics.rss > 500 * 1024 * 1024) {
+      // 500MB
       recommendations.push('Consider implementing memory pooling for large objects');
     }
 

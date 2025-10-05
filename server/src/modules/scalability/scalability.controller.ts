@@ -10,10 +10,30 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { ScalabilityService, ScalingMetrics, ScalingDecision, HealthCheckResult } from './services/scalability.service';
-import { LoadBalancerService, LoadBalancerConfig, BackendServer, LoadBalancerStats } from './services/load-balancer.service';
-import { AutoScalingService, AutoScalingConfig, ScalingEvent, AutoScalingStats } from './services/auto-scaling.service';
-import { ContainerOrchestrationService, ContainerConfig, ServiceConfig, OrchestrationStats } from './services/container-orchestration.service';
+import {
+  ScalabilityService,
+  ScalingMetrics,
+  ScalingDecision,
+  HealthCheckResult,
+} from './services/scalability.service';
+import {
+  LoadBalancerService,
+  LoadBalancerConfig,
+  BackendServer,
+  LoadBalancerStats,
+} from './services/load-balancer.service';
+import {
+  AutoScalingService,
+  AutoScalingConfig,
+  ScalingEvent,
+  AutoScalingStats,
+} from './services/auto-scaling.service';
+import {
+  ContainerOrchestrationService,
+  ContainerConfig,
+  ServiceConfig,
+  OrchestrationStats,
+} from './services/container-orchestration.service';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 
 @ApiTags('Scalability')
@@ -23,7 +43,7 @@ export class ScalabilityController {
     private readonly scalabilityService: ScalabilityService,
     private readonly loadBalancerService: LoadBalancerService,
     private readonly autoScalingService: AutoScalingService,
-    private readonly containerOrchestrationService: ContainerOrchestrationService,
+    private readonly containerOrchestrationService: ContainerOrchestrationService
   ) {}
 
   // Scaling Metrics Endpoints
@@ -46,7 +66,7 @@ export class ScalabilityController {
   @ApiResponse({ status: 200, description: 'Scaling decision made successfully' })
   @HttpCode(HttpStatus.OK)
   async makeScalingDecision(
-    @Body() body: { thresholds?: any },
+    @Body() body: { thresholds?: any }
   ): Promise<ApiResponseDto<ScalingDecision>> {
     const decision = await this.scalabilityService.makeScalingDecision(body.thresholds);
 
@@ -76,7 +96,7 @@ export class ScalabilityController {
   @ApiOperation({ summary: 'Get scaling history' })
   @ApiResponse({ status: 200, description: 'Scaling history retrieved successfully' })
   async getScalingHistory(
-    @Query('limit') limit: number = 50,
+    @Query('limit') limit: number = 50
   ): Promise<ApiResponseDto<ScalingDecision[]>> {
     const history = await this.scalabilityService.getScalingHistory(limit);
 
@@ -94,7 +114,19 @@ export class ScalabilityController {
   @ApiResponse({ status: 200, description: 'Load balancer initialized successfully' })
   @HttpCode(HttpStatus.OK)
   async initializeLoadBalancer(
-    @Body() body: { backends: Omit<BackendServer, 'health' | 'lastHealthCheck' | 'activeConnections' | 'totalRequests' | 'errorCount' | 'responseTime'>[], config?: Partial<LoadBalancerConfig> },
+    @Body()
+    body: {
+      backends: Omit<
+        BackendServer,
+        | 'health'
+        | 'lastHealthCheck'
+        | 'activeConnections'
+        | 'totalRequests'
+        | 'errorCount'
+        | 'responseTime'
+      >[];
+      config?: Partial<LoadBalancerConfig>;
+    }
   ): Promise<ApiResponseDto<{ initialized: boolean }>> {
     await this.loadBalancerService.initialize(body.backends, body.config);
 
@@ -111,7 +143,7 @@ export class ScalabilityController {
   @ApiResponse({ status: 200, description: 'Backend server registered successfully' })
   @HttpCode(HttpStatus.OK)
   async registerBackend(
-    @Body() backend: BackendServer,
+    @Body() backend: BackendServer
   ): Promise<ApiResponseDto<{ registered: boolean }>> {
     await this.loadBalancerService.registerBackend(backend);
 
@@ -127,7 +159,7 @@ export class ScalabilityController {
   @ApiOperation({ summary: 'Get next backend server' })
   @ApiResponse({ status: 200, description: 'Backend server retrieved successfully' })
   async getNextBackend(
-    @Query('clientIp') clientIp?: string,
+    @Query('clientIp') clientIp?: string
   ): Promise<ApiResponseDto<BackendServer | null>> {
     const backend = await this.loadBalancerService.getNextBackend(clientIp);
 
@@ -174,7 +206,7 @@ export class ScalabilityController {
   @ApiResponse({ status: 200, description: 'Auto-scaling initialized successfully' })
   @HttpCode(HttpStatus.OK)
   async initializeAutoScaling(
-    @Body() config: Partial<AutoScalingConfig>,
+    @Body() config: Partial<AutoScalingConfig>
   ): Promise<ApiResponseDto<{ initialized: boolean }>> {
     await this.autoScalingService.initialize(config);
 
@@ -235,7 +267,7 @@ export class ScalabilityController {
   @ApiResponse({ status: 200, description: 'Configuration updated successfully' })
   @HttpCode(HttpStatus.OK)
   async updateAutoScalingConfig(
-    @Body() config: AutoScalingConfig,
+    @Body() config: AutoScalingConfig
   ): Promise<ApiResponseDto<{ updated: boolean }>> {
     await this.autoScalingService.updateConfig(config);
 
@@ -265,7 +297,7 @@ export class ScalabilityController {
   @ApiOperation({ summary: 'Get auto-scaling events' })
   @ApiResponse({ status: 200, description: 'Events retrieved successfully' })
   async getAutoScalingEvents(
-    @Query('limit') limit: number = 50,
+    @Query('limit') limit: number = 50
   ): Promise<ApiResponseDto<ScalingEvent[]>> {
     const events = await this.autoScalingService.getRecentEvents(limit);
 
@@ -298,7 +330,7 @@ export class ScalabilityController {
   @ApiResponse({ status: 200, description: 'Deployment configuration created successfully' })
   @HttpCode(HttpStatus.OK)
   async createDeploymentConfig(
-    @Body() config: ContainerConfig,
+    @Body() config: ContainerConfig
   ): Promise<ApiResponseDto<{ yaml: string }>> {
     const yaml = await this.containerOrchestrationService.createDeploymentConfig(config);
 
@@ -315,7 +347,7 @@ export class ScalabilityController {
   @ApiResponse({ status: 200, description: 'Service configuration created successfully' })
   @HttpCode(HttpStatus.OK)
   async createServiceConfig(
-    @Body() config: ServiceConfig,
+    @Body() config: ServiceConfig
   ): Promise<ApiResponseDto<{ yaml: string }>> {
     const yaml = await this.containerOrchestrationService.createServiceConfig(config);
 
@@ -332,7 +364,7 @@ export class ScalabilityController {
   @ApiResponse({ status: 200, description: 'Docker Compose configuration generated successfully' })
   @HttpCode(HttpStatus.OK)
   async generateDockerCompose(
-    @Body() config: ContainerConfig,
+    @Body() config: ContainerConfig
   ): Promise<ApiResponseDto<{ yaml: string }>> {
     const yaml = await this.containerOrchestrationService.generateDockerCompose(config);
 
@@ -350,9 +382,12 @@ export class ScalabilityController {
   @HttpCode(HttpStatus.OK)
   async scaleDeployment(
     @Param('deploymentName') deploymentName: string,
-    @Body() body: { replicas: number },
+    @Body() body: { replicas: number }
   ): Promise<ApiResponseDto<{ scaled: boolean }>> {
-    const scaled = await this.containerOrchestrationService.scaleDeployment(deploymentName, body.replicas);
+    const scaled = await this.containerOrchestrationService.scaleDeployment(
+      deploymentName,
+      body.replicas
+    );
 
     return {
       success: true,
@@ -366,7 +401,7 @@ export class ScalabilityController {
   @ApiOperation({ summary: 'Get deployment status' })
   @ApiResponse({ status: 200, description: 'Deployment status retrieved successfully' })
   async getDeploymentStatus(
-    @Param('deploymentName') deploymentName: string,
+    @Param('deploymentName') deploymentName: string
   ): Promise<ApiResponseDto<any>> {
     const status = await this.containerOrchestrationService.getDeploymentStatus(deploymentName);
 
@@ -381,9 +416,7 @@ export class ScalabilityController {
   @Get('container/service/:serviceName/status')
   @ApiOperation({ summary: 'Get service status' })
   @ApiResponse({ status: 200, description: 'Service status retrieved successfully' })
-  async getServiceStatus(
-    @Param('serviceName') serviceName: string,
-  ): Promise<ApiResponseDto<any>> {
+  async getServiceStatus(@Param('serviceName') serviceName: string): Promise<ApiResponseDto<any>> {
     const status = await this.containerOrchestrationService.getServiceStatus(serviceName);
 
     return {

@@ -39,11 +39,7 @@ export interface ICreditTransactionRepository {
   /**
    * Find transactions by date range
    */
-  findByDateRange(
-    userId: string,
-    startDate: Date,
-    endDate: Date
-  ): Promise<CreditTransaction[]>;
+  findByDateRange(userId: string, startDate: Date, endDate: Date): Promise<CreditTransaction[]>;
 
   /**
    * Count transactions by user

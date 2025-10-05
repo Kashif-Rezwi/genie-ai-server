@@ -47,8 +47,8 @@ export interface RedisOptimizationResult {
 @Injectable()
 export class RedisOptimizationService {
   private readonly logger = new Logger(RedisOptimizationService.name);
-  private operationCount = 0;
-  private operationStartTime = Date.now();
+  private readonly operationCount = 0;
+  private readonly operationStartTime = Date.now();
   private readonly thresholds: PerformanceThresholds['redis'];
 
   constructor(@InjectRedis() private readonly redis: Redis) {
@@ -147,7 +147,9 @@ export class RedisOptimizationService {
       const after = await this.getRedisMetrics();
       const latencyImproved = before.performance.averageLatency - after.performance.averageLatency;
 
-      this.logger.log(`Redis optimization completed. Keys removed: ${keysRemoved}, Memory freed: ${this.formatBytes(memoryFreed)}`);
+      this.logger.log(
+        `Redis optimization completed. Keys removed: ${keysRemoved}, Memory freed: ${this.formatBytes(memoryFreed)}`
+      );
 
       return {
         action: actions.join(', '),
@@ -169,9 +171,9 @@ export class RedisOptimizationService {
    */
   async monitorAndOptimize(): Promise<void> {
     const metrics = await this.getRedisMetrics();
-    
+
     // Check if optimization is needed
-    const needsOptimization = 
+    const needsOptimization =
       metrics.memory.fragmentation > this.thresholds.fragmentationThreshold ||
       metrics.performance.averageLatency > this.thresholds.latencyThreshold ||
       metrics.operations.slowLog > this.thresholds.maxSlowOperations;
@@ -191,11 +193,15 @@ export class RedisOptimizationService {
     const metrics = await this.getRedisMetrics();
 
     if (metrics.memory.fragmentation > this.thresholds.fragmentationThreshold) {
-      recommendations.push('High memory fragmentation detected. Consider restarting Redis or using memory defragmentation');
+      recommendations.push(
+        'High memory fragmentation detected. Consider restarting Redis or using memory defragmentation'
+      );
     }
 
     if (metrics.performance.averageLatency > this.thresholds.latencyThreshold) {
-      recommendations.push('High latency detected. Consider optimizing queries or increasing Redis memory');
+      recommendations.push(
+        'High latency detected. Consider optimizing queries or increasing Redis memory'
+      );
     }
 
     if (metrics.operations.slowLog > this.thresholds.maxSlowOperations) {
@@ -203,7 +209,9 @@ export class RedisOptimizationService {
     }
 
     if (metrics.keys.total > 100000) {
-      recommendations.push('Large number of keys detected. Consider implementing key expiration strategies');
+      recommendations.push(
+        'Large number of keys detected. Consider implementing key expiration strategies'
+      );
     }
 
     if (metrics.performance.hitRate < this.thresholds.hitRateThreshold) {
@@ -238,15 +246,15 @@ export class RedisOptimizationService {
       const infoBefore = await this.redis.info('memory');
       const beforeMatch = infoBefore.match(/used_memory:(\d+)/);
       const before = beforeMatch ? parseInt(beforeMatch[1], 10) : 0;
-      
+
       // Trigger memory optimization
       await this.redis.eval('return redis.call("MEMORY", "PURGE")', 0);
-      
+
       // Get memory info after optimization
       const infoAfter = await this.redis.info('memory');
       const afterMatch = infoAfter.match(/used_memory:(\d+)/);
       const after = afterMatch ? parseInt(afterMatch[1], 10) : 0;
-      
+
       return before - after;
     } catch (error) {
       this.logger.error('Error optimizing memory usage:', error);
@@ -277,20 +285,18 @@ export class RedisOptimizationService {
       let optimized = 0;
 
       // Find and optimize common patterns
-      const patterns = [
-        'query_cache:*',
-        'rate_limit:*',
-        'session:*',
-        'temp:*',
-      ];
+      const patterns = ['query_cache:*', 'rate_limit:*', 'session:*', 'temp:*'];
 
       for (const pattern of patterns) {
         const keys = await this.redis.keys(pattern);
-        if (keys.length > 1000) { // Only optimize if there are many keys
+        if (keys.length > 1000) {
+          // Only optimize if there are many keys
           // Set expiration for temporary keys
-          for (const key of keys.slice(0, 100)) { // Limit to 100 keys per pattern
+          for (const key of keys.slice(0, 100)) {
+            // Limit to 100 keys per pattern
             const ttl = await this.redis.ttl(key);
-            if (ttl === -1) { // No expiration set
+            if (ttl === -1) {
+              // No expiration set
               await this.redis.expire(key, 3600); // Set 1 hour expiration
               optimized++;
             }
@@ -366,7 +372,7 @@ export class RedisOptimizationService {
   private parseRedisInfo(info: string): any {
     const parsed: any = {};
     const lines = info.split('\r\n');
-    
+
     for (const line of lines) {
       if (line.includes(':')) {
         const [key, value] = line.split(':');
@@ -393,12 +399,12 @@ export class RedisOptimizationService {
    */
   private formatBytes(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
-    
+
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   }
 
   /**
@@ -408,7 +414,7 @@ export class RedisOptimizationService {
   async getRedisStatistics(): Promise<object> {
     const metrics = await this.getRedisMetrics();
     const recommendations = await this.getOptimizationRecommendations();
-    
+
     return {
       metrics,
       recommendations,

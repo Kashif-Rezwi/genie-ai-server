@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { User, CreditTransaction, TransactionType } from '../../../entities';
 import { CreditsService } from './credits.service';
-import { IUserRepository, ICreditTransactionRepository } from '../../../core/repositories/interfaces';
+import {
+  IUserRepository,
+  ICreditTransactionRepository,
+} from '../../../core/repositories/interfaces';
 
 @Injectable()
 export class CreditsAnalyticsService {
@@ -24,7 +27,10 @@ export class CreditsAnalyticsService {
       this.transactionRepository.count(),
     ]);
 
-    const totalCreditsInCirculation = users.reduce((sum: number, user: User) => sum + user.creditsBalance, 0);
+    const totalCreditsInCirculation = users.reduce(
+      (sum: number, user: User) => sum + user.creditsBalance,
+      0
+    );
 
     return {
       totalUsers,
@@ -43,11 +49,11 @@ export class CreditsAnalyticsService {
     const balance = await this.creditsService.getBalance(userId);
 
     const transactions = await this.transactionRepository.findByUserId(userId);
-    
+
     const totalPurchased = transactions
       .filter(t => t.type === TransactionType.PURCHASE)
       .reduce((sum, t) => sum + t.amount, 0);
-    
+
     const totalUsed = transactions
       .filter(t => t.type === TransactionType.USAGE)
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);

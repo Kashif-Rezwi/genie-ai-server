@@ -8,7 +8,7 @@ import { ICreditTransactionRepository } from './interfaces/credit-transaction.re
 export class CreditTransactionRepository implements ICreditTransactionRepository {
   constructor(
     @InjectRepository(CreditTransaction)
-    private readonly transactionRepository: Repository<CreditTransaction>,
+    private readonly transactionRepository: Repository<CreditTransaction>
   ) {}
 
   async findById(id: string): Promise<CreditTransaction | null> {
@@ -37,7 +37,10 @@ export class CreditTransactionRepository implements ICreditTransactionRepository
     return this.transactionRepository.save(transaction);
   }
 
-  async update(id: string, transactionData: Partial<CreditTransaction>): Promise<CreditTransaction> {
+  async update(
+    id: string,
+    transactionData: Partial<CreditTransaction>
+  ): Promise<CreditTransaction> {
     await this.transactionRepository.update(id, transactionData);
     const updatedTransaction = await this.findById(id);
     if (!updatedTransaction) {
@@ -84,7 +87,7 @@ export class CreditTransactionRepository implements ICreditTransactionRepository
       .where('transaction.userId = :userId', { userId })
       .andWhere('transaction.type = :type', { type: TransactionType.PURCHASE })
       .getRawOne();
-    
+
     return parseFloat(result.total) || 0;
   }
 
@@ -95,7 +98,7 @@ export class CreditTransactionRepository implements ICreditTransactionRepository
       .where('transaction.userId = :userId', { userId })
       .andWhere('transaction.type = :type', { type: TransactionType.USAGE })
       .getRawOne();
-    
+
     return parseFloat(result.total) || 0;
   }
 

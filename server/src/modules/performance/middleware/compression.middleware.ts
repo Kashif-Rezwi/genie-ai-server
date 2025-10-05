@@ -41,7 +41,7 @@ export class CompressionMiddleware implements NestMiddleware {
     const originalEnd = res.end;
     const originalWriteHead = res.writeHead;
 
-    let compressed = false;
+    const compressed = false;
     let compressionType: string;
     let compressor: zlib.Gzip | zlib.Deflate | zlib.BrotliCompress;
 
@@ -121,9 +121,8 @@ export class CompressionMiddleware implements NestMiddleware {
       }
       if (headers) {
         return (originalWriteHead as any).call(res, statusCode, statusMessage, headers);
-      } else {
-        return originalWriteHead.call(res, statusCode, statusMessage);
       }
+      return originalWriteHead.call(res, statusCode, statusMessage);
     };
 
     next();
@@ -135,9 +134,11 @@ export class CompressionMiddleware implements NestMiddleware {
    * @returns boolean - Whether compression is supported
    */
   private supportsCompression(acceptEncoding: string): boolean {
-    return acceptEncoding.includes('gzip') || 
-           acceptEncoding.includes('deflate') || 
-           acceptEncoding.includes('br');
+    return (
+      acceptEncoding.includes('gzip') ||
+      acceptEncoding.includes('deflate') ||
+      acceptEncoding.includes('br')
+    );
   }
 
   /**
@@ -180,10 +181,10 @@ export class CompressionMiddleware implements NestMiddleware {
     chunks: Buffer[],
     compressionType: string,
     compressor: zlib.Gzip | zlib.Deflate | zlib.BrotliCompress,
-    originalEnd: Function,
+    originalEnd: Function
   ): void {
     const data = Buffer.concat(chunks);
-    
+
     // Set compression headers
     res.setHeader('Content-Encoding', compressionType);
     res.setHeader('Vary', 'Accept-Encoding');

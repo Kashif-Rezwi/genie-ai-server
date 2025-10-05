@@ -35,7 +35,10 @@ export const performanceConfig = (): PerformanceThresholds => ({
   memory: {
     usageThreshold: parseFloat(process.env.PERF_MEMORY_USAGE_THRESHOLD || '0.8'),
     gcCountThreshold: parseInt(process.env.PERF_MEMORY_GC_COUNT_THRESHOLD || '100', 10),
-    externalMemoryThreshold: parseInt(process.env.PERF_MEMORY_EXTERNAL_THRESHOLD || '104857600', 10), // 100MB
+    externalMemoryThreshold: parseInt(
+      process.env.PERF_MEMORY_EXTERNAL_THRESHOLD || '104857600',
+      10
+    ), // 100MB
   },
   redis: {
     fragmentationThreshold: parseFloat(process.env.PERF_REDIS_FRAGMENTATION_THRESHOLD || '1.5'),

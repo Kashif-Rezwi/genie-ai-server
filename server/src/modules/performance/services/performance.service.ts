@@ -34,13 +34,13 @@ export interface PerformanceMetrics {
 @Injectable()
 export class PerformanceService {
   private readonly logger = new Logger(PerformanceService.name);
-  private startTime = Date.now();
+  private readonly startTime = Date.now();
   private lastCpuUsage = process.cpuUsage();
 
   constructor(
     private readonly queryCache: QueryCacheService,
     private readonly backgroundJobs: BackgroundJobService,
-    private readonly creditReservations: OptimizedCreditReservationService,
+    private readonly creditReservations: OptimizedCreditReservationService
   ) {}
 
   /**
@@ -185,6 +185,6 @@ export class PerformanceService {
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     if (bytes === 0) return '0 Bytes';
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    return `${Math.round((bytes / Math.pow(1024, i)) * 100) / 100} ${sizes[i]}`;
   }
 }

@@ -63,22 +63,22 @@ export class OrchestrationStatsService {
     try {
       const deployments = await this.getAllDeployments();
       const services = await this.getAllServices();
-      
+
       const totalDeployments = deployments.length;
       const runningDeployments = deployments.filter(d => d.status === 'Running').length;
       const failedDeployments = deployments.filter(d => d.status === 'Failed').length;
-      
+
       const totalServices = services.length;
-      
+
       // Calculate pod statistics
       const totalPods = deployments.reduce((sum, d) => sum + d.replicas, 0);
       const runningPods = deployments.reduce((sum, d) => sum + d.readyReplicas, 0);
       const failedPods = deployments.reduce((sum, d) => sum + d.unavailableReplicas, 0);
-      
+
       // Calculate resource utilization (mock data for now)
       const averageCpuUsage = Math.random() * 100;
       const averageMemoryUsage = Math.random() * 100;
-      
+
       const stats: OrchestrationStats = {
         totalDeployments,
         runningDeployments,
@@ -103,7 +103,9 @@ export class OrchestrationStatsService {
         JSON.stringify(stats)
       );
 
-      this.logger.log(`Orchestration stats calculated: ${totalDeployments} deployments, ${totalServices} services`);
+      this.logger.log(
+        `Orchestration stats calculated: ${totalDeployments} deployments, ${totalServices} services`
+      );
       return stats;
     } catch (error) {
       this.logger.error('Error getting orchestration stats:', error);

@@ -97,7 +97,7 @@ export class PerformanceRegressionService {
   constructor(
     private readonly redisService: RedisService,
     private readonly loggingService: LoggingService,
-    private readonly apmService: APMService,
+    private readonly apmService: APMService
   ) {}
 
   /**
@@ -112,10 +112,7 @@ export class PerformanceRegressionService {
     };
 
     this.tests.set(id, newTest);
-    this.loggingService.log(
-      `Performance test created: ${test.name}`,
-      'monitoring',
-    );
+    this.loggingService.log(`Performance test created: ${test.name}`, 'monitoring');
 
     return id;
   }
@@ -133,10 +130,7 @@ export class PerformanceRegressionService {
     const updatedTest = { ...test, ...updates };
     this.tests.set(testId, updatedTest);
 
-    this.loggingService.log(
-      `Performance test updated: ${test.name}`,
-      'monitoring',
-    );
+    this.loggingService.log(`Performance test updated: ${test.name}`, 'monitoring');
 
     return true;
   }
@@ -154,10 +148,7 @@ export class PerformanceRegressionService {
     this.tests.delete(testId);
     this.baselines.delete(testId);
 
-    this.loggingService.log(
-      `Performance test deleted: ${test.name}`,
-      'monitoring',
-    );
+    this.loggingService.log(`Performance test deleted: ${test.name}`, 'monitoring');
 
     return true;
   }
@@ -198,7 +189,7 @@ export class PerformanceRegressionService {
       `Performance Test: ${test.name}`,
       'custom',
       undefined,
-      { testId, endpoint: test.endpoint },
+      { testId, endpoint: test.endpoint }
     );
 
     try {
@@ -211,7 +202,8 @@ export class PerformanceRegressionService {
       result = {
         testId,
         timestamp: startTime,
-        success: response.statusCode === test.expectedStatus && responseTime <= test.expectedResponseTime,
+        success:
+          response.statusCode === test.expectedStatus && responseTime <= test.expectedResponseTime,
         responseTime,
         statusCode: response.statusCode,
         metrics: {
@@ -233,7 +225,6 @@ export class PerformanceRegressionService {
         statusCode: response.statusCode,
         regression: !!regression,
       });
-
     } catch (error) {
       const endTime = Date.now();
       const responseTime = endTime - startTime;
@@ -271,7 +262,7 @@ export class PerformanceRegressionService {
 
     this.loggingService.log(
       `Performance test completed: ${test.name} - ${result.success ? 'PASS' : 'FAIL'} (${result.responseTime}ms)`,
-      'monitoring',
+      'monitoring'
     );
 
     return result;
@@ -304,7 +295,7 @@ export class PerformanceRegressionService {
    */
   getResults(testId?: string, limit = 100): PerformanceTestResult[] {
     let filteredResults = this.results;
-    
+
     if (testId) {
       filteredResults = this.results.filter(result => result.testId === testId);
     }
@@ -322,8 +313,8 @@ export class PerformanceRegressionService {
     }
 
     const endTime = Date.now();
-    const startTime = endTime - (days * 24 * 60 * 60 * 1000);
-    
+    const startTime = endTime - days * 24 * 60 * 60 * 1000;
+
     const testResults = this.results.filter(
       result => result.testId === testId && result.timestamp >= startTime
     );
@@ -356,7 +347,7 @@ export class PerformanceRegressionService {
         throughput: this.calculateTrends(testResults, 'metrics.throughput'),
         errorRate: this.calculateErrorRateTrends(testResults),
       },
-      regressions: regressions,
+      regressions,
       recommendations: this.generateRecommendations(testResults, regressions),
     };
   }
@@ -383,7 +374,9 @@ export class PerformanceRegressionService {
     const responseTimes = testResults.map(result => result.responseTime);
     const throughputs = testResults.map(result => result.metrics.throughput);
     const memoryUsages = testResults.map(result => result.metrics.memoryUsage.heapUsed);
-    const cpuUsages = testResults.map(result => result.metrics.cpuUsage.user + result.metrics.cpuUsage.system);
+    const cpuUsages = testResults.map(
+      result => result.metrics.cpuUsage.user + result.metrics.cpuUsage.system
+    );
 
     const baseline: PerformanceBaseline = {
       testId,
@@ -398,10 +391,7 @@ export class PerformanceRegressionService {
 
     this.baselines.set(testId, baseline);
 
-    this.loggingService.log(
-      `Performance baseline set for test: ${test.name}`,
-      'monitoring',
-    );
+    this.loggingService.log(`Performance baseline set for test: ${test.name}`, 'monitoring');
 
     return true;
   }
@@ -417,9 +407,9 @@ export class PerformanceRegressionService {
    * Clear old test results
    */
   clearOldResults(olderThanDays = 30): void {
-    const cutoff = Date.now() - (olderThanDays * 24 * 60 * 60 * 1000);
+    const cutoff = Date.now() - olderThanDays * 24 * 60 * 60 * 1000;
     const oldCount = this.results.length;
-    
+
     this.results.splice(
       0,
       this.results.findIndex(result => result.timestamp >= cutoff)
@@ -429,8 +419,10 @@ export class PerformanceRegressionService {
   }
 
   private async executeRequest(test: PerformanceTest): Promise<{ statusCode: number; body: any }> {
-    const url = test.endpoint.startsWith('http') ? test.endpoint : `http://localhost:3000${test.endpoint}`;
-    
+    const url = test.endpoint.startsWith('http')
+      ? test.endpoint
+      : `http://localhost:3000${test.endpoint}`;
+
     const options: RequestInit = {
       method: test.method,
       headers: {
@@ -452,14 +444,18 @@ export class PerformanceRegressionService {
     };
   }
 
-  private async checkRegression(testId: string, result: PerformanceTestResult): Promise<PerformanceTestResult['regression'] | null> {
+  private async checkRegression(
+    testId: string,
+    result: PerformanceTestResult
+  ): Promise<PerformanceTestResult['regression'] | null> {
     const baseline = this.baselines.get(testId);
     if (!baseline) {
       return null;
     }
 
     const responseTimeIncrease = result.responseTime - baseline.baselineResponseTime;
-    const responseTimeIncreasePercent = (responseTimeIncrease / baseline.baselineResponseTime) * 100;
+    const responseTimeIncreasePercent =
+      (responseTimeIncrease / baseline.baselineResponseTime) * 100;
 
     // Consider regression if response time increased by more than 20%
     if (responseTimeIncreasePercent > 20) {
@@ -493,7 +489,7 @@ export class PerformanceRegressionService {
     for (let i = 1; i < sortedResults.length; i++) {
       const current = this.getNestedValue(sortedResults[i], metric);
       const previous = this.getNestedValue(sortedResults[i - 1], metric);
-      
+
       if (current !== undefined && previous !== undefined) {
         const change = current - previous;
         const changePercent = previous > 0 ? (change / previous) * 100 : 0;
@@ -517,7 +513,7 @@ export class PerformanceRegressionService {
     for (let i = 1; i < sortedResults.length; i++) {
       const current = sortedResults[i].success ? 0 : 1;
       const previous = sortedResults[i - 1].success ? 0 : 1;
-      
+
       const change = current - previous;
       const changePercent = previous > 0 ? (change / previous) * 100 : 0;
 
@@ -532,7 +528,10 @@ export class PerformanceRegressionService {
     return trends;
   }
 
-  private generateRecommendations(results: PerformanceTestResult[], regressions: PerformanceTestResult[]): string[] {
+  private generateRecommendations(
+    results: PerformanceTestResult[],
+    regressions: PerformanceTestResult[]
+  ): string[] {
     const recommendations: string[] = [];
 
     if (regressions.length > 0) {

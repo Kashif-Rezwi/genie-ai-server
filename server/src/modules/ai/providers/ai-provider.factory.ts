@@ -26,10 +26,14 @@ export class AIProviderFactory {
   getProvider(providerName: string): AIProvider {
     const provider = this.providers.get(providerName);
     if (!provider) {
-      throw new ValidationException(`Provider ${providerName} not supported`, 'UNSUPPORTED_AI_PROVIDER', { 
-        providerName, 
-        supportedProviders: Array.from(this.providers.keys()) 
-      });
+      throw new ValidationException(
+        `Provider ${providerName} not supported`,
+        'UNSUPPORTED_AI_PROVIDER',
+        {
+          providerName,
+          supportedProviders: Array.from(this.providers.keys()),
+        }
+      );
     }
     return provider;
   }

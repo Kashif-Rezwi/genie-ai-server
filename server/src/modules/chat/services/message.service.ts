@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { DataSource, MoreThan } from 'typeorm';
 import { Chat, Message, MessageRole } from '../../../entities';
 import {
@@ -12,7 +9,11 @@ import {
 } from '../interfaces/chat.interfaces';
 import { MessageResponseDto } from '../dto/message.dto';
 import { IChatRepository, IMessageRepository } from '../../../core/repositories/interfaces';
-import { ResourceNotFoundException, BusinessException, ValidationException } from '../../../common/exceptions';
+import {
+  ResourceNotFoundException,
+  BusinessException,
+  ValidationException,
+} from '../../../common/exceptions';
 
 @Injectable()
 export class MessageService {
@@ -32,17 +33,18 @@ export class MessageService {
 
     // Check for duplicate message in last 5 minutes
     const recentMessages = await this.messageRepository.findByChatId(chatId, 0, 10);
-    const recentMessage = recentMessages.find(msg => 
-      msg.role === MessageRole.USER && 
-      msg.content === content && 
-      msg.createdAt > new Date(Date.now() - 5 * 60 * 1000)
+    const recentMessage = recentMessages.find(
+      msg =>
+        msg.role === MessageRole.USER &&
+        msg.content === content &&
+        msg.createdAt > new Date(Date.now() - 5 * 60 * 1000)
     );
 
     if (recentMessage) {
       throw new BusinessException(
         'Duplicate message detected. Please wait before sending the same message again.',
         'DUPLICATE_MESSAGE_DETECTED',
-        { chatId, content: content.substring(0, 50) + '...' }
+        { chatId, content: `${content.substring(0, 50)}...` }
       );
     }
 
@@ -156,7 +158,7 @@ export class MessageService {
 
     // Group by model and calculate costs
     const modelGroups = new Map<string, { count: number; totalCost: number }>();
-    
+
     messages.forEach(msg => {
       const model = msg.model || 'user';
       const existing = modelGroups.get(model) || { count: 0, totalCost: 0 };
@@ -183,7 +185,7 @@ export class MessageService {
   async getUserModelUsage(userId: string): Promise<ModelUsage[]> {
     // Get all messages for the user
     const messages = await this.messageRepository.countByUserId(userId);
-    
+
     // For now, return empty array since we need to implement this properly
     // This would require a more complex query that we'll handle later
     return [];

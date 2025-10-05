@@ -6,7 +6,7 @@ import { ICreditsService } from '../../interfaces/services';
 export class MockCreditsService implements ICreditsService {
   private mockBalance = 100;
   private mockTransactions: any[] = [];
-  private mockReservations = new Map<string, any>();
+  private readonly mockReservations = new Map<string, any>();
 
   async getBalance(userId: string): Promise<number> {
     return this.mockBalance;
@@ -92,7 +92,7 @@ export class MockCreditsService implements ICreditsService {
     const userTransactions = this.mockTransactions
       .filter(tx => tx.userId === userId)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    
+
     return limit ? userTransactions.slice(0, limit) : userTransactions;
   }
 

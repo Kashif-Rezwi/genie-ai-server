@@ -59,7 +59,7 @@ export class PerformanceMonitoringService {
     private readonly databaseOptimization: DatabaseOptimizationService,
     private readonly memoryOptimization: MemoryOptimizationService,
     private readonly redisOptimization: RedisOptimizationService,
-    private readonly queryCache: QueryCacheService,
+    private readonly queryCache: QueryCacheService
   ) {
     this.thresholds = performanceConfig();
   }
@@ -165,10 +165,10 @@ export class PerformanceMonitoringService {
   async monitorPerformance(): Promise<void> {
     try {
       const report = await this.generatePerformanceReport();
-      
+
       // Check for performance issues and create alerts
       await this.checkPerformanceAlerts(report);
-      
+
       // Auto-optimize if critical issues are detected
       if (report.overall.status === 'critical') {
         this.logger.warn('Critical performance issues detected, starting auto-optimization...');
@@ -270,7 +270,8 @@ export class PerformanceMonitoringService {
     }
 
     // Penalize high external memory
-    if (metrics.external > 100 * 1024 * 1024) { // 100MB
+    if (metrics.external > 100 * 1024 * 1024) {
+      // 100MB
       score -= 20;
     }
 
@@ -360,7 +361,9 @@ export class PerformanceMonitoringService {
     const recommendations: string[] = [];
 
     if (scores.database.score < 70) {
-      recommendations.push('Database performance needs attention - consider optimizing queries and indexes');
+      recommendations.push(
+        'Database performance needs attention - consider optimizing queries and indexes'
+      );
     }
 
     if (scores.memory.score < 70) {
@@ -368,7 +371,9 @@ export class PerformanceMonitoringService {
     }
 
     if (scores.redis.score < 70) {
-      recommendations.push('Redis performance needs optimization - check fragmentation and latency');
+      recommendations.push(
+        'Redis performance needs optimization - check fragmentation and latency'
+      );
     }
 
     if (scores.cache.score < 70) {
@@ -440,7 +445,12 @@ export class PerformanceMonitoringService {
   private async checkPerformanceAlerts(report: PerformanceReport): Promise<void> {
     // Check overall performance
     if (report.overall.status === 'critical') {
-      this.createAlert('overall', 'critical', 'Critical performance issues detected', report.overall);
+      this.createAlert(
+        'overall',
+        'critical',
+        'Critical performance issues detected',
+        report.overall
+      );
     } else if (report.overall.status === 'warning') {
       this.createAlert('overall', 'medium', 'Performance warning detected', report.overall);
     }

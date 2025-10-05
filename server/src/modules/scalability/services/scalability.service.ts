@@ -112,7 +112,7 @@ export class ScalabilityService {
 
   constructor(
     @InjectRedis() private readonly redis: Redis,
-    private readonly userRepository: IUserRepository,
+    private readonly userRepository: IUserRepository
   ) {}
 
   /**
@@ -122,7 +122,7 @@ export class ScalabilityService {
   async collectMetrics(): Promise<ScalingMetrics> {
     try {
       const startTime = Date.now();
-      
+
       // Get system metrics
       const memoryUsage = await this.getMemoryUsage();
       const cpuUsage = await this.getCpuUsage();
@@ -160,12 +160,12 @@ export class ScalabilityService {
    * @returns Promise<ScalingDecision> - Scaling decision
    */
   async makeScalingDecision(
-    thresholds: ScalingThresholds = this.defaultThresholds,
+    thresholds: ScalingThresholds = this.defaultThresholds
   ): Promise<ScalingDecision> {
     try {
       const metrics = await this.collectMetrics();
       const currentInstances = await this.getCurrentInstanceCount();
-      
+
       let action: 'scale_up' | 'scale_down' | 'no_action' = 'no_action';
       let reason = 'All metrics within normal range';
       let confidence = 0;
@@ -202,11 +202,15 @@ export class ScalabilityService {
 
       // Connection scaling
       if (metrics.activeConnections > thresholds.connections.scaleUp) {
-        triggers.push(`Active connections ${metrics.activeConnections} > ${thresholds.connections.scaleUp}`);
+        triggers.push(
+          `Active connections ${metrics.activeConnections} > ${thresholds.connections.scaleUp}`
+        );
         action = 'scale_up';
         confidence += 0.2;
       } else if (metrics.activeConnections < thresholds.connections.scaleDown) {
-        triggers.push(`Active connections ${metrics.activeConnections} < ${thresholds.connections.scaleDown}`);
+        triggers.push(
+          `Active connections ${metrics.activeConnections} < ${thresholds.connections.scaleDown}`
+        );
         if (action === 'no_action') {
           action = 'scale_down';
           confidence += 0.1;
@@ -215,11 +219,15 @@ export class ScalabilityService {
 
       // Request rate scaling
       if (metrics.requestRate > thresholds.requestRate.scaleUp) {
-        triggers.push(`Request rate ${metrics.requestRate}/s > ${thresholds.requestRate.scaleUp}/s`);
+        triggers.push(
+          `Request rate ${metrics.requestRate}/s > ${thresholds.requestRate.scaleUp}/s`
+        );
         action = 'scale_up';
         confidence += 0.2;
       } else if (metrics.requestRate < thresholds.requestRate.scaleDown) {
-        triggers.push(`Request rate ${metrics.requestRate}/s < ${thresholds.requestRate.scaleDown}/s`);
+        triggers.push(
+          `Request rate ${metrics.requestRate}/s < ${thresholds.requestRate.scaleDown}/s`
+        );
         if (action === 'no_action') {
           action = 'scale_down';
           confidence += 0.1;
@@ -235,11 +243,15 @@ export class ScalabilityService {
 
       // Response time scaling
       if (metrics.responseTime > thresholds.responseTime.scaleUp) {
-        triggers.push(`Response time ${metrics.responseTime}ms > ${thresholds.responseTime.scaleUp}ms`);
+        triggers.push(
+          `Response time ${metrics.responseTime}ms > ${thresholds.responseTime.scaleUp}ms`
+        );
         action = 'scale_up';
         confidence += 0.2;
       } else if (metrics.responseTime < thresholds.responseTime.scaleDown) {
-        triggers.push(`Response time ${metrics.responseTime}ms < ${thresholds.responseTime.scaleDown}ms`);
+        triggers.push(
+          `Response time ${metrics.responseTime}ms < ${thresholds.responseTime.scaleDown}ms`
+        );
         if (action === 'no_action') {
           action = 'scale_down';
           confidence += 0.1;
@@ -287,22 +299,22 @@ export class ScalabilityService {
   async performHealthCheck(): Promise<HealthCheckResult> {
     try {
       const startTime = Date.now();
-      
+
       // Check database
       const database = await this.checkDatabase();
-      
+
       // Check Redis
       const redis = await this.checkRedis();
-      
+
       // Check memory
       const memory = await this.checkMemory();
-      
+
       // Check CPU
       const cpu = await this.checkCpu();
-      
+
       // Check disk
       const disk = await this.checkDisk();
-      
+
       // Check network
       const network = await this.checkNetwork();
 
@@ -318,7 +330,7 @@ export class ScalabilityService {
       // Determine overall status
       const failedChecks = Object.values(checks).filter(check => !check).length;
       let status: 'healthy' | 'unhealthy' | 'degraded';
-      
+
       if (failedChecks === 0) {
         status = 'healthy';
       } else if (failedChecks <= 2) {
@@ -367,14 +379,14 @@ export class ScalabilityService {
     try {
       const key = `${this.decisionsPrefix}*`;
       const keys = await this.redis.keys(key);
-      
+
       if (keys.length === 0) {
         return [];
       }
 
       // Sort by timestamp (newest first)
       keys.sort((a, b) => b.localeCompare(a));
-      
+
       const limitedKeys = keys.slice(0, limit);
       const decisions: ScalingDecision[] = [];
 
@@ -434,7 +446,7 @@ export class ScalabilityService {
       const startUsage = process.cpuUsage();
       await new Promise(resolve => setTimeout(resolve, 100));
       const endUsage = process.cpuUsage(startUsage);
-      
+
       const totalUsage = (endUsage.user + endUsage.system) / 1000000; // Convert to seconds
       return Math.min(totalUsage * 100, 100);
     } catch (error) {
@@ -482,14 +494,14 @@ export class ScalabilityService {
     try {
       const totalRequests = await this.redis.get('scaling:total_requests');
       const errorRequests = await this.redis.get('scaling:error_requests');
-      
+
       if (!totalRequests || !errorRequests) {
         return 0;
       }
-      
+
       const total = parseInt(totalRequests);
       const errors = parseInt(errorRequests);
-      
+
       return total > 0 ? (errors / total) * 100 : 0;
     } catch (error) {
       this.logger.error('Error getting error rate:', error);

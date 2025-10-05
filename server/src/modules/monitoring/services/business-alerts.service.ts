@@ -80,7 +80,7 @@ export class BusinessAlertsService {
     private readonly redisService: RedisService,
     private readonly loggingService: LoggingService,
     private readonly businessAnalyticsService: BusinessAnalyticsService,
-    private readonly costMonitoringService: CostMonitoringService,
+    private readonly costMonitoringService: CostMonitoringService
   ) {
     this.initializeDefaultRules();
   }
@@ -91,7 +91,7 @@ export class BusinessAlertsService {
   createRule(rule: Omit<BusinessAlertRule, 'id' | 'createdAt' | 'updatedAt'>): string {
     const id = this.generateId();
     const now = Date.now();
-    
+
     const newRule: BusinessAlertRule = {
       ...rule,
       id,
@@ -101,10 +101,7 @@ export class BusinessAlertsService {
 
     this.rules.set(id, newRule);
 
-    this.loggingService.log(
-      `Business alert rule created: ${rule.name}`,
-      'monitoring',
-    );
+    this.loggingService.log(`Business alert rule created: ${rule.name}`, 'monitoring');
 
     return id;
   }
@@ -122,10 +119,7 @@ export class BusinessAlertsService {
     const updatedRule = { ...rule, ...updates, updatedAt: Date.now() };
     this.rules.set(ruleId, updatedRule);
 
-    this.loggingService.log(
-      `Business alert rule updated: ${rule.name}`,
-      'monitoring',
-    );
+    this.loggingService.log(`Business alert rule updated: ${rule.name}`, 'monitoring');
 
     return true;
   }
@@ -143,10 +137,7 @@ export class BusinessAlertsService {
     this.rules.delete(ruleId);
     this.alertHistory.delete(ruleId);
 
-    this.loggingService.log(
-      `Business alert rule deleted: ${rule.name}`,
-      'monitoring',
-    );
+    this.loggingService.log(`Business alert rule deleted: ${rule.name}`, 'monitoring');
 
     return true;
   }
@@ -208,7 +199,7 @@ export class BusinessAlertsService {
     severity?: string,
     resolved?: boolean,
     acknowledged?: boolean,
-    limit = 100,
+    limit = 100
   ): BusinessAlert[] {
     let filteredAlerts = this.alerts;
 
@@ -261,10 +252,7 @@ export class BusinessAlertsService {
 
     alert.acknowledged = true;
 
-    this.loggingService.log(
-      `Business alert acknowledged: ${alert.message}`,
-      'monitoring',
-    );
+    this.loggingService.log(`Business alert acknowledged: ${alert.message}`, 'monitoring');
 
     return true;
   }
@@ -282,10 +270,7 @@ export class BusinessAlertsService {
     alert.resolved = true;
     alert.resolvedAt = Date.now();
 
-    this.loggingService.log(
-      `Business alert resolved: ${alert.message}`,
-      'monitoring',
-    );
+    this.loggingService.log(`Business alert resolved: ${alert.message}`, 'monitoring');
 
     return true;
   }
@@ -296,10 +281,7 @@ export class BusinessAlertsService {
   updateConfig(config: Partial<BusinessAlertConfig>): void {
     Object.assign(this.config, config);
 
-    this.loggingService.log(
-      'Business alert configuration updated',
-      'monitoring',
-    );
+    this.loggingService.log('Business alert configuration updated', 'monitoring');
   }
 
   /**
@@ -313,9 +295,9 @@ export class BusinessAlertsService {
    * Clear old alerts
    */
   clearOldAlerts(olderThanDays = 30): void {
-    const cutoff = Date.now() - (olderThanDays * 24 * 60 * 60 * 1000);
+    const cutoff = Date.now() - olderThanDays * 24 * 60 * 60 * 1000;
     const oldCount = this.alerts.length;
-    
+
     this.alerts.splice(
       0,
       this.alerts.findIndex(alert => alert.timestamp >= cutoff)
@@ -430,44 +412,77 @@ export class BusinessAlertsService {
     }
   }
 
-  private evaluateCondition(value: number | string, operator: string, threshold: number | string): boolean {
+  private evaluateCondition(
+    value: number | string,
+    operator: string,
+    threshold: number | string
+  ): boolean {
     if (typeof value === 'number' && typeof threshold === 'number') {
       switch (operator) {
-        case 'gt': return value > threshold;
-        case 'lt': return value < threshold;
-        case 'eq': return value === threshold;
-        case 'gte': return value >= threshold;
-        case 'lte': return value <= threshold;
-        case 'ne': return value !== threshold;
-        default: return false;
+        case 'gt':
+          return value > threshold;
+        case 'lt':
+          return value < threshold;
+        case 'eq':
+          return value === threshold;
+        case 'gte':
+          return value >= threshold;
+        case 'lte':
+          return value <= threshold;
+        case 'ne':
+          return value !== threshold;
+        default:
+          return false;
       }
     } else if (typeof value === 'string' && typeof threshold === 'string') {
       switch (operator) {
-        case 'eq': return value === threshold;
-        case 'ne': return value !== threshold;
-        case 'contains': return value.includes(threshold);
-        case 'not_contains': return !value.includes(threshold);
-        default: return false;
+        case 'eq':
+          return value === threshold;
+        case 'ne':
+          return value !== threshold;
+        case 'contains':
+          return value.includes(threshold);
+        case 'not_contains':
+          return !value.includes(threshold);
+        default:
+          return false;
       }
     }
     return false;
   }
 
   private generateAlertMessage(rule: BusinessAlertRule, value: number | string): string {
-    const threshold = rule.threshold;
-    const operator = rule.operator;
-    
+    const { threshold } = rule;
+    const { operator } = rule;
+
     let operatorText: string;
     switch (operator) {
-      case 'gt': operatorText = 'greater than'; break;
-      case 'lt': operatorText = 'less than'; break;
-      case 'eq': operatorText = 'equal to'; break;
-      case 'gte': operatorText = 'greater than or equal to'; break;
-      case 'lte': operatorText = 'less than or equal to'; break;
-      case 'ne': operatorText = 'not equal to'; break;
-      case 'contains': operatorText = 'contains'; break;
-      case 'not_contains': operatorText = 'does not contain'; break;
-      default: operatorText = operator;
+      case 'gt':
+        operatorText = 'greater than';
+        break;
+      case 'lt':
+        operatorText = 'less than';
+        break;
+      case 'eq':
+        operatorText = 'equal to';
+        break;
+      case 'gte':
+        operatorText = 'greater than or equal to';
+        break;
+      case 'lte':
+        operatorText = 'less than or equal to';
+        break;
+      case 'ne':
+        operatorText = 'not equal to';
+        break;
+      case 'contains':
+        operatorText = 'contains';
+        break;
+      case 'not_contains':
+        operatorText = 'does not contain';
+        break;
+      default:
+        operatorText = operator;
     }
 
     return `${rule.name}: ${rule.metric} (${value}) is ${operatorText} ${threshold}`;
@@ -490,10 +505,7 @@ export class BusinessAlertsService {
         await this.sendSlackNotification(alert);
       }
 
-      this.loggingService.log(
-        `Alert notification sent: ${alert.message}`,
-        'monitoring',
-      );
+      this.loggingService.log(`Alert notification sent: ${alert.message}`, 'monitoring');
     } catch (error) {
       this.logger.error(`Failed to send alert notification: ${error.message}`);
     }
@@ -579,19 +591,25 @@ export class BusinessAlertsService {
   }
 
   private groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
-    return array.reduce((groups, item) => {
-      const group = String(item[key]);
-      groups[group] = groups[group] || [];
-      groups[group].push(item);
-      return groups;
-    }, {} as Record<string, T[]>);
+    return array.reduce(
+      (groups, item) => {
+        const group = String(item[key]);
+        groups[group] = groups[group] || [];
+        groups[group].push(item);
+        return groups;
+      },
+      {} as Record<string, T[]>
+    );
   }
 
   private countBy<T>(groups: Record<string, T[]>): Record<string, number> {
-    return Object.keys(groups).reduce((counts, key) => {
-      counts[key] = groups[key].length;
-      return counts;
-    }, {} as Record<string, number>);
+    return Object.keys(groups).reduce(
+      (counts, key) => {
+        counts[key] = groups[key].length;
+        return counts;
+      },
+      {} as Record<string, number>
+    );
   }
 
   private generateId(): string {

@@ -51,7 +51,7 @@ export class ApiResponseDto<T = any> {
     message: string,
     data?: T,
     error?: { code: string; details?: any },
-    requestId?: string,
+    requestId?: string
   ) {
     this.success = success;
     this.message = message;
@@ -75,7 +75,7 @@ export class ApiResponseDto<T = any> {
     message: string,
     errorCode: string,
     details?: any,
-    requestId?: string,
+    requestId?: string
   ): ApiResponseDto {
     return new ApiResponseDto(false, message, undefined, { code: errorCode, details }, requestId);
   }
@@ -118,7 +118,7 @@ export class PaginatedResponseDto<T = any> extends ApiResponseDto<{
     limit: number,
     total: number,
     message: string = 'Success',
-    requestId?: string,
+    requestId?: string
   ) {
     const totalPages = Math.ceil(total / limit);
     super(
@@ -136,7 +136,7 @@ export class PaginatedResponseDto<T = any> extends ApiResponseDto<{
         },
       },
       undefined,
-      requestId,
+      requestId
     );
   }
 }

@@ -14,7 +14,11 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { PerUserRateLimitService, RateLimitResult } from './services/per-user-rate-limit.service';
-import { BruteForceProtectionService, BruteForceResult, BruteForceStats } from './services/brute-force-protection.service';
+import {
+  BruteForceProtectionService,
+  BruteForceResult,
+  BruteForceStats,
+} from './services/brute-force-protection.service';
 import { AuditLoggingService, AuditQuery, AuditStats } from './services/audit-logging.service';
 import { ContentSecurityPolicyService } from './services/content-security-policy.service';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
@@ -26,7 +30,7 @@ export class SecurityController {
     private readonly rateLimitService: PerUserRateLimitService,
     private readonly bruteForceService: BruteForceProtectionService,
     private readonly auditService: AuditLoggingService,
-    private readonly cspService: ContentSecurityPolicyService,
+    private readonly cspService: ContentSecurityPolicyService
   ) {}
 
   // Rate Limiting Endpoints
@@ -34,7 +38,9 @@ export class SecurityController {
   @ApiOperation({ summary: 'Get user rate limits' })
   @ApiResponse({ status: 200, description: 'Rate limits retrieved successfully' })
   @ApiBearerAuth()
-  async getUserRateLimits(@Request() req: any): Promise<ApiResponseDto<Record<string, RateLimitResult>>> {
+  async getUserRateLimits(
+    @Request() req: any
+  ): Promise<ApiResponseDto<Record<string, RateLimitResult>>> {
     const userId = req.user?.id;
     if (!userId) {
       throw new Error('User not authenticated');
@@ -58,7 +64,7 @@ export class SecurityController {
   @HttpCode(HttpStatus.OK)
   async resetRateLimits(
     @Request() req: any,
-    @Body() body: { endpoint?: string },
+    @Body() body: { endpoint?: string }
   ): Promise<ApiResponseDto<{ reset: boolean }>> {
     const userId = req.user?.id;
     if (!userId) {
@@ -71,7 +77,7 @@ export class SecurityController {
       // Reset all rate limits for user
       const userTier = await this.rateLimitService.getUserTier(userId);
       const rateLimits = await this.rateLimitService.getAllRateLimits(userId, userTier);
-      
+
       for (const endpoint of Object.keys(rateLimits)) {
         await this.rateLimitService.resetRateLimit(userId, endpoint);
       }
@@ -92,7 +98,7 @@ export class SecurityController {
   @HttpCode(HttpStatus.OK)
   async updateUserTier(
     @Request() req: any,
-    @Body() body: { tier: string },
+    @Body() body: { tier: string }
   ): Promise<ApiResponseDto<{ updated: boolean }>> {
     const userId = req.user?.id;
     if (!userId) {
@@ -116,7 +122,7 @@ export class SecurityController {
   @ApiBearerAuth()
   async getBruteForceStatus(
     @Request() req: any,
-    @Query('action') action: string = 'login',
+    @Query('action') action: string = 'login'
   ): Promise<ApiResponseDto<BruteForceResult>> {
     const userId = req.user?.id;
     const identifier = userId || req.ip;
@@ -137,7 +143,7 @@ export class SecurityController {
   @ApiBearerAuth()
   async getBruteForceStats(
     @Request() req: any,
-    @Query('action') action: string = 'login',
+    @Query('action') action: string = 'login'
   ): Promise<ApiResponseDto<BruteForceStats>> {
     const userId = req.user?.id;
     const identifier = userId || req.ip;
@@ -159,14 +165,14 @@ export class SecurityController {
   @HttpCode(HttpStatus.OK)
   async resetBruteForceProtection(
     @Request() req: any,
-    @Body() body: { action?: string },
+    @Body() body: { action?: string }
   ): Promise<ApiResponseDto<{ reset: boolean }>> {
     const userId = req.user?.id;
     const identifier = userId || req.ip;
 
     const reset = await this.bruteForceService.resetBruteForceProtection(
       identifier,
-      body.action || 'login',
+      body.action || 'login'
     );
 
     return {
@@ -177,7 +183,6 @@ export class SecurityController {
     };
   }
 
-
   // Audit Logging Endpoints
   @Get('audit/events')
   @ApiOperation({ summary: 'Query audit events' })
@@ -185,7 +190,7 @@ export class SecurityController {
   @ApiBearerAuth()
   async queryAuditEvents(
     @Request() req: any,
-    @Query() query: AuditQuery,
+    @Query() query: AuditQuery
   ): Promise<ApiResponseDto<any[]>> {
     const userId = req.user?.id;
     if (!userId) {
@@ -215,7 +220,7 @@ export class SecurityController {
   async getAuditStats(
     @Request() req: any,
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
+    @Query('endDate') endDate?: string
   ): Promise<ApiResponseDto<AuditStats>> {
     const userId = req.user?.id;
     if (!userId) {
@@ -242,7 +247,7 @@ export class SecurityController {
   @HttpCode(HttpStatus.OK)
   async cleanupAuditEvents(
     @Request() req: any,
-    @Body() body: { olderThanDays?: number },
+    @Body() body: { olderThanDays?: number }
   ): Promise<ApiResponseDto<{ deletedCount: number }>> {
     const userId = req.user?.id;
     if (!userId) {
@@ -264,7 +269,7 @@ export class SecurityController {
   @ApiOperation({ summary: 'Get CSP header' })
   @ApiResponse({ status: 200, description: 'CSP header retrieved successfully' })
   async getCSPHeader(
-    @Query('environment') environment: string = 'production',
+    @Query('environment') environment: string = 'production'
   ): Promise<ApiResponseDto<{ header: string }>> {
     const header = this.cspService.getCSPHeader(environment);
 
@@ -281,7 +286,7 @@ export class SecurityController {
   @ApiResponse({ status: 200, description: 'CSP report-only header retrieved successfully' })
   async getCSPReportOnlyHeader(
     @Query('environment') environment: string = 'production',
-    @Query('reportUri') reportUri?: string,
+    @Query('reportUri') reportUri?: string
   ): Promise<ApiResponseDto<{ header: string }>> {
     const header = this.cspService.getCSPReportOnlyHeader(environment, reportUri);
 
@@ -342,5 +347,4 @@ export class SecurityController {
       timestamp: new Date().toISOString(),
     };
   }
-
 }

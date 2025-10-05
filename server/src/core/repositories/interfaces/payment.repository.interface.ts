@@ -44,11 +44,7 @@ export interface IPaymentRepository {
   /**
    * Find payments by date range
    */
-  findByDateRange(
-    userId: string,
-    startDate: Date,
-    endDate: Date
-  ): Promise<Payment[]>;
+  findByDateRange(userId: string, startDate: Date, endDate: Date): Promise<Payment[]>;
 
   /**
    * Count payments by user

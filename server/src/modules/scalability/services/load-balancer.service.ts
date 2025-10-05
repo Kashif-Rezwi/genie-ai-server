@@ -78,12 +78,20 @@ export class LoadBalancerService {
    * @returns Promise<void>
    */
   async initialize(
-    backends: Omit<BackendServer, 'health' | 'lastHealthCheck' | 'activeConnections' | 'totalRequests' | 'errorCount' | 'responseTime'>[],
-    config: Partial<LoadBalancerConfig> = {},
+    backends: Omit<
+      BackendServer,
+      | 'health'
+      | 'lastHealthCheck'
+      | 'activeConnections'
+      | 'totalRequests'
+      | 'errorCount'
+      | 'responseTime'
+    >[],
+    config: Partial<LoadBalancerConfig> = {}
   ): Promise<void> {
     try {
       const lbConfig = { ...this.defaultConfig, ...config };
-      
+
       // Register backend servers
       for (const backend of backends) {
         const fullBackend: BackendServer = {
@@ -95,7 +103,7 @@ export class LoadBalancerService {
           errorCount: 0,
           responseTime: 0,
         };
-        
+
         await this.registerBackend(fullBackend);
       }
 
@@ -118,7 +126,7 @@ export class LoadBalancerService {
     try {
       const key = `${this.backendsPrefix}${backend.id}`;
       await this.redis.setex(key, 86400, JSON.stringify(backend));
-      
+
       this.logger.log(`Backend server registered: ${backend.host}:${backend.port}`);
     } catch (error) {
       this.logger.error(`Error registering backend ${backend.id}:`, error);
@@ -135,7 +143,7 @@ export class LoadBalancerService {
     try {
       const key = `${this.backendsPrefix}${backendId}`;
       await this.redis.del(key);
-      
+
       this.logger.log(`Backend server unregistered: ${backendId}`);
     } catch (error) {
       this.logger.error(`Error unregistering backend ${backendId}:`, error);
@@ -151,14 +159,14 @@ export class LoadBalancerService {
   async getNextBackend(clientIp?: string): Promise<BackendServer | null> {
     try {
       const backends = await this.getHealthyBackends();
-      
+
       if (backends.length === 0) {
         this.logger.warn('No healthy backends available');
         return null;
       }
 
       const config = await this.getConfig();
-      
+
       switch (config.algorithm) {
         case 'round_robin':
           return this.roundRobinSelection(backends);
@@ -219,10 +227,11 @@ export class LoadBalancerService {
       const totalRequests = backends.reduce((sum, b) => sum + b.totalRequests, 0);
       const totalErrors = backends.reduce((sum, b) => sum + b.errorCount, 0);
       const activeConnections = backends.reduce((sum, b) => sum + b.activeConnections, 0);
-      
-      const averageResponseTime = backends.length > 0 
-        ? backends.reduce((sum, b) => sum + b.responseTime, 0) / backends.length 
-        : 0;
+
+      const averageResponseTime =
+        backends.length > 0
+          ? backends.reduce((sum, b) => sum + b.responseTime, 0) / backends.length
+          : 0;
 
       return {
         totalRequests,
@@ -249,7 +258,7 @@ export class LoadBalancerService {
   async updateBackendStats(
     backendId: string,
     responseTime: number,
-    success: boolean,
+    success: boolean
   ): Promise<void> {
     try {
       const backend = await this.getBackend(backendId);
@@ -259,7 +268,7 @@ export class LoadBalancerService {
 
       backend.totalRequests++;
       backend.responseTime = (backend.responseTime + responseTime) / 2; // Moving average
-      
+
       if (!success) {
         backend.errorCount++;
       }
@@ -334,11 +343,11 @@ export class LoadBalancerService {
     try {
       const key = `${this.backendsPrefix}${backendId}`;
       const data = await this.redis.get(key);
-      
+
       if (data) {
         return JSON.parse(data) as BackendServer;
       }
-      
+
       return null;
     } catch (error) {
       this.logger.error(`Error getting backend ${backendId}:`, error);
@@ -354,7 +363,7 @@ export class LoadBalancerService {
   private async checkBackendHealth(backend: BackendServer): Promise<HealthCheckResult> {
     try {
       const startTime = Date.now();
-      
+
       // Simple health check - in production, this would make an HTTP request
       const healthy = true; // Simplified for MVP
       const responseTime = Date.now() - startTime;
@@ -383,7 +392,10 @@ export class LoadBalancerService {
    * @param health - Health status
    * @returns Promise<void>
    */
-  private async updateBackendHealth(backendId: string, health: 'healthy' | 'unhealthy' | 'degraded'): Promise<void> {
+  private async updateBackendHealth(
+    backendId: string,
+    health: 'healthy' | 'unhealthy' | 'degraded'
+  ): Promise<void> {
     try {
       const backend = await this.getBackend(backendId);
       if (backend) {
@@ -412,7 +424,7 @@ export class LoadBalancerService {
    * @returns BackendServer - Selected backend
    */
   private leastConnectionsSelection(backends: BackendServer[]): BackendServer {
-    return backends.reduce((min, current) => 
+    return backends.reduce((min, current) =>
       current.activeConnections < min.activeConnections ? current : min
     );
   }
@@ -425,14 +437,14 @@ export class LoadBalancerService {
   private weightedRoundRobinSelection(backends: BackendServer[]): BackendServer {
     const totalWeight = backends.reduce((sum, b) => sum + b.weight, 0);
     let random = Math.random() * totalWeight;
-    
+
     for (const backend of backends) {
       random -= backend.weight;
       if (random <= 0) {
         return backend;
       }
     }
-    
+
     return backends[0];
   }
 
@@ -446,7 +458,7 @@ export class LoadBalancerService {
     if (!clientIp) {
       return this.roundRobinSelection(backends);
     }
-    
+
     const hash = this.hashString(clientIp);
     const index = hash % backends.length;
     return backends[index];
@@ -461,7 +473,7 @@ export class LoadBalancerService {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash);

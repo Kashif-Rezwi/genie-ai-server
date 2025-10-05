@@ -8,7 +8,7 @@ import { IChatRepository } from './interfaces/chat.repository.interface';
 export class ChatRepository implements IChatRepository {
   constructor(
     @InjectRepository(Chat)
-    private readonly chatRepository: Repository<Chat>,
+    private readonly chatRepository: Repository<Chat>
   ) {}
 
   async findById(id: string): Promise<Chat | null> {

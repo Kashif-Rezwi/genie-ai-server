@@ -88,7 +88,7 @@ export class APMService {
 
   constructor(
     private readonly redisService: RedisService,
-    private readonly loggingService: LoggingService,
+    private readonly loggingService: LoggingService
   ) {}
 
   /**
@@ -100,7 +100,7 @@ export class APMService {
     userId?: string,
     metadata?: Record<string, any>,
     tags?: Record<string, string>,
-    parentId?: string,
+    parentId?: string
   ): string {
     const id = this.generateId();
     const startTime = Date.now();
@@ -127,10 +127,7 @@ export class APMService {
       parent.children.push(id);
     }
 
-    this.loggingService.log(
-      `APM Transaction started: ${name} (${type})`,
-      'monitoring',
-    );
+    this.loggingService.log(`APM Transaction started: ${name} (${type})`, 'monitoring');
 
     return id;
   }
@@ -141,7 +138,7 @@ export class APMService {
   endTransaction(
     transactionId: string,
     status: 'completed' | 'failed' = 'completed',
-    metadata?: Record<string, any>,
+    metadata?: Record<string, any>
   ): void {
     const transaction = this.activeTransactions.get(transactionId);
     if (!transaction) {
@@ -171,7 +168,7 @@ export class APMService {
 
     this.loggingService.log(
       `APM Transaction ended: ${transaction.name} (${status}) - ${duration}ms`,
-      'monitoring',
+      'monitoring'
     );
   }
 
@@ -182,7 +179,7 @@ export class APMService {
     transactionId: string,
     name: string,
     metadata?: Record<string, any>,
-    tags?: Record<string, string>,
+    tags?: Record<string, string>
   ): string {
     const spanId = this.generateId();
     const startTime = Date.now();
@@ -199,10 +196,7 @@ export class APMService {
 
     this.activeSpans.set(spanId, span);
 
-    this.loggingService.log(
-      `APM Span started: ${name}`,
-      'monitoring',
-    );
+    this.loggingService.log(`APM Span started: ${name}`, 'monitoring');
 
     return spanId;
   }
@@ -213,7 +207,7 @@ export class APMService {
   endSpan(
     spanId: string,
     status: 'completed' | 'failed' = 'completed',
-    metadata?: Record<string, any>,
+    metadata?: Record<string, any>
   ): void {
     const span = this.activeSpans.get(spanId);
     if (!span) {
@@ -243,7 +237,7 @@ export class APMService {
 
     this.loggingService.log(
       `APM Span ended: ${span.name} (${status}) - ${duration}ms`,
-      'monitoring',
+      'monitoring'
     );
   }
 
@@ -258,7 +252,7 @@ export class APMService {
     spanId?: string,
     userId?: string,
     context?: Record<string, any>,
-    stack?: string,
+    stack?: string
   ): string {
     const errorId = this.generateId();
     const timestamp = Date.now();
@@ -283,10 +277,7 @@ export class APMService {
       this.errorHistory.splice(0, this.errorHistory.length - this.maxHistorySize);
     }
 
-    this.loggingService.log(
-      `APM Error recorded: ${message}`,
-      'monitoring',
-    );
+    this.loggingService.log(`APM Error recorded: ${message}`, 'monitoring');
 
     return errorId;
   }
@@ -304,18 +295,14 @@ export class APMService {
     const completedTransactions = this.transactionHistory.filter(t => t.status === 'completed');
     const failedTransactions = this.transactionHistory.filter(t => t.status === 'failed');
 
-    const transactionDurations = completedTransactions
-      .map(t => t.duration || 0)
-      .filter(d => d > 0);
+    const transactionDurations = completedTransactions.map(t => t.duration || 0).filter(d => d > 0);
 
     // Span metrics
     const allSpans = [...this.spanHistory, ...this.activeSpans.values()];
     const completedSpans = this.spanHistory.filter(s => s.status === 'completed');
     const failedSpans = this.spanHistory.filter(s => s.status === 'failed');
 
-    const spanDurations = completedSpans
-      .map(s => s.duration || 0)
-      .filter(d => d > 0);
+    const spanDurations = completedSpans.map(s => s.duration || 0).filter(d => d > 0);
 
     // Error metrics
     const recentErrors = this.errorHistory.filter(e => e.timestamp >= oneMinuteAgo);
@@ -351,7 +338,10 @@ export class APMService {
       },
       performance: {
         throughput,
-        errorRate: allTransactions.length > 0 ? (failedTransactions.length / allTransactions.length) * 100 : 0,
+        errorRate:
+          allTransactions.length > 0
+            ? (failedTransactions.length / allTransactions.length) * 100
+            : 0,
         responseTime: {
           p50: this.calculatePercentile(responseTimes, 50),
           p95: this.calculatePercentile(responseTimes, 95),
@@ -365,18 +355,18 @@ export class APMService {
    * Get transaction details
    */
   getTransaction(transactionId: string): APMTransaction | null {
-    return this.activeTransactions.get(transactionId) || 
-           this.transactionHistory.find(t => t.id === transactionId) || 
-           null;
+    return (
+      this.activeTransactions.get(transactionId) ||
+      this.transactionHistory.find(t => t.id === transactionId) ||
+      null
+    );
   }
 
   /**
    * Get span details
    */
   getSpan(spanId: string): APMSpan | null {
-    return this.activeSpans.get(spanId) || 
-           this.spanHistory.find(s => s.id === spanId) || 
-           null;
+    return this.activeSpans.get(spanId) || this.spanHistory.find(s => s.id === spanId) || null;
   }
 
   /**
@@ -390,9 +380,7 @@ export class APMService {
    * Get transactions by user
    */
   getTransactionsByUser(userId: string, limit = 100): APMTransaction[] {
-    return this.transactionHistory
-      .filter(t => t.userId === userId)
-      .slice(-limit);
+    return this.transactionHistory.filter(t => t.userId === userId).slice(-limit);
   }
 
   /**
@@ -413,8 +401,8 @@ export class APMService {
    * Clear old data
    */
   clearOldData(olderThanHours = 24): void {
-    const cutoff = Date.now() - (olderThanHours * 60 * 60 * 1000);
-    
+    const cutoff = Date.now() - olderThanHours * 60 * 60 * 1000;
+
     // Clear old transactions
     const oldTransactionCount = this.transactionHistory.length;
     this.transactionHistory.splice(
@@ -437,7 +425,7 @@ export class APMService {
     );
 
     this.logger.log(
-      `Cleared old APM data: ${oldTransactionCount} transactions, ${oldSpanCount} spans, ${oldErrorCount} errors`,
+      `Cleared old APM data: ${oldTransactionCount} transactions, ${oldSpanCount} spans, ${oldErrorCount} errors`
     );
   }
 
@@ -458,18 +446,24 @@ export class APMService {
   }
 
   private groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
-    return array.reduce((groups, item) => {
-      const group = String(item[key]);
-      groups[group] = groups[group] || [];
-      groups[group].push(item);
-      return groups;
-    }, {} as Record<string, T[]>);
+    return array.reduce(
+      (groups, item) => {
+        const group = String(item[key]);
+        groups[group] = groups[group] || [];
+        groups[group].push(item);
+        return groups;
+      },
+      {} as Record<string, T[]>
+    );
   }
 
   private countBy<T>(groups: Record<string, T[]>): Record<string, number> {
-    return Object.keys(groups).reduce((counts, key) => {
-      counts[key] = groups[key].length;
-      return counts;
-    }, {} as Record<string, number>);
+    return Object.keys(groups).reduce(
+      (counts, key) => {
+        counts[key] = groups[key].length;
+        return counts;
+      },
+      {} as Record<string, number>
+    );
   }
 }

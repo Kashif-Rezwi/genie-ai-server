@@ -7,10 +7,8 @@ export const API_VERSION_KEY = 'apiVersion';
  * API Version decorator
  * Marks controllers and methods with version information
  */
-export const ApiVersion = (version: string) => applyDecorators(
-  SetMetadata(API_VERSION_KEY, version),
-  ApiTags(`v${version}`),
-);
+export const ApiVersion = (version: string) =>
+  applyDecorators(SetMetadata(API_VERSION_KEY, version), ApiTags(`v${version}`));
 
 /**
  * Get API version from metadata

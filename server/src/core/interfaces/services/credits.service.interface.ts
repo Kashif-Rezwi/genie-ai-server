@@ -57,11 +57,7 @@ export interface ICreditsService {
    * @param metadata - Optional metadata for the reservation
    * @returns Promise<string> - The reservation ID
    */
-  reserveCredits(
-    userId: string,
-    amount: number,
-    metadata?: Record<string, any>
-  ): Promise<string>;
+  reserveCredits(userId: string, amount: number, metadata?: Record<string, any>): Promise<string>;
 
   /**
    * Confirm a credit reservation

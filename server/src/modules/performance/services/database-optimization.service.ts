@@ -38,11 +38,14 @@ export interface DatabaseMetrics {
 export class DatabaseOptimizationService {
   private readonly logger = new Logger(DatabaseOptimizationService.name);
   private readonly thresholds: PerformanceThresholds['database'];
-  private queryMetrics = new Map<string, { count: number; totalTime: number; avgTime: number }>();
+  private readonly queryMetrics = new Map<
+    string,
+    { count: number; totalTime: number; avgTime: number }
+  >();
 
   constructor(
     private readonly dataSource: DataSource,
-    private readonly queryCache: QueryCacheService,
+    private readonly queryCache: QueryCacheService
   ) {
     this.thresholds = performanceConfig().database;
   }
@@ -74,12 +77,14 @@ export class DatabaseOptimizationService {
         },
         {
           name: 'Credit Transactions Query',
-          query: 'SELECT * FROM credit_transactions WHERE "userId" = $1 AND type = $2 ORDER BY "createdAt" DESC',
+          query:
+            'SELECT * FROM credit_transactions WHERE "userId" = $1 AND type = $2 ORDER BY "createdAt" DESC',
           optimization: 'Add composite index on (userId, type, createdAt)',
         },
         {
           name: 'Payment History Query',
-          query: 'SELECT * FROM payments WHERE "userId" = $1 AND status = $2 ORDER BY "createdAt" DESC',
+          query:
+            'SELECT * FROM payments WHERE "userId" = $1 AND status = $2 ORDER BY "createdAt" DESC',
           optimization: 'Add composite index on (userId, status, createdAt)',
         },
       ];
@@ -166,7 +171,7 @@ export class DatabaseOptimizationService {
     try {
       // Check for missing indexes
       const missingIndexes = await this.checkMissingIndexes();
-      
+
       for (const index of missingIndexes) {
         try {
           await this.dataSource.query(index.query);
@@ -199,7 +204,7 @@ export class DatabaseOptimizationService {
       // This would enable TypeORM query caching
       // For now, we'll use our custom query cache service
       this.logger.log(`Query caching enabled with TTL: ${ttl}s`);
-      
+
       // Update cache configuration
       await this.queryCache.updateConfig({ defaultTtl: ttl });
     } catch (error) {
@@ -217,13 +222,13 @@ export class DatabaseOptimizationService {
   private async analyzeQuery(query: string, name: string): Promise<QueryOptimizationResult | null> {
     try {
       const startTime = Date.now();
-      
+
       // Execute query with EXPLAIN ANALYZE
       const explainQuery = `EXPLAIN ANALYZE ${query}`;
       const result = await this.dataSource.query(explainQuery);
-      
+
       const executionTime = Date.now() - startTime;
-      
+
       // Store metrics
       const existing = this.queryMetrics.get(query) || { count: 0, totalTime: 0, avgTime: 0 };
       existing.count++;
@@ -235,7 +240,7 @@ export class DatabaseOptimizationService {
       if (executionTime > this.thresholds.slowQueryThreshold) {
         // Calculate actual improvement potential based on query analysis
         const improvementPotential = this.calculateImprovementPotential(query, executionTime);
-        
+
         return {
           query,
           originalTime: executionTime,
@@ -274,7 +279,8 @@ export class DatabaseOptimizationService {
         },
         {
           name: 'messages_chat_id_index',
-          query: 'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_messages_chat_id ON messages("chatId")',
+          query:
+            'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_messages_chat_id ON messages("chatId")',
           checkQuery: `SELECT 1 FROM pg_indexes WHERE tablename = 'messages' AND indexname = 'idx_messages_chat_id'`,
         },
       ];
@@ -307,11 +313,11 @@ export class DatabaseOptimizationService {
   private async updateTableStatistics(): Promise<void> {
     try {
       const tables = ['users', 'chats', 'messages', 'credit_transactions', 'payments'];
-      
+
       for (const table of tables) {
         await this.dataSource.query(`ANALYZE ${table}`);
       }
-      
+
       this.logger.log('Table statistics updated');
     } catch (error) {
       this.logger.error('Error updating table statistics:', error);

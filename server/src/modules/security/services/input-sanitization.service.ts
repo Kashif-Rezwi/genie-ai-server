@@ -53,7 +53,7 @@ export class InputSanitizationService {
     // Length validation
     if (sanitized.length > opts.maxLength!) {
       errors.push(`Input exceeds maximum length of ${opts.maxLength} characters`);
-      sanitized = sanitized.substring(0, opts.maxLength!);
+      sanitized = sanitized.substring(0, opts.maxLength);
     }
 
     // HTML sanitization

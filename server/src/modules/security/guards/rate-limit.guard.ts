@@ -27,7 +27,7 @@ export class RateLimitGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
-    const user = request.user;
+    const { user } = request;
     const ip = this.securityService.extractIPFromRequest(request);
 
     try {
@@ -62,7 +62,7 @@ export class RateLimitGuard implements CanActivate {
         userId: user?.id,
         event: 'rate_limit_check',
         details: {
-          operation: operation,
+          operation,
           endpoint: request.url,
           method: request.method,
         },
@@ -78,7 +78,7 @@ export class RateLimitGuard implements CanActivate {
         userId: user?.id,
         event: 'rate_limit_exceeded',
         details: {
-          operation: operation,
+          operation,
           endpoint: request.url,
           method: request.method,
           error: error.message,

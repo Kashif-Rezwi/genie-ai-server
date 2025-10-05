@@ -23,7 +23,7 @@ export class QueryCacheService {
   private readonly logger = new Logger(QueryCacheService.name);
   private readonly defaultTtl = 300; // 5 minutes default
   private readonly keyPrefix = 'query_cache:';
-  
+
   // Performance metrics
   private cacheHits = 0;
   private cacheMisses = 0;
@@ -55,7 +55,7 @@ export class QueryCacheService {
         const data = options.serialize !== false ? JSON.parse(cached) : cached;
         const latency = Date.now() - startTime;
         this.totalLatency += latency;
-        
+
         return {
           data: data as T,
           fromCache: true,
@@ -66,7 +66,7 @@ export class QueryCacheService {
       // Cache miss - fetch data
       this.cacheMisses++;
       const data = await fetcher();
-      
+
       // Cache the result
       const serialized = options.serialize !== false ? JSON.stringify(data) : String(data);
       await this.redis.setex(cacheKey, ttl, serialized);
@@ -81,12 +81,12 @@ export class QueryCacheService {
       };
     } catch (error) {
       this.logger.warn(`Cache operation failed for key ${cacheKey}:`, error);
-      
+
       // Fallback to direct fetch
       const data = await fetcher();
       const latency = Date.now() - startTime;
       this.totalLatency += latency;
-      
+
       return {
         data,
         fromCache: false,
@@ -159,7 +159,7 @@ export class QueryCacheService {
    */
   async invalidateKey(key: string, keyPrefix?: string): Promise<boolean> {
     const cacheKey = this.buildKey(key, keyPrefix);
-    
+
     try {
       const result = await this.redis.del(cacheKey);
       return result > 0;
@@ -184,11 +184,11 @@ export class QueryCacheService {
     try {
       const info = await this.redis.info('memory');
       const keys = await this.redis.keys(this.buildKey('*'));
-      
+
       const totalRequests = this.cacheHits + this.cacheMisses;
       const hitRate = totalRequests > 0 ? this.cacheHits / totalRequests : 0;
       const averageLatency = totalRequests > 0 ? this.totalLatency / totalRequests : 0;
-      
+
       return {
         totalKeys: keys.length,
         memoryUsage: this.extractMemoryUsage(info),

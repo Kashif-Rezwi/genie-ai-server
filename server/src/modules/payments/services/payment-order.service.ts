@@ -1,17 +1,15 @@
-import {
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Payment, PaymentStatus, PaymentMethod, User } from '../../../entities';
 import { RazorpayService } from './razorpay.service';
 import { getPackageById, calculateTotalCredits } from '../../../config';
 import { paymentConfig } from '../../../config';
 import { IPaymentRepository, IUserRepository } from '../../../core/repositories/interfaces';
-import { ResourceNotFoundException, PaymentException, ValidationException } from '../../../common/exceptions';
 import {
-  CreatePaymentOrderDto,
-  PaymentOrderResponse,
-} from '../dto/payment.dto';
+  ResourceNotFoundException,
+  PaymentException,
+  ValidationException,
+} from '../../../common/exceptions';
+import { CreatePaymentOrderDto, PaymentOrderResponse } from '../dto/payment.dto';
 
 @Injectable()
 export class PaymentOrderService {
@@ -21,7 +19,7 @@ export class PaymentOrderService {
   constructor(
     private readonly paymentRepository: IPaymentRepository,
     private readonly userRepository: IUserRepository,
-    private readonly razorpayService: RazorpayService,
+    private readonly razorpayService: RazorpayService
   ) {}
 
   /**
@@ -41,10 +39,10 @@ export class PaymentOrderService {
 
     // Get package details
     const package_ = getPackageById(packageId);
-    if (!package_ || !package_.isActive) {
-      throw new PaymentException('Invalid or inactive package', 'INVALID_PACKAGE', { 
+    if (!package_?.isActive) {
+      throw new PaymentException('Invalid or inactive package', 'INVALID_PACKAGE', {
         packageId,
-        isActive: package_?.isActive
+        isActive: package_?.isActive,
       });
     }
 
@@ -129,10 +127,14 @@ export class PaymentOrderService {
     const payment = await this.getPaymentById(paymentId, userId);
 
     if (payment.status !== PaymentStatus.PENDING) {
-      throw new PaymentException('Only pending payments can be cancelled', 'INVALID_PAYMENT_STATUS', { 
-        currentStatus: payment.status,
-        requiredStatus: PaymentStatus.PENDING
-      });
+      throw new PaymentException(
+        'Only pending payments can be cancelled',
+        'INVALID_PAYMENT_STATUS',
+        {
+          currentStatus: payment.status,
+          requiredStatus: PaymentStatus.PENDING,
+        }
+      );
     }
 
     payment.status = PaymentStatus.CANCELLED;

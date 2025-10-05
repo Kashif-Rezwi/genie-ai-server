@@ -38,10 +38,7 @@ export interface IAIService {
    * @param request - The AI request data
    * @returns AsyncGenerator<any, void, unknown> - Streaming response
    */
-  streamResponse(
-    userId: string,
-    request: AIRequestDto
-  ): AsyncGenerator<any, void, unknown>;
+  streamResponse(userId: string, request: AIRequestDto): AsyncGenerator<any, void, unknown>;
 
   /**
    * Get available AI models

@@ -8,7 +8,7 @@ import { ICreditAuditLogRepository } from './interfaces/credit-audit-log.reposit
 export class CreditAuditLogRepository implements ICreditAuditLogRepository {
   constructor(
     @InjectRepository(CreditAuditLog)
-    private readonly auditLogRepository: Repository<CreditAuditLog>,
+    private readonly auditLogRepository: Repository<CreditAuditLog>
   ) {}
 
   async findById(id: string): Promise<CreditAuditLog | null> {
@@ -57,11 +57,7 @@ export class CreditAuditLogRepository implements ICreditAuditLogRepository {
     });
   }
 
-  async findByDateRange(
-    userId: string,
-    startDate: Date,
-    endDate: Date
-  ): Promise<CreditAuditLog[]> {
+  async findByDateRange(userId: string, startDate: Date, endDate: Date): Promise<CreditAuditLog[]> {
     return this.auditLogRepository
       .createQueryBuilder('auditLog')
       .where('auditLog.userId = :userId', { userId })

@@ -24,7 +24,7 @@ export class BusinessException extends HttpException {
         details,
         timestamp: new Date().toISOString(),
       } as CustomExceptionResponse,
-      HttpStatus.BAD_REQUEST,
+      HttpStatus.BAD_REQUEST
     );
   }
 }
@@ -42,7 +42,7 @@ export class ValidationException extends HttpException {
         details,
         timestamp: new Date().toISOString(),
       } as CustomExceptionResponse,
-      HttpStatus.BAD_REQUEST,
+      HttpStatus.BAD_REQUEST
     );
   }
 }
@@ -60,7 +60,7 @@ export class AuthenticationException extends HttpException {
         details,
         timestamp: new Date().toISOString(),
       } as CustomExceptionResponse,
-      HttpStatus.UNAUTHORIZED,
+      HttpStatus.UNAUTHORIZED
     );
   }
 }
@@ -78,7 +78,7 @@ export class AuthorizationException extends HttpException {
         details,
         timestamp: new Date().toISOString(),
       } as CustomExceptionResponse,
-      HttpStatus.FORBIDDEN,
+      HttpStatus.FORBIDDEN
     );
   }
 }
@@ -96,7 +96,7 @@ export class ResourceNotFoundException extends HttpException {
         details,
         timestamp: new Date().toISOString(),
       } as CustomExceptionResponse,
-      HttpStatus.NOT_FOUND,
+      HttpStatus.NOT_FOUND
     );
   }
 }
@@ -114,7 +114,7 @@ export class ConflictException extends HttpException {
         details,
         timestamp: new Date().toISOString(),
       } as CustomExceptionResponse,
-      HttpStatus.CONFLICT,
+      HttpStatus.CONFLICT
     );
   }
 }
@@ -132,7 +132,7 @@ export class InternalServerException extends HttpException {
         details,
         timestamp: new Date().toISOString(),
       } as CustomExceptionResponse,
-      HttpStatus.INTERNAL_SERVER_ERROR,
+      HttpStatus.INTERNAL_SERVER_ERROR
     );
   }
 }
@@ -150,7 +150,7 @@ export class RateLimitException extends HttpException {
         details,
         timestamp: new Date().toISOString(),
       } as CustomExceptionResponse,
-      HttpStatus.TOO_MANY_REQUESTS,
+      HttpStatus.TOO_MANY_REQUESTS
     );
   }
 }
@@ -168,7 +168,7 @@ export class PaymentException extends HttpException {
         details,
         timestamp: new Date().toISOString(),
       } as CustomExceptionResponse,
-      HttpStatus.BAD_REQUEST,
+      HttpStatus.BAD_REQUEST
     );
   }
 }
@@ -186,7 +186,7 @@ export class CreditException extends HttpException {
         details,
         timestamp: new Date().toISOString(),
       } as CustomExceptionResponse,
-      HttpStatus.BAD_REQUEST,
+      HttpStatus.BAD_REQUEST
     );
   }
 }

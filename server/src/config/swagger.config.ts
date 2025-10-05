@@ -1,13 +1,17 @@
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { INestApplication } from '@nestjs/common';
-import { CURRENT_API_VERSION, SUPPORTED_API_VERSIONS } from '../common/decorators/api-version.decorator';
+import {
+  CURRENT_API_VERSION,
+  SUPPORTED_API_VERSIONS,
+} from '../common/decorators/api-version.decorator';
 
 /**
  * Swagger configuration for API documentation
  */
 export const swaggerConfig = new DocumentBuilder()
   .setTitle('Genie AI Server API')
-  .setDescription(`
+  .setDescription(
+    `
     # Genie AI Server API Documentation
     
     A comprehensive, production-ready API for AI-powered chat and credit management services built with NestJS, TypeScript, and PostgreSQL.
@@ -127,17 +131,11 @@ export const swaggerConfig = new DocumentBuilder()
     - **Health Check**: \`/api/health\`
     - **Metrics**: \`/api/metrics\`
     - **Performance**: \`/api/performance\`
-  `)
+  `
+  )
   .setVersion(CURRENT_API_VERSION)
-  .setContact(
-    'Genie AI Team',
-    'https://genie-ai.com',
-    'support@genie-ai.com',
-  )
-  .setLicense(
-    'MIT',
-    'https://opensource.org/licenses/MIT',
-  )
+  .setContact('Genie AI Team', 'https://genie-ai.com', 'support@genie-ai.com')
+  .setLicense('MIT', 'https://opensource.org/licenses/MIT')
   .addServer('http://localhost:3000', 'Development Server')
   .addServer('https://api.genie-ai.com', 'Production Server')
   .addBearerAuth(
@@ -149,7 +147,7 @@ export const swaggerConfig = new DocumentBuilder()
       description: 'Enter JWT token',
       in: 'header',
     },
-    'JWT-auth',
+    'JWT-auth'
   )
   .addTag('Authentication', 'User authentication and authorization')
   .addTag('AI Chat', 'AI-powered chat and conversation management')
@@ -167,7 +165,7 @@ export const swaggerConfig = new DocumentBuilder()
  */
 export const setupSwagger = (app: INestApplication): void => {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  
+
   // Main API documentation
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
@@ -190,16 +188,20 @@ export const setupSwagger = (app: INestApplication): void => {
 
   // API version specific documentation
   SUPPORTED_API_VERSIONS.forEach(version => {
-    const versionedDocument = SwaggerModule.createDocument(app, {
-      ...swaggerConfig,
-      info: {
-        ...swaggerConfig.info,
-        version,
-        title: `${swaggerConfig.info?.title} v${version}`,
+    const versionedDocument = SwaggerModule.createDocument(
+      app,
+      {
+        ...swaggerConfig,
+        info: {
+          ...swaggerConfig.info,
+          version,
+          title: `${swaggerConfig.info?.title} v${version}`,
+        },
       },
-    }, {
-      include: [], // Include all modules
-    });
+      {
+        include: [], // Include all modules
+      }
+    );
 
     SwaggerModule.setup(`api/docs/v${version}`, app, versionedDocument, {
       swaggerOptions: {

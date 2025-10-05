@@ -30,9 +30,8 @@ export class HealthService {
       const result = await this.redisService.getClient().ping();
       if (result === 'PONG') {
         return { redis: { status: 'up' } };
-      } else {
-        throw new Error('Invalid ping response');
       }
+      throw new Error('Invalid ping response');
     } catch (error) {
       return { redis: { status: 'down', error: error.message } };
     }
@@ -316,8 +315,7 @@ export class HealthService {
       return `${hours}h ${minutes}m ${secs}s`;
     } else if (minutes > 0) {
       return `${minutes}m ${secs}s`;
-    } else {
-      return `${secs}s`;
     }
+    return `${secs}s`;
   }
 }

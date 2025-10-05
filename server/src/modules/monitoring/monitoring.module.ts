@@ -16,12 +16,9 @@ import { EmailModule } from '../email/email.module';
 
 @Global()
 @Module({
-  imports: [
-    TerminusModule, 
-    EmailModule
-  ],
+  imports: [TerminusModule, EmailModule],
   controllers: [
-    MonitoringController, 
+    MonitoringController,
     APMController,
     AnalyticsController,
     PerformanceController,

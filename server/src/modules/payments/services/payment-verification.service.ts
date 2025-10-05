@@ -1,17 +1,16 @@
-import {
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Payment, PaymentStatus, PaymentMethod, User } from '../../../entities';
 import { RazorpayService } from './razorpay.service';
 import { CreditsService } from '../../credits/services/credits.service';
 import { IPaymentRepository, IUserRepository } from '../../../core/repositories/interfaces';
-import { ResourceNotFoundException, PaymentException, ValidationException, ConflictException } from '../../../common/exceptions';
 import {
-  VerifyPaymentDto,
-  PaymentVerificationResponse,
-} from '../dto/payment.dto';
+  ResourceNotFoundException,
+  PaymentException,
+  ValidationException,
+  ConflictException,
+} from '../../../common/exceptions';
+import { VerifyPaymentDto, PaymentVerificationResponse } from '../dto/payment.dto';
 
 @Injectable()
 export class PaymentVerificationService {
@@ -41,9 +40,9 @@ export class PaymentVerificationService {
     }
 
     if (payment.status === PaymentStatus.COMPLETED) {
-      throw new ConflictException('Payment already completed', 'PAYMENT_ALREADY_COMPLETED', { 
+      throw new ConflictException('Payment already completed', 'PAYMENT_ALREADY_COMPLETED', {
         paymentId: payment.id,
-        currentStatus: payment.status
+        currentStatus: payment.status,
       });
     }
 
@@ -57,9 +56,9 @@ export class PaymentVerificationService {
       payment.status = PaymentStatus.FAILED;
       payment.failureReason = 'Invalid signature';
       await this.paymentRepository.update(payment.id, payment);
-      throw new ValidationException('Invalid payment signature', 'INVALID_PAYMENT_SIGNATURE', { 
+      throw new ValidationException('Invalid payment signature', 'INVALID_PAYMENT_SIGNATURE', {
         razorpayOrderId,
-        razorpayPaymentId
+        razorpayPaymentId,
       });
     }
 
@@ -70,9 +69,9 @@ export class PaymentVerificationService {
       payment.status = PaymentStatus.FAILED;
       payment.failureReason = 'Payment not captured';
       await this.paymentRepository.update(payment.id, payment);
-      throw new PaymentException('Payment not captured', 'PAYMENT_NOT_CAPTURED', { 
+      throw new PaymentException('Payment not captured', 'PAYMENT_NOT_CAPTURED', {
         razorpayPaymentId,
-        razorpayStatus: razorpayPayment.status
+        razorpayStatus: razorpayPayment.status,
       });
     }
 
@@ -134,9 +133,7 @@ export class PaymentVerificationService {
   /**
    * Retry failed payment processing
    */
-  async retryFailedPaymentProcessing(
-    paymentId: string
-  ): Promise<PaymentVerificationResponse> {
+  async retryFailedPaymentProcessing(paymentId: string): Promise<PaymentVerificationResponse> {
     const payment = await this.paymentRepository.findOne({
       where: { id: paymentId },
     });
@@ -146,9 +143,9 @@ export class PaymentVerificationService {
     }
 
     if (payment.status !== PaymentStatus.FAILED || !payment.razorpayPaymentId) {
-      throw new PaymentException('Payment is not in a retryable state', 'PAYMENT_NOT_RETRYABLE', { 
+      throw new PaymentException('Payment is not in a retryable state', 'PAYMENT_NOT_RETRYABLE', {
         currentStatus: payment.status,
-        hasRazorpayPaymentId: !!payment.razorpayPaymentId
+        hasRazorpayPaymentId: !!payment.razorpayPaymentId,
       });
     }
 
@@ -188,9 +185,9 @@ export class PaymentVerificationService {
       };
     }
 
-    throw new PaymentException('Payment is still in failed state', 'PAYMENT_STILL_FAILED', { 
+    throw new PaymentException('Payment is still in failed state', 'PAYMENT_STILL_FAILED', {
       paymentId,
-      razorpayStatus: razorpayPayment.status
+      razorpayStatus: razorpayPayment.status,
     });
   }
 
@@ -214,7 +211,7 @@ export class PaymentVerificationService {
       if (payment.razorpayOrderId) {
         try {
           const razorpayOrder = await this.razorpayService.fetchOrder(payment.razorpayOrderId);
-          
+
           if (razorpayOrder.status === 'paid') {
             // Payment was successful, update our record
             payment.status = PaymentStatus.COMPLETED;

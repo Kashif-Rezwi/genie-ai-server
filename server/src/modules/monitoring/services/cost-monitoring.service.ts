@@ -31,16 +31,22 @@ export interface CostMetrics {
     units: number;
     currency: string;
   };
-  byCategory: Record<string, {
-    cost: number;
-    units: number;
-    percentage: number;
-  }>;
-  byUser: Record<string, {
-    cost: number;
-    units: number;
-    percentage: number;
-  }>;
+  byCategory: Record<
+    string,
+    {
+      cost: number;
+      units: number;
+      percentage: number;
+    }
+  >;
+  byUser: Record<
+    string,
+    {
+      cost: number;
+      units: number;
+      percentage: number;
+    }
+  >;
   trends: {
     daily: CostTrend[];
     weekly: CostTrend[];
@@ -103,7 +109,7 @@ export class CostMonitoringService {
 
   constructor(
     private readonly redisService: RedisService,
-    private readonly loggingService: LoggingService,
+    private readonly loggingService: LoggingService
   ) {
     this.initializeDefaultCategories();
   }
@@ -120,10 +126,7 @@ export class CostMonitoringService {
 
     this.categories.set(id, newCategory);
 
-    this.loggingService.log(
-      `Cost category created: ${category.name}`,
-      'monitoring',
-    );
+    this.loggingService.log(`Cost category created: ${category.name}`, 'monitoring');
 
     return id;
   }
@@ -141,10 +144,7 @@ export class CostMonitoringService {
     const updatedCategory = { ...category, ...updates };
     this.categories.set(categoryId, updatedCategory);
 
-    this.loggingService.log(
-      `Cost category updated: ${category.name}`,
-      'monitoring',
-    );
+    this.loggingService.log(`Cost category updated: ${category.name}`, 'monitoring');
 
     return true;
   }
@@ -171,7 +171,7 @@ export class CostMonitoringService {
     units: number,
     userId?: string,
     metadata?: Record<string, any>,
-    tags?: Record<string, string>,
+    tags?: Record<string, string>
   ): string {
     const category = this.categories.get(categoryId);
     if (!category) {
@@ -211,7 +211,7 @@ export class CostMonitoringService {
 
     this.loggingService.log(
       `Cost recorded: ${category.name} - ${units} ${category.unit} = ${cost} ${category.currency}`,
-      'monitoring',
+      'monitoring'
     );
 
     return recordId;
@@ -233,7 +233,7 @@ export class CostMonitoringService {
     // Calculate costs by category
     const costsByCategory = this.groupBy(periodRecords, 'categoryId');
     const byCategory: Record<string, { cost: number; units: number; percentage: number }> = {};
-    
+
     for (const [categoryId, records] of Object.entries(costsByCategory)) {
       const categoryCost = records.reduce((sum, record) => sum + record.cost, 0);
       const categoryUnits = records.reduce((sum, record) => sum + record.units, 0);
@@ -245,9 +245,12 @@ export class CostMonitoringService {
     }
 
     // Calculate costs by user
-    const costsByUser = this.groupBy(periodRecords.filter(r => r.userId), 'userId');
+    const costsByUser = this.groupBy(
+      periodRecords.filter(r => r.userId),
+      'userId'
+    );
     const byUser: Record<string, { cost: number; units: number; percentage: number }> = {};
-    
+
     for (const [userId, records] of Object.entries(costsByUser)) {
       const userCost = records.reduce((sum, record) => sum + record.cost, 0);
       const userUnits = records.reduce((sum, record) => sum + record.units, 0);
@@ -266,7 +269,7 @@ export class CostMonitoringService {
     };
 
     // Calculate projections
-    const projections = this.calculateProjections(periodRecords, period as 'day' | 'week' | 'month' | 'year');
+    const projections = this.calculateProjections(periodRecords, period);
 
     // Get active alerts
     const activeAlerts = this.alerts.filter(alert => !alert.resolved);
@@ -291,7 +294,7 @@ export class CostMonitoringService {
   createBudget(budget: Omit<CostBudget, 'id' | 'createdAt' | 'updatedAt'>): string {
     const id = this.generateId();
     const now = Date.now();
-    
+
     const newBudget: CostBudget = {
       ...budget,
       id,
@@ -301,10 +304,7 @@ export class CostMonitoringService {
 
     this.budgets.set(id, newBudget);
 
-    this.loggingService.log(
-      `Cost budget created: ${budget.name}`,
-      'monitoring',
-    );
+    this.loggingService.log(`Cost budget created: ${budget.name}`, 'monitoring');
 
     return id;
   }
@@ -322,10 +322,7 @@ export class CostMonitoringService {
     const updatedBudget = { ...budget, ...updates, updatedAt: Date.now() };
     this.budgets.set(budgetId, updatedBudget);
 
-    this.loggingService.log(
-      `Cost budget updated: ${budget.name}`,
-      'monitoring',
-    );
+    this.loggingService.log(`Cost budget updated: ${budget.name}`, 'monitoring');
 
     return true;
   }
@@ -352,7 +349,7 @@ export class CostMonitoringService {
     userId?: string,
     startTime?: number,
     endTime?: number,
-    limit = 1000,
+    limit = 1000
   ): CostRecord[] {
     let filteredRecords = this.records;
 
@@ -376,9 +373,7 @@ export class CostMonitoringService {
    * Get cost alerts
    */
   getAlerts(resolved = false, limit = 100): CostAlert[] {
-    return this.alerts
-      .filter(alert => alert.resolved === resolved)
-      .slice(-limit);
+    return this.alerts.filter(alert => alert.resolved === resolved).slice(-limit);
   }
 
   /**
@@ -393,10 +388,7 @@ export class CostMonitoringService {
 
     alert.acknowledged = true;
 
-    this.loggingService.log(
-      `Cost alert acknowledged: ${alert.message}`,
-      'monitoring',
-    );
+    this.loggingService.log(`Cost alert acknowledged: ${alert.message}`, 'monitoring');
 
     return true;
   }
@@ -413,10 +405,7 @@ export class CostMonitoringService {
 
     alert.resolved = true;
 
-    this.loggingService.log(
-      `Cost alert resolved: ${alert.message}`,
-      'monitoring',
-    );
+    this.loggingService.log(`Cost alert resolved: ${alert.message}`, 'monitoring');
 
     return true;
   }
@@ -425,8 +414,8 @@ export class CostMonitoringService {
    * Clear old records and alerts
    */
   clearOldData(olderThanDays = 90): void {
-    const cutoff = Date.now() - (olderThanDays * 24 * 60 * 60 * 1000);
-    
+    const cutoff = Date.now() - olderThanDays * 24 * 60 * 60 * 1000;
+
     const oldRecordCount = this.records.length;
     this.records.splice(
       0,
@@ -439,7 +428,9 @@ export class CostMonitoringService {
       this.alerts.findIndex(alert => alert.timestamp >= cutoff)
     );
 
-    this.logger.log(`Cleared ${oldRecordCount - this.records.length} old cost records and ${oldAlertCount - this.alerts.length} old alerts`);
+    this.logger.log(
+      `Cleared ${oldRecordCount - this.records.length} old cost records and ${oldAlertCount - this.alerts.length} old alerts`
+    );
   }
 
   private initializeDefaultCategories(): void {
@@ -500,11 +491,15 @@ export class CostMonitoringService {
       if (budget.categoryId && budget.categoryId !== record.categoryId) continue;
       if (budget.userId && budget.userId !== record.userId) continue;
 
-      const periodStart = this.getPeriodStart(now, budget.period as 'day' | 'week' | 'month' | 'year');
-      const periodRecords = this.records.filter(r => 
-        r.timestamp >= periodStart &&
-        (!budget.categoryId || r.categoryId === budget.categoryId) &&
-        (!budget.userId || r.userId === budget.userId)
+      const periodStart = this.getPeriodStart(
+        now,
+        budget.period as 'day' | 'week' | 'month' | 'year'
+      );
+      const periodRecords = this.records.filter(
+        r =>
+          r.timestamp >= periodStart &&
+          (!budget.categoryId || r.categoryId === budget.categoryId) &&
+          (!budget.userId || r.userId === budget.userId)
       );
 
       const currentCost = periodRecords.reduce((sum, r) => sum + r.cost, 0);
@@ -524,7 +519,9 @@ export class CostMonitoringService {
     }
   }
 
-  private createAlert(alert: Omit<CostAlert, 'id' | 'timestamp' | 'acknowledged' | 'resolved'>): void {
+  private createAlert(
+    alert: Omit<CostAlert, 'id' | 'timestamp' | 'acknowledged' | 'resolved'>
+  ): void {
     const alertId = this.generateId();
     const newAlert: CostAlert = {
       ...alert,
@@ -541,15 +538,12 @@ export class CostMonitoringService {
       this.alerts.splice(0, this.alerts.length - this.maxAlerts);
     }
 
-    this.loggingService.log(
-      `Cost alert created: ${alert.message}`,
-      'monitoring',
-    );
+    this.loggingService.log(`Cost alert created: ${alert.message}`, 'monitoring');
   }
 
   private getPeriodStart(timestamp: number, period: 'day' | 'week' | 'month' | 'year'): number {
     const date = new Date(timestamp);
-    
+
     switch (period) {
       case 'day':
         date.setHours(0, 0, 0, 0);
@@ -579,10 +573,10 @@ export class CostMonitoringService {
     for (let i = 1; i < periods.length; i++) {
       const currentPeriod = periods[i];
       const previousPeriod = periods[i - 1];
-      
+
       const currentCost = grouped[currentPeriod].reduce((sum, r) => sum + r.cost, 0);
       const previousCost = grouped[previousPeriod].reduce((sum, r) => sum + r.cost, 0);
-      
+
       const change = currentCost - previousCost;
       const changePercent = previousCost > 0 ? (change / previousCost) * 100 : 0;
 
@@ -598,13 +592,16 @@ export class CostMonitoringService {
     return trends;
   }
 
-  private groupRecordsByPeriod(records: CostRecord[], period: 'day' | 'week' | 'month'): Record<string, CostRecord[]> {
+  private groupRecordsByPeriod(
+    records: CostRecord[],
+    period: 'day' | 'week' | 'month'
+  ): Record<string, CostRecord[]> {
     const grouped: Record<string, CostRecord[]> = {};
 
     for (const record of records) {
       const periodStart = this.getPeriodStart(record.timestamp, period);
       const periodKey = new Date(periodStart).toISOString().split('T')[0];
-      
+
       if (!grouped[periodKey]) {
         grouped[periodKey] = [];
       }
@@ -614,16 +611,19 @@ export class CostMonitoringService {
     return grouped;
   }
 
-  private calculateProjections(records: CostRecord[], period: 'day' | 'week' | 'month' | 'year'): CostMetrics['projections'] {
+  private calculateProjections(
+    records: CostRecord[],
+    period: 'day' | 'week' | 'month' | 'year'
+  ): CostMetrics['projections'] {
     const now = Date.now();
     const periodStart = this.getPeriodStart(now, period);
     const periodRecords = records.filter(r => r.timestamp >= periodStart);
-    
+
     const periodCost = periodRecords.reduce((sum, r) => sum + r.cost, 0);
     const periodDuration = now - periodStart;
     const periodDurationMs = this.getPeriodDurationMs(period);
     const completionRatio = periodDuration / periodDurationMs;
-    
+
     const projectedPeriodCost = completionRatio > 0 ? periodCost / completionRatio : 0;
 
     return {
@@ -636,10 +636,14 @@ export class CostMonitoringService {
 
   private getPeriodDurationMs(period: 'day' | 'week' | 'month' | 'year'): number {
     switch (period) {
-      case 'day': return 24 * 60 * 60 * 1000;
-      case 'week': return 7 * 24 * 60 * 60 * 1000;
-      case 'month': return 30 * 24 * 60 * 60 * 1000;
-      case 'year': return 365 * 24 * 60 * 60 * 1000;
+      case 'day':
+        return 24 * 60 * 60 * 1000;
+      case 'week':
+        return 7 * 24 * 60 * 60 * 1000;
+      case 'month':
+        return 30 * 24 * 60 * 60 * 1000;
+      case 'year':
+        return 365 * 24 * 60 * 60 * 1000;
     }
   }
 
@@ -650,12 +654,15 @@ export class CostMonitoringService {
   }
 
   private groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
-    return array.reduce((groups, item) => {
-      const group = String(item[key]);
-      groups[group] = groups[group] || [];
-      groups[group].push(item);
-      return groups;
-    }, {} as Record<string, T[]>);
+    return array.reduce(
+      (groups, item) => {
+        const group = String(item[key]);
+        groups[group] = groups[group] || [];
+        groups[group].push(item);
+        return groups;
+      },
+      {} as Record<string, T[]>
+    );
   }
 
   private generateId(): string {

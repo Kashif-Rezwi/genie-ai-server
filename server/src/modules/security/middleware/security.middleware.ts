@@ -13,7 +13,7 @@ export class SecurityMiddleware implements NestMiddleware {
     private readonly rateLimitService: PerUserRateLimitService,
     private readonly bruteForceService: BruteForceProtectionService,
     private readonly auditService: AuditLoggingService,
-    private readonly cspService: ContentSecurityPolicyService,
+    private readonly cspService: ContentSecurityPolicyService
   ) {}
 
   async use(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -31,7 +31,7 @@ export class SecurityMiddleware implements NestMiddleware {
       if (this.isSensitiveEndpoint(req.path, req.method)) {
         const bruteForceResult = await this.bruteForceService.checkBruteForce(
           userId || ipAddress,
-          this.getActionType(req.path),
+          this.getActionType(req.path)
         );
 
         if (!bruteForceResult.allowed) {
@@ -63,7 +63,7 @@ export class SecurityMiddleware implements NestMiddleware {
         const rateLimitResult = await this.rateLimitService.checkRateLimit(
           userId,
           endpoint,
-          userTier,
+          userTier
         );
 
         if (!rateLimitResult.allowed) {
@@ -103,7 +103,6 @@ export class SecurityMiddleware implements NestMiddleware {
         });
       }
 
-
       // Log successful request
       await this.logSecurityEvent(req, res, {
         action: this.getActionFromPath(req.path, req.method),
@@ -121,7 +120,7 @@ export class SecurityMiddleware implements NestMiddleware {
       next();
     } catch (error) {
       this.logger.error('Security middleware error:', error);
-      
+
       // Log security error
       await this.logSecurityEvent(req, res, {
         action: 'security:middleware_error',
@@ -151,12 +150,9 @@ export class SecurityMiddleware implements NestMiddleware {
   private setSecurityHeaders(req: Request, res: Response): void {
     try {
       // Content Security Policy
-      const cspHeader = this.cspService.getCSPHeader(
-        process.env.NODE_ENV || 'production',
-        {
-          reportUri: '/api/security/csp-report',
-        },
-      );
+      const cspHeader = this.cspService.getCSPHeader(process.env.NODE_ENV || 'production', {
+        reportUri: '/api/security/csp-report',
+      });
       res.set('Content-Security-Policy', cspHeader);
 
       // Additional security headers
@@ -185,7 +181,7 @@ export class SecurityMiddleware implements NestMiddleware {
   private extractUserId(req: Request): string | undefined {
     // Try JWT token first
     const authHeader = req.get('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    if (authHeader?.startsWith('Bearer ')) {
       try {
         const token = authHeader.substring(7);
         // In a real implementation, you would decode the JWT here
@@ -218,7 +214,6 @@ export class SecurityMiddleware implements NestMiddleware {
       'unknown'
     );
   }
-
 
   /**
    * Check if endpoint is sensitive
@@ -260,7 +255,7 @@ export class SecurityMiddleware implements NestMiddleware {
    */
   private getActionFromPath(path: string, method: string): string {
     const methodPrefix = method.toLowerCase();
-    
+
     if (path.includes('/auth/login')) return 'user:login';
     if (path.includes('/auth/logout')) return 'user:logout';
     if (path.includes('/auth/register')) return 'user:register';
@@ -283,7 +278,7 @@ export class SecurityMiddleware implements NestMiddleware {
       return 'payment:read';
     }
     if (path.includes('/admin')) return 'admin:system_config';
-    
+
     return `${methodPrefix}:${path.replace(/^\//, '').replace(/\//g, ':')}`;
   }
 
@@ -296,13 +291,13 @@ export class SecurityMiddleware implements NestMiddleware {
   private normalizeEndpoint(path: string, method: string): string {
     // Remove query parameters
     const cleanPath = path.split('?')[0];
-    
+
     // Normalize path parameters
     const normalizedPath = cleanPath
       .replace(/\/\d+/g, '/:id')
       .replace(/\/[a-f0-9-]{36}/g, '/:uuid')
       .replace(/\/[a-f0-9-]{8}-[a-f0-9-]{4}-[a-f0-9-]{4}-[a-f0-9-]{4}-[a-f0-9-]{12}/g, '/:uuid');
-    
+
     return `${method.toLowerCase()}:${normalizedPath}`;
   }
 
@@ -316,7 +311,7 @@ export class SecurityMiddleware implements NestMiddleware {
   private async logSecurityEvent(
     req: Request,
     res: Response,
-    eventData: Partial<any>,
+    eventData: Partial<any>
   ): Promise<void> {
     try {
       await this.auditService.logEvent({

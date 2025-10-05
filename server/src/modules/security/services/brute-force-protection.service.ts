@@ -78,10 +78,7 @@ export class BruteForceProtectionService {
    * @param action - Action type (login, register, etc.)
    * @returns Promise<BruteForceResult> - Brute force check result
    */
-  async checkBruteForce(
-    identifier: string,
-    action: string = 'login',
-  ): Promise<BruteForceResult> {
+  async checkBruteForce(identifier: string, action: string = 'login'): Promise<BruteForceResult> {
     try {
       const config = this.configs[action] || this.configs.login;
       const key = this.generateKey(identifier, action);
@@ -119,7 +116,7 @@ export class BruteForceProtectionService {
       if (config.progressiveDelay && attemptCount > 0) {
         nextAttemptDelay = Math.min(
           attemptCount * 2000, // 2 seconds per attempt
-          config.maxDelayMs,
+          config.maxDelayMs
         );
       }
 
@@ -147,7 +144,7 @@ export class BruteForceProtectionService {
    */
   async recordFailedAttempt(
     identifier: string,
-    action: string = 'login',
+    action: string = 'login'
   ): Promise<BruteForceResult> {
     try {
       const config = this.configs[action] || this.configs.login;
@@ -158,7 +155,7 @@ export class BruteForceProtectionService {
       const pipeline = this.redis.pipeline();
       pipeline.incr(key);
       pipeline.expire(key, Math.ceil(config.windowMs / 1000));
-      
+
       await pipeline.exec();
 
       // Update stats
@@ -183,11 +180,13 @@ export class BruteForceProtectionService {
       if (config.progressiveDelay && attemptCount > 0) {
         nextAttemptDelay = Math.min(
           attemptCount * 2000, // 2 seconds per attempt
-          config.maxDelayMs,
+          config.maxDelayMs
         );
       }
 
-      this.logger.warn(`Failed attempt recorded for ${identifier} (${action}): ${attemptCount}/${config.maxAttempts}`);
+      this.logger.warn(
+        `Failed attempt recorded for ${identifier} (${action}): ${attemptCount}/${config.maxAttempts}`
+      );
 
       return {
         allowed: true,
@@ -211,10 +210,7 @@ export class BruteForceProtectionService {
    * @param action - Action type
    * @returns Promise<boolean> - Success status
    */
-  async recordSuccessfulAttempt(
-    identifier: string,
-    action: string = 'login',
-  ): Promise<boolean> {
+  async recordSuccessfulAttempt(identifier: string, action: string = 'login'): Promise<boolean> {
     try {
       const key = this.generateKey(identifier, action);
       const blockKey = this.generateBlockKey(identifier, action);
@@ -223,7 +219,7 @@ export class BruteForceProtectionService {
       const pipeline = this.redis.pipeline();
       pipeline.del(key);
       pipeline.del(blockKey);
-      
+
       await pipeline.exec();
 
       // Update stats
@@ -243,10 +239,7 @@ export class BruteForceProtectionService {
    * @param action - Action type
    * @returns Promise<BruteForceStats> - Brute force statistics
    */
-  async getBruteForceStats(
-    identifier: string,
-    action: string = 'login',
-  ): Promise<BruteForceStats> {
+  async getBruteForceStats(identifier: string, action: string = 'login'): Promise<BruteForceStats> {
     try {
       const statsKey = this.generateStatsKey(identifier, action);
       const blockKey = this.generateBlockKey(identifier, action);
@@ -258,7 +251,7 @@ export class BruteForceProtectionService {
       pipeline.get(key);
 
       const results = await pipeline.exec();
-      
+
       if (!results || results.some(result => result[0] !== null)) {
         return this.getDefaultStats();
       }
@@ -290,10 +283,7 @@ export class BruteForceProtectionService {
    * @param action - Action type
    * @returns Promise<boolean> - Success status
    */
-  async resetBruteForceProtection(
-    identifier: string,
-    action: string = 'login',
-  ): Promise<boolean> {
+  async resetBruteForceProtection(identifier: string, action: string = 'login'): Promise<boolean> {
     try {
       const key = this.generateKey(identifier, action);
       const blockKey = this.generateBlockKey(identifier, action);
@@ -303,7 +293,7 @@ export class BruteForceProtectionService {
       pipeline.del(key);
       pipeline.del(blockKey);
       pipeline.del(statsKey);
-      
+
       await pipeline.exec();
 
       this.logger.log(`Brute force protection reset for ${identifier} (${action})`);
@@ -324,7 +314,7 @@ export class BruteForceProtectionService {
   private async triggerBlock(
     identifier: string,
     action: string,
-    config: BruteForceConfig,
+    config: BruteForceConfig
   ): Promise<void> {
     try {
       const blockKey = this.generateBlockKey(identifier, action);
@@ -333,13 +323,15 @@ export class BruteForceProtectionService {
       await this.redis.setex(
         blockKey,
         Math.ceil(config.blockDurationMs / 1000),
-        blockExpiresAt.toString(),
+        blockExpiresAt.toString()
       );
 
       // Update stats
       await this.updateStats(identifier, action, 'block');
 
-      this.logger.warn(`Account blocked for ${identifier} (${action}) until ${new Date(blockExpiresAt).toISOString()}`);
+      this.logger.warn(
+        `Account blocked for ${identifier} (${action}) until ${new Date(blockExpiresAt).toISOString()}`
+      );
     } catch (error) {
       this.logger.error(`Trigger block error for ${identifier}:`, error);
     }
@@ -355,7 +347,7 @@ export class BruteForceProtectionService {
   private async updateStats(
     identifier: string,
     action: string,
-    type: 'failed' | 'successful' | 'block',
+    type: 'failed' | 'successful' | 'block'
   ): Promise<void> {
     try {
       const statsKey = this.generateStatsKey(identifier, action);
@@ -364,7 +356,7 @@ export class BruteForceProtectionService {
       const pipeline = this.redis.pipeline();
       pipeline.hincrby(statsKey, 'totalAttempts', 1);
       pipeline.hset(statsKey, 'lastAttemptAt', now);
-      
+
       if (type === 'failed') {
         pipeline.hincrby(statsKey, 'failedAttempts', 1);
       } else if (type === 'successful') {
@@ -375,7 +367,7 @@ export class BruteForceProtectionService {
 
       // Set expiration (24 hours)
       pipeline.expire(statsKey, 86400);
-      
+
       await pipeline.exec();
     } catch (error) {
       this.logger.error(`Update stats error for ${identifier}:`, error);

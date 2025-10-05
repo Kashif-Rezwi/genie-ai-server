@@ -32,7 +32,7 @@ export class PaymentsService {
     private readonly paymentOrderService: PaymentOrderService,
     private readonly paymentVerificationService: PaymentVerificationService,
     private readonly paymentAnalyticsService: PaymentAnalyticsService,
-    private readonly paymentOperationsService: PaymentOperationsService,
+    private readonly paymentOperationsService: PaymentOperationsService
   ) {}
 
   // Payment Order Management
@@ -68,9 +68,7 @@ export class PaymentsService {
     return this.paymentVerificationService.verifyAndCompletePayment(verifyDto);
   }
 
-  async retryFailedPaymentProcessing(
-    paymentId: string
-  ): Promise<PaymentVerificationResponse> {
+  async retryFailedPaymentProcessing(paymentId: string): Promise<PaymentVerificationResponse> {
     return this.paymentVerificationService.retryFailedPaymentProcessing(paymentId);
   }
 
@@ -148,10 +146,7 @@ export class PaymentsService {
     return this.paymentOperationsService.updatePaymentStatus(paymentId, status, metadata);
   }
 
-  async getPaymentsByStatus(
-    status: PaymentStatus,
-    limit: number = 100
-  ): Promise<Payment[]> {
+  async getPaymentsByStatus(status: PaymentStatus, limit: number = 100): Promise<Payment[]> {
     return this.paymentOperationsService.getPaymentsByStatus(status, limit);
   }
 }

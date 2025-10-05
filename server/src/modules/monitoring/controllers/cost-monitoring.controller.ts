@@ -88,7 +88,12 @@ export class CostMonitoringController {
 
   @Post('record')
   async recordCost(@Body() costData: any): Promise<ApiResponseDto> {
-    const record = this.costMonitoringService.recordCost(costData.amount, costData.category, costData.description, costData.units || 1);
+    const record = this.costMonitoringService.recordCost(
+      costData.amount,
+      costData.category,
+      costData.description,
+      costData.units || 1
+    );
     return {
       success: true,
       message: 'Cost recorded successfully',

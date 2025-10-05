@@ -110,7 +110,7 @@ export class AuditLoggingService {
     try {
       const eventId = this.generateEventId();
       const timestamp = new Date();
-      
+
       const auditEvent: AuditEvent = {
         id: eventId,
         timestamp,
@@ -163,7 +163,7 @@ export class AuditLoggingService {
 
       // Build search keys
       const searchKeys: string[] = [];
-      
+
       if (query.userId) {
         searchKeys.push(`${this.indexPrefix}user:${query.userId}`);
       }
@@ -186,14 +186,18 @@ export class AuditLoggingService {
       }
 
       // Get event IDs from indexes
-      const eventIds = await this.getEventIdsFromIndexes(searchKeys, query.startDate, query.endDate);
-      
+      const eventIds = await this.getEventIdsFromIndexes(
+        searchKeys,
+        query.startDate,
+        query.endDate
+      );
+
       // Sort by timestamp (newest first)
       eventIds.sort((a, b) => b.timestamp - a.timestamp);
-      
+
       // Apply pagination
       const paginatedIds = eventIds.slice(offset, offset + limit);
-      
+
       // Fetch events
       const events: AuditEvent[] = [];
       for (const { id } of paginatedIds) {
@@ -252,14 +256,14 @@ export class AuditLoggingService {
     try {
       const key = `${this.eventPrefix}${eventId}`;
       const eventData = await this.redis.get(key);
-      
+
       if (!eventData) {
         return null;
       }
 
       const event = JSON.parse(eventData) as AuditEvent;
       event.timestamp = new Date(event.timestamp);
-      
+
       return event;
     } catch (error) {
       this.logger.error(`Get event error for ${eventId}:`, error);
@@ -309,7 +313,7 @@ export class AuditLoggingService {
   private async storeEvent(event: AuditEvent): Promise<void> {
     const key = `${this.eventPrefix}${event.id}`;
     const eventData = JSON.stringify(event);
-    
+
     // Store for 1 year
     await this.redis.setex(key, 365 * 24 * 60 * 60, eventData);
   }
@@ -371,7 +375,7 @@ export class AuditLoggingService {
     pipeline.hincrby(statsKey, `eventsByAction:${event.action}`, 1);
     pipeline.hincrby(statsKey, `eventsBySeverity:${event.severity}`, 1);
     pipeline.hincrby(statsKey, `eventsByOutcome:${event.outcome}`, 1);
-    
+
     if (event.userId) {
       pipeline.hincrby(statsKey, `eventsByUser:${event.userId}`, 1);
     }
@@ -431,13 +435,13 @@ export class AuditLoggingService {
   private async getEventIdsFromIndexes(
     searchKeys: string[],
     startDate?: Date,
-    endDate?: Date,
+    endDate?: Date
   ): Promise<Array<{ id: string; timestamp: number }>> {
     const minScore = startDate ? startDate.getTime() : 0;
     const maxScore = endDate ? endDate.getTime() : '+inf';
 
     const pipeline = this.redis.pipeline();
-    
+
     for (const key of searchKeys) {
       pipeline.zrevrangebyscore(key, maxScore, minScore, 'WITHSCORES');
     }

@@ -96,10 +96,7 @@ export interface IPaymentsService {
    * @param query - Query parameters
    * @returns Promise<PaymentHistoryResponse> - Payment history
    */
-  getPaymentHistory(
-    userId: string,
-    query: PaymentHistoryQueryDto
-  ): Promise<PaymentHistoryResponse>;
+  getPaymentHistory(userId: string, query: PaymentHistoryQueryDto): Promise<PaymentHistoryResponse>;
 
   /**
    * Get payment by ID

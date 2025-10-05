@@ -29,9 +29,7 @@ export interface PaymentAnalytics {
 export class PaymentAnalyticsService {
   private readonly logger = new Logger(PaymentAnalyticsService.name);
 
-  constructor(
-    private readonly paymentRepository: IPaymentRepository,
-  ) {}
+  constructor(private readonly paymentRepository: IPaymentRepository) {}
 
   /**
    * Get payment analytics for a specific period
@@ -48,12 +46,17 @@ export class PaymentAnalyticsService {
     const failedPayments = filteredPayments.filter(p => p.status === PaymentStatus.FAILED);
 
     const totalRevenue = successfulPayments.reduce((sum, p) => sum + p.amount, 0);
-    const averageOrderValue = successfulPayments.length > 0 ? totalRevenue / successfulPayments.length : 0;
+    const averageOrderValue =
+      successfulPayments.length > 0 ? totalRevenue / successfulPayments.length : 0;
 
     // Top packages
     const packageStats = new Map<string, { name: string; sales: number; revenue: number }>();
     successfulPayments.forEach(payment => {
-      const existing = packageStats.get(payment.packageId) || { name: payment.packageName, sales: 0, revenue: 0 };
+      const existing = packageStats.get(payment.packageId) || {
+        name: payment.packageName,
+        sales: 0,
+        revenue: 0,
+      };
       existing.sales += 1;
       existing.revenue += payment.amount;
       packageStats.set(payment.packageId, existing);
@@ -90,7 +93,7 @@ export class PaymentAnalyticsService {
     // Payment method distribution
     const methodStats = new Map<string, { count: number; revenue: number }>();
     successfulPayments.forEach(payment => {
-      const method = payment.method;
+      const { method } = payment;
       const existing = methodStats.get(method) || { count: 0, revenue: 0 };
       existing.count += 1;
       existing.revenue += payment.amount;

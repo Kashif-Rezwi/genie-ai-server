@@ -3,11 +3,11 @@ import { Reflector } from '@nestjs/core';
 
 @Injectable()
 export class AdminRoleGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
-    const user = request.user;
+    const { user } = request;
 
     if (!user) {
       throw new ForbiddenException('User not authenticated');

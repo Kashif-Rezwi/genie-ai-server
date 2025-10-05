@@ -39,11 +39,7 @@ export interface ICreditAuditLogRepository {
   /**
    * Find audit logs by date range
    */
-  findByDateRange(
-    userId: string,
-    startDate: Date,
-    endDate: Date
-  ): Promise<CreditAuditLog[]>;
+  findByDateRange(userId: string, startDate: Date, endDate: Date): Promise<CreditAuditLog[]>;
 
   /**
    * Count audit logs by user

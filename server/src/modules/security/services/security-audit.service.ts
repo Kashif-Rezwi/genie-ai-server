@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RedisService } from '../../redis/redis.service';
 import { LoggingService } from '../../monitoring/services/logging.service';
-import { SecurityVulnerabilityService, SecurityVulnerability, SecurityAuditReport } from './security-vulnerability.service';
+import {
+  SecurityVulnerabilityService,
+  SecurityVulnerability,
+  SecurityAuditReport,
+} from './security-vulnerability.service';
 import { SecurityCheckService, SecurityCheck } from './security-check.service';
 import { SecurityComplianceService } from './security-compliance.service';
 
@@ -18,7 +22,7 @@ export class SecurityAuditService {
     private readonly loggingService: LoggingService,
     private readonly vulnerabilityService: SecurityVulnerabilityService,
     private readonly checkService: SecurityCheckService,
-    private readonly complianceService: SecurityComplianceService,
+    private readonly complianceService: SecurityComplianceService
   ) {}
 
   /**
@@ -47,8 +51,10 @@ export class SecurityAuditService {
     }
 
     // Calculate scores using compliance service
-    const vulnerabilityCounts = this.vulnerabilityService.countVulnerabilitiesByType(vulnerabilities);
-    const categoryCounts = this.vulnerabilityService.countVulnerabilitiesByCategory(vulnerabilities);
+    const vulnerabilityCounts =
+      this.vulnerabilityService.countVulnerabilitiesByType(vulnerabilities);
+    const categoryCounts =
+      this.vulnerabilityService.countVulnerabilitiesByCategory(vulnerabilities);
     const overallScore = this.complianceService.calculateOverallScore(vulnerabilityCounts);
 
     // Create audit report
@@ -72,7 +78,7 @@ export class SecurityAuditService {
 
     this.loggingService.log(
       `Security audit completed: ${vulnerabilities.length} vulnerabilities found, score: ${overallScore}`,
-      'monitoring',
+      'monitoring'
     );
 
     return report;
@@ -95,7 +101,7 @@ export class SecurityAuditService {
     type?: string,
     category?: string,
     status?: string,
-    limit = 100,
+    limit = 100
   ): SecurityVulnerability[] {
     return this.vulnerabilityService.getVulnerabilities(type, category, status, limit);
   }
@@ -117,7 +123,10 @@ export class SecurityAuditService {
   /**
    * Update vulnerability status
    */
-  updateVulnerabilityStatus(vulnerabilityId: string, status: SecurityVulnerability['status']): boolean {
+  updateVulnerabilityStatus(
+    vulnerabilityId: string,
+    status: SecurityVulnerability['status']
+  ): boolean {
     return this.vulnerabilityService.updateVulnerabilityStatus(vulnerabilityId, status);
   }
 
@@ -157,7 +166,7 @@ export class SecurityAuditService {
     return this.complianceService.getComplianceStatus(
       latestReport.compliance.owasp_top_10,
       latestReport.compliance.pci_dss,
-      latestReport.compliance.gdpr,
+      latestReport.compliance.gdpr
     );
   }
 }

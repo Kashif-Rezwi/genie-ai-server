@@ -91,7 +91,9 @@ export class ChatStreamingService {
       const modelConfig = getModelConfig(modelId);
 
       if (!modelConfig) {
-        throw new ValidationException(`Model ${modelId} not supported`, 'MODEL_NOT_SUPPORTED', { modelId });
+        throw new ValidationException(`Model ${modelId} not supported`, 'MODEL_NOT_SUPPORTED', {
+          modelId,
+        });
       }
 
       // Step 6: Check credits for paid models

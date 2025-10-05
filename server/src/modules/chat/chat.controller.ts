@@ -205,9 +205,13 @@ export class ChatController {
     const lastUserMessage = messages.reverse().find(m => m.role === 'user');
 
     if (!lastUserMessage) {
-      throw new BusinessException('No user message found to regenerate response', 'NO_USER_MESSAGE_FOUND', { 
-        chatId
-      });
+      throw new BusinessException(
+        'No user message found to regenerate response',
+        'NO_USER_MESSAGE_FOUND',
+        {
+          chatId,
+        }
+      );
     }
 
     const sendMessageDto: SendMessageDto = {

@@ -153,7 +153,11 @@ export interface IMonitoringService {
    * @param metadata - Optional metadata
    * @returns Promise<void>
    */
-  recordUserActivity(userId: string, activity: string, metadata?: Record<string, any>): Promise<void>;
+  recordUserActivity(
+    userId: string,
+    activity: string,
+    metadata?: Record<string, any>
+  ): Promise<void>;
 
   /**
    * Get metrics data

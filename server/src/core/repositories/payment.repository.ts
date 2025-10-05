@@ -8,7 +8,7 @@ import { IPaymentRepository } from './interfaces/payment.repository.interface';
 export class PaymentRepository implements IPaymentRepository {
   constructor(
     @InjectRepository(Payment)
-    private readonly paymentRepository: Repository<Payment>,
+    private readonly paymentRepository: Repository<Payment>
   ) {}
 
   async findById(id: string): Promise<Payment | null> {
@@ -64,11 +64,7 @@ export class PaymentRepository implements IPaymentRepository {
     });
   }
 
-  async findByDateRange(
-    userId: string,
-    startDate: Date,
-    endDate: Date
-  ): Promise<Payment[]> {
+  async findByDateRange(userId: string, startDate: Date, endDate: Date): Promise<Payment[]> {
     return this.paymentRepository
       .createQueryBuilder('payment')
       .where('payment.userId = :userId', { userId })
@@ -91,7 +87,7 @@ export class PaymentRepository implements IPaymentRepository {
       .where('payment.userId = :userId', { userId })
       .andWhere('payment.status = :status', { status: PaymentStatus.COMPLETED })
       .getRawOne();
-    
+
     return parseFloat(result.total) || 0;
   }
 

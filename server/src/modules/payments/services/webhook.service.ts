@@ -32,8 +32,8 @@ export class WebhookService {
 
         if (!isValid) {
           this.logger.warn('Invalid webhook signature received');
-          throw new ValidationException('Invalid webhook signature', 'INVALID_WEBHOOK_SIGNATURE', { 
-            signature: signature.substring(0, 10) + '...'
+          throw new ValidationException('Invalid webhook signature', 'INVALID_WEBHOOK_SIGNATURE', {
+            signature: `${signature.substring(0, 10)}...`,
           });
         }
 
@@ -206,15 +206,15 @@ export class WebhookService {
     });
 
     if (!payment) {
-      throw new PaymentException('Payment not found', 'PAYMENT_NOT_FOUND', { 
-        razorpayOrderId: (event as any)?.payload?.payment?.entity?.order_id || 'unknown'
+      throw new PaymentException('Payment not found', 'PAYMENT_NOT_FOUND', {
+        razorpayOrderId: (event as any)?.payload?.payment?.entity?.order_id || 'unknown',
       });
     }
 
     if (payment.status !== PaymentStatus.FAILED || !payment.razorpayPaymentId) {
-      throw new PaymentException('Payment is not in a retryable state', 'PAYMENT_NOT_RETRYABLE', { 
+      throw new PaymentException('Payment is not in a retryable state', 'PAYMENT_NOT_RETRYABLE', {
         currentStatus: payment.status,
-        hasRazorpayPaymentId: !!payment.razorpayPaymentId
+        hasRazorpayPaymentId: !!payment.razorpayPaymentId,
       });
     }
 

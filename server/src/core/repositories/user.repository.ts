@@ -8,7 +8,7 @@ import { IUserRepository } from './interfaces/user.repository.interface';
 export class UserRepository implements IUserRepository {
   constructor(
     @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly userRepository: Repository<User>
   ) {}
 
   async findById(id: string): Promise<User | null> {

@@ -7,7 +7,7 @@ import { CustomExceptionResponse } from '../exceptions/business.exception';
  * Provides consistent error handling patterns across all services
  */
 export class ErrorHandlerUtil {
-  private static logger = new Logger(ErrorHandlerUtil.name);
+  private static readonly logger = new Logger(ErrorHandlerUtil.name);
 
   /**
    * Handle and log errors with context
@@ -20,24 +20,20 @@ export class ErrorHandlerUtil {
     error: Error,
     context: any,
     loggingService: LoggingService,
-    serviceName: string,
+    serviceName: string
   ): void {
     // Extract error details if it's a custom exception
     const errorDetails = this.extractErrorDetails(error);
-    
+
     // Log error with structured context
-    loggingService.logError(
-      `Error in ${serviceName}`,
-      error,
-      {
-        ...context,
-        service: serviceName,
-        errorName: error.constructor.name,
-        errorMessage: error.message,
-        stack: error.stack,
-        ...errorDetails,
-      },
-    );
+    loggingService.logError(`Error in ${serviceName}`, error, {
+      ...context,
+      service: serviceName,
+      errorName: error.constructor.name,
+      errorMessage: error.message,
+      stack: error.stack,
+      ...errorDetails,
+    });
 
     // Log to console for immediate visibility during development
     this.logger.error(`[${serviceName}] ${error.message}`, error.stack);
@@ -64,7 +60,7 @@ export class ErrorHandlerUtil {
     } catch (e) {
       // Ignore extraction errors
     }
-    
+
     return {};
   }
 
@@ -81,7 +77,7 @@ export class ErrorHandlerUtil {
     context: any,
     loggingService: LoggingService,
     serviceName: string,
-    fallbackValue?: T,
+    fallbackValue?: T
   ): Promise<T | undefined> {
     try {
       return await operation();
@@ -104,7 +100,7 @@ export class ErrorHandlerUtil {
     context: any,
     loggingService: LoggingService,
     serviceName: string,
-    fallbackValue?: T,
+    fallbackValue?: T
   ): T | undefined {
     try {
       return operation();
@@ -123,7 +119,7 @@ export class ErrorHandlerUtil {
   static createErrorContext(
     userId?: string,
     requestId?: string,
-    additionalContext?: Record<string, any>,
+    additionalContext?: Record<string, any>
   ): Record<string, any> {
     return {
       userId,
@@ -139,22 +135,22 @@ export class ErrorHandlerUtil {
    */
   static determineErrorSeverity(error: Error): 'low' | 'medium' | 'high' | 'critical' {
     const errorName = error.constructor.name;
-    
+
     // Critical errors
     if (errorName.includes('Database') || errorName.includes('Connection')) {
       return 'critical';
     }
-    
+
     // High severity errors
     if (errorName.includes('Authentication') || errorName.includes('Authorization')) {
       return 'high';
     }
-    
+
     // Medium severity errors
     if (errorName.includes('Validation') || errorName.includes('Business')) {
       return 'medium';
     }
-    
+
     // Default to low severity
     return 'low';
   }
@@ -166,11 +162,11 @@ export class ErrorHandlerUtil {
    */
   static formatErrorMessage(error: Error, includeDetails: boolean = false): string {
     const baseMessage = error.message || 'An unexpected error occurred';
-    
+
     if (!includeDetails) {
       return baseMessage;
     }
-    
+
     return `${baseMessage} (${error.constructor.name})`;
   }
 }

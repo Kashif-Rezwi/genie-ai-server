@@ -91,7 +91,7 @@ export class KubernetesConfigService {
                   })),
                   env: Object.entries(config.environment).map(([key, value]) => ({
                     name: key,
-                    value: value,
+                    value,
                   })),
                   resources: {
                     requests: {
@@ -131,7 +131,7 @@ export class KubernetesConfigService {
       };
 
       const yaml = this.convertToYaml(deployment);
-      
+
       this.logger.log(`Kubernetes deployment config generated for ${config.image}`);
       return yaml;
     } catch (error) {
@@ -169,7 +169,7 @@ export class KubernetesConfigService {
       };
 
       const yaml = this.convertToYaml(service);
-      
+
       this.logger.log(`Kubernetes service config generated for ${config.name}`);
       return yaml;
     } catch (error) {
@@ -186,48 +186,48 @@ export class KubernetesConfigService {
   private convertToYaml(obj: any): string {
     // Simple YAML conversion - in production, use a proper YAML library
     const indent = (level: number) => '  '.repeat(level);
-    
+
     const convertValue = (value: any, level: number = 0): string => {
       if (value === null || value === undefined) {
         return 'null';
       }
-      
+
       if (typeof value === 'string') {
         return `"${value}"`;
       }
-      
+
       if (typeof value === 'number' || typeof value === 'boolean') {
         return String(value);
       }
-      
+
       if (Array.isArray(value)) {
         if (value.length === 0) {
           return '[]';
         }
-        
-        const items = value.map(item => 
-          `${indent(level + 1)}- ${convertValue(item, level + 1)}`
-        ).join('\n');
-        
+
+        const items = value
+          .map(item => `${indent(level + 1)}- ${convertValue(item, level + 1)}`)
+          .join('\n');
+
         return `\n${items}`;
       }
-      
+
       if (typeof value === 'object') {
         const entries = Object.entries(value);
         if (entries.length === 0) {
           return '{}';
         }
-        
-        const items = entries.map(([key, val]) => 
-          `${indent(level)}${key}: ${convertValue(val, level + 1)}`
-        ).join('\n');
-        
+
+        const items = entries
+          .map(([key, val]) => `${indent(level)}${key}: ${convertValue(val, level + 1)}`)
+          .join('\n');
+
         return `\n${items}`;
       }
-      
+
       return String(value);
     };
-    
+
     return convertValue(obj);
   }
 }

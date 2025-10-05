@@ -2,7 +2,10 @@ import { Controller, Get, Res, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Response } from 'express';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
-import { CURRENT_API_VERSION, SUPPORTED_API_VERSIONS } from '../../common/decorators/api-version.decorator';
+import {
+  CURRENT_API_VERSION,
+  SUPPORTED_API_VERSIONS,
+} from '../../common/decorators/api-version.decorator';
 
 /**
  * API Documentation Controller
@@ -38,29 +41,32 @@ export class ApiDocsController {
       admin: string;
     };
   }> {
-    return ApiResponseDto.success({
-      name: 'Genie AI Server API',
-      version: CURRENT_API_VERSION,
-      description: 'AI-powered chat and credit management API',
-      supportedVersions: SUPPORTED_API_VERSIONS,
-      documentation: {
-        swagger: '/api/docs',
-        examples: '/api/docs/examples',
+    return ApiResponseDto.success(
+      {
+        name: 'Genie AI Server API',
+        version: CURRENT_API_VERSION,
+        description: 'AI-powered chat and credit management API',
+        supportedVersions: SUPPORTED_API_VERSIONS,
+        documentation: {
+          swagger: '/api/docs',
+          examples: '/api/docs/examples',
+        },
+        features: [
+          'AI Chat with multiple models',
+          'Credit-based usage system',
+          'JWT Authentication',
+          'Rate limiting and security',
+          'Real-time monitoring',
+          'Payment processing',
+        ],
+        rateLimits: {
+          free: '100 requests/hour',
+          premium: '1000 requests/hour',
+          admin: 'Unlimited requests',
+        },
       },
-      features: [
-        'AI Chat with multiple models',
-        'Credit-based usage system',
-        'JWT Authentication',
-        'Rate limiting and security',
-        'Real-time monitoring',
-        'Payment processing',
-      ],
-      rateLimits: {
-        free: '100 requests/hour',
-        premium: '1000 requests/hour',
-        admin: 'Unlimited requests',
-      },
-    }, 'API information retrieved successfully');
+      'API information retrieved successfully'
+    );
   }
 
   /**
@@ -276,17 +282,20 @@ print(response.json())
     };
   }> {
     const uptime = process.uptime();
-    
-    return ApiResponseDto.success({
-      status: 'healthy',
-      version: CURRENT_API_VERSION,
-      uptime: Math.floor(uptime),
-      timestamp: new Date().toISOString(),
-      endpoints: {
-        total: 25, // Approximate number of endpoints
-        documented: 25,
-        coverage: '100%',
+
+    return ApiResponseDto.success(
+      {
+        status: 'healthy',
+        version: CURRENT_API_VERSION,
+        uptime: Math.floor(uptime),
+        timestamp: new Date().toISOString(),
+        endpoints: {
+          total: 25, // Approximate number of endpoints
+          documented: 25,
+          coverage: '100%',
+        },
       },
-    }, 'API health status retrieved successfully');
+      'API health status retrieved successfully'
+    );
   }
 }

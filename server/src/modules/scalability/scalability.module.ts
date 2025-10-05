@@ -10,9 +10,7 @@ import { OrchestrationStatsService } from './services/orchestration-stats.servic
 import { ScalabilityController } from './scalability.controller';
 
 @Module({
-  imports: [
-    ScheduleModule.forRoot(),
-  ],
+  imports: [ScheduleModule.forRoot()],
   controllers: [ScalabilityController],
   providers: [
     ScalabilityService,

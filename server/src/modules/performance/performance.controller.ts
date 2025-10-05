@@ -23,7 +23,7 @@ export class PerformanceController {
     private readonly databaseOptimization: DatabaseOptimizationService,
     private readonly memoryOptimization: MemoryOptimizationService,
     private readonly redisOptimization: RedisOptimizationService,
-    private readonly performanceMonitoring: PerformanceMonitoringService,
+    private readonly performanceMonitoring: PerformanceMonitoringService
   ) {}
 
   /**
@@ -257,9 +257,9 @@ export class PerformanceController {
   @Get('health')
   async getHealthStatus() {
     const metrics = await this.performanceService.getPerformanceMetrics();
-    
+
     // Determine health status based on metrics
-    const isHealthy = 
+    const isHealthy =
       metrics.system.memoryUsage.heapUsed < 500 * 1024 * 1024 && // Less than 500MB
       metrics.jobs.failed < 10 && // Less than 10 failed jobs
       metrics.cache.totalKeys < 10000; // Less than 10k cache keys
@@ -284,6 +284,6 @@ export class PerformanceController {
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     if (bytes === 0) return '0 Bytes';
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    return `${Math.round((bytes / Math.pow(1024, i)) * 100) / 100} ${sizes[i]}`;
   }
 }
