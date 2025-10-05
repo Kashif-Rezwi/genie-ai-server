@@ -75,10 +75,11 @@ export class PerformanceService {
   }
 
   /**
-   * Optimize system performance
-   * @returns Promise<object> - Optimization results
+   * Perform basic system cleanup (legacy method - use PerformanceMonitoringService for comprehensive optimization)
+   * @returns Promise<object> - Cleanup results
+   * @deprecated Use PerformanceMonitoringService.optimizePerformance() for comprehensive optimization
    */
-  async optimizePerformance(): Promise<{
+  async performBasicCleanup(): Promise<{
     cacheCleared: boolean;
     expiredJobsCleaned: number;
     expiredReservationsCleaned: number;
@@ -101,7 +102,7 @@ export class PerformanceService {
       const memoryUsage = process.memoryUsage();
       const memoryFreed = this.formatBytes(memoryUsage.heapUsed);
 
-      this.logger.log('Performance optimization completed');
+      this.logger.log('Basic system cleanup completed');
 
       return {
         cacheCleared,
@@ -110,7 +111,7 @@ export class PerformanceService {
         memoryFreed,
       };
     } catch (error) {
-      this.logger.error('Failed to optimize performance:', error);
+      this.logger.error('Failed to perform basic cleanup:', error);
       throw error;
     }
   }

@@ -23,6 +23,11 @@ export class QueryCacheService {
   private readonly logger = new Logger(QueryCacheService.name);
   private readonly defaultTtl = 300; // 5 minutes default
   private readonly keyPrefix = 'query_cache:';
+  
+  // Performance metrics
+  private cacheHits = 0;
+  private cacheMisses = 0;
+  private totalLatency = 0;
 
   constructor(@InjectRedis() private readonly redis: Redis) {}
 
@@ -38,6 +43,7 @@ export class QueryCacheService {
     fetcher: () => Promise<T>,
     options: CacheOptions = {}
   ): Promise<CacheResult<T>> {
+    const startTime = Date.now();
     const cacheKey = this.buildKey(key, options.keyPrefix);
     const ttl = options.ttl ?? this.defaultTtl;
 
@@ -45,7 +51,11 @@ export class QueryCacheService {
       // Try to get from cache first
       const cached = await this.redis.get(cacheKey);
       if (cached) {
+        this.cacheHits++;
         const data = options.serialize !== false ? JSON.parse(cached) : cached;
+        const latency = Date.now() - startTime;
+        this.totalLatency += latency;
+        
         return {
           data: data as T,
           fromCache: true,
@@ -54,11 +64,15 @@ export class QueryCacheService {
       }
 
       // Cache miss - fetch data
+      this.cacheMisses++;
       const data = await fetcher();
       
       // Cache the result
       const serialized = options.serialize !== false ? JSON.stringify(data) : String(data);
       await this.redis.setex(cacheKey, ttl, serialized);
+
+      const latency = Date.now() - startTime;
+      this.totalLatency += latency;
 
       return {
         data,
@@ -70,6 +84,9 @@ export class QueryCacheService {
       
       // Fallback to direct fetch
       const data = await fetcher();
+      const latency = Date.now() - startTime;
+      this.totalLatency += latency;
+      
       return {
         data,
         fromCache: false,
@@ -159,22 +176,81 @@ export class QueryCacheService {
   async getStats(): Promise<{
     totalKeys: number;
     memoryUsage: string;
-    hitRate?: number;
+    hitRate: number;
+    hitCount: number;
+    missCount: number;
+    averageLatency: number;
   }> {
     try {
       const info = await this.redis.info('memory');
       const keys = await this.redis.keys(this.buildKey('*'));
       
+      const totalRequests = this.cacheHits + this.cacheMisses;
+      const hitRate = totalRequests > 0 ? this.cacheHits / totalRequests : 0;
+      const averageLatency = totalRequests > 0 ? this.totalLatency / totalRequests : 0;
+      
       return {
         totalKeys: keys.length,
         memoryUsage: this.extractMemoryUsage(info),
+        hitRate,
+        hitCount: this.cacheHits,
+        missCount: this.cacheMisses,
+        averageLatency,
       };
     } catch (error) {
       this.logger.warn('Failed to get cache stats:', error);
       return {
         totalKeys: 0,
         memoryUsage: 'Unknown',
+        hitRate: 0,
+        hitCount: 0,
+        missCount: 0,
+        averageLatency: 0,
       };
+    }
+  }
+
+  /**
+   * Get cache performance metrics
+   * @returns Promise<object> - Cache metrics
+   */
+  async getCacheMetrics(): Promise<{
+    hitRate: number;
+    totalKeys: number;
+    memoryUsage: string;
+    hitCount: number;
+    missCount: number;
+    averageLatency: number;
+  }> {
+    return this.getStats();
+  }
+
+  /**
+   * Update cache configuration
+   * @param config - New configuration
+   * @returns Promise<void>
+   */
+  async updateConfig(config: { defaultTtl?: number }): Promise<void> {
+    if (config.defaultTtl) {
+      (this as any).defaultTtl = config.defaultTtl;
+    }
+  }
+
+  /**
+   * Clear all cache entries
+   * @returns Promise<boolean> - Success status
+   */
+  async clearAll(): Promise<boolean> {
+    try {
+      const keys = await this.redis.keys(this.buildKey('*'));
+      if (keys.length === 0) return true;
+
+      await this.redis.del(...keys);
+      this.logger.log(`Cleared ${keys.length} cache entries`);
+      return true;
+    } catch (error) {
+      this.logger.error('Failed to clear cache:', error);
+      return false;
     }
   }
 
