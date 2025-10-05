@@ -1,7 +1,9 @@
 import { DataSource } from 'typeorm';
 import { Chat, Message, MessageRole, User } from '../../entities';
+import { Logger } from '@nestjs/common';
 
 export const seedSampleChats = async (dataSource: DataSource) => {
+  const logger = new Logger('ChatSeed');
   const userRepo = dataSource.getRepository(User);
   const chatRepo = dataSource.getRepository(Chat);
   const messageRepo = dataSource.getRepository(Message);
@@ -10,7 +12,7 @@ export const seedSampleChats = async (dataSource: DataSource) => {
   const adminUser = await userRepo.findOne({ where: { email: 'admin@genie.com' } });
 
   if (!adminUser) {
-    console.log('⚠️ Admin user not found, skipping chat seed');
+    logger.warn('Admin user not found, skipping chat seed');
     return;
   }
 
@@ -18,7 +20,7 @@ export const seedSampleChats = async (dataSource: DataSource) => {
   const existingChat = await chatRepo.findOne({ where: { userId: adminUser.id } });
 
   if (existingChat) {
-    console.log('⚠️ Sample chat already exists');
+    logger.warn('Sample chat already exists');
     return;
   }
 
@@ -60,5 +62,5 @@ export const seedSampleChats = async (dataSource: DataSource) => {
     await messageRepo.save(message);
   }
 
-  console.log('✅ Sample chat seeded successfully');
+  logger.log('Sample chat seeded successfully');
 };

@@ -1,8 +1,10 @@
 import { DataSource } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import * as bcrypt from 'bcryptjs';
+import { Logger } from '@nestjs/common';
 
 export const seedUsers = async (dataSource: DataSource) => {
+  const logger = new Logger('UserSeed');
   const userRepo = dataSource.getRepository(User);
 
   // Check if admin user already exists
@@ -18,8 +20,8 @@ export const seedUsers = async (dataSource: DataSource) => {
     });
 
     await userRepo.save(adminUser);
-    console.log('✅ Admin user seeded');
+    logger.log('Admin user seeded');
   } else {
-    console.log('⚠️ Admin user already exists');
+    logger.warn('Admin user already exists');
   }
 };

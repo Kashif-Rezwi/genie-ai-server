@@ -227,7 +227,7 @@ const chatResponse = await api.post('/ai/chat', {
   stream: false
 });
 
-console.log(chatResponse.data);
+// console.log(chatResponse.data); // Removed console.log from example
 \`\`\`
 
 ### Python

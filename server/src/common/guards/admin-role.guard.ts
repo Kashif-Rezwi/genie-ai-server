@@ -13,8 +13,9 @@ export class AdminRoleGuard implements CanActivate {
       throw new ForbiddenException('User not authenticated');
     }
 
-    // For now, check if user has admin role
-    // TODO: Implement proper role-based access control
+    // Check if user has admin role
+    // Note: This is a simplified admin check for MVP
+    // Future enhancement: Implement comprehensive role-based access control with roles table
     const isAdmin = user.role === 'admin' || user.isAdmin === true;
 
     if (!isAdmin) {

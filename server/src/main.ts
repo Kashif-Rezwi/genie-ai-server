@@ -83,6 +83,7 @@ async function bootstrap() {
 
 // Start the application
 bootstrap().catch(error => {
+  // Use console.error here as Logger may not be available during bootstrap
   console.error('Failed to start application:', error);
   process.exit(1);
 });
