@@ -8,35 +8,125 @@ import { CURRENT_API_VERSION, SUPPORTED_API_VERSIONS } from '../common/decorator
 export const swaggerConfig = new DocumentBuilder()
   .setTitle('Genie AI Server API')
   .setDescription(`
-    ## Genie AI Server API Documentation
+    # Genie AI Server API Documentation
     
-    This is the comprehensive API documentation for the Genie AI Server, providing AI-powered chat and credit management services.
+    A comprehensive, production-ready API for AI-powered chat and credit management services built with NestJS, TypeScript, and PostgreSQL.
     
-    ### Features
-    - 🤖 **AI Chat**: Interactive conversations with multiple AI models
-    - 💳 **Credit System**: Flexible credit-based usage model
-    - 🔐 **Authentication**: Secure JWT-based authentication
-    - 📊 **Analytics**: Usage tracking and performance metrics
-    - 🛡️ **Security**: Rate limiting, input validation, and sanitization
+    ## 🚀 Features
     
-    ### Authentication
+    ### Core Services
+    - **🤖 AI Chat**: Interactive conversations with multiple AI models (OpenAI, Anthropic, Groq)
+    - **💳 Credit System**: Flexible credit-based usage model with transaction tracking
+    - **🔐 Authentication**: Secure JWT-based authentication with role-based access control
+    - **📊 Analytics**: Comprehensive usage tracking and performance metrics
+    - **🛡️ Security**: Advanced rate limiting, input validation, and sanitization
+    - **⚡ Performance**: Real-time monitoring and optimization tools
+    - **📈 Scalability**: Auto-scaling and load balancing capabilities
+    
+    ### Advanced Features
+    - **🔄 Real-time Streaming**: Server-sent events for AI responses
+    - **💾 Caching**: Redis-based query and response caching
+    - **📝 Audit Logging**: Comprehensive audit trails for all operations
+    - **🔒 Security Headers**: CSP, HSTS, and other security headers
+    - **🌐 CORS Support**: Configurable cross-origin resource sharing
+    - **📱 API Versioning**: Multiple API versions with backward compatibility
+    
+    ## 🔐 Authentication
+    
     Most endpoints require authentication. Include the JWT token in the Authorization header:
     \`\`\`
     Authorization: Bearer <your-jwt-token>
     \`\`\`
     
-    ### Rate Limiting
+    ### User Roles
+    - **user**: Standard user with credit-based access
+    - **admin**: Administrative access with full permissions
+    - **premium**: Enhanced user with higher rate limits
+    
+    ## ⚡ Rate Limiting
+    
     API requests are rate limited based on user tier and credit balance:
-    - **Free Tier**: 100 requests/hour
-    - **Premium Tier**: 1000 requests/hour
+    - **Free Tier**: 100 requests/hour, 10 credits/hour
+    - **Premium Tier**: 1000 requests/hour, 100 credits/hour
     - **Admin**: Unlimited requests
     
-    ### Error Handling
-    All endpoints return standardized error responses with appropriate HTTP status codes.
+    ### Rate Limit Headers
+    All responses include rate limit information:
+    \`\`\`
+    X-RateLimit-Limit: 1000
+    X-RateLimit-Remaining: 999
+    X-RateLimit-Reset: 1640995200
+    \`\`\`
     
-    ### API Versioning
+    ## 📊 Error Handling
+    
+    All endpoints return standardized error responses with appropriate HTTP status codes:
+    
+    \`\`\`json
+    {
+      "success": false,
+      "message": "Error description",
+      "error": {
+        "code": "ERROR_CODE",
+        "details": "Additional error details",
+        "timestamp": "2024-01-01T00:00:00.000Z"
+      }
+    }
+    \`\`\`
+    
+    ### Common Error Codes
+    - **400**: Bad Request - Invalid input data
+    - **401**: Unauthorized - Invalid or missing authentication
+    - **403**: Forbidden - Insufficient permissions
+    - **404**: Not Found - Resource not found
+    - **409**: Conflict - Resource already exists
+    - **429**: Too Many Requests - Rate limit exceeded
+    - **500**: Internal Server Error - Server error
+    
+    ## 🔄 API Versioning
+    
     Current API version: **${CURRENT_API_VERSION}**
     Supported versions: ${SUPPORTED_API_VERSIONS.join(', ')}
+    
+    Version-specific endpoints are available at:
+    - \`/api/v1/...\` - Version 1 endpoints
+    - \`/api/v2/...\` - Version 2 endpoints (current)
+    
+    ## 📈 Performance Monitoring
+    
+    The API includes comprehensive performance monitoring:
+    - **Response Time Tracking**: Monitor API response times
+    - **Error Rate Monitoring**: Track error rates and types
+    - **Resource Usage**: Monitor memory, CPU, and database usage
+    - **Business Metrics**: Track user engagement and revenue metrics
+    
+    ## 🛠️ Development
+    
+    ### Local Development
+    \`\`\`bash
+    # Install dependencies
+    npm install
+    
+    # Start development server
+    npm run start:dev
+    
+    # Access API documentation
+    http://localhost:3000/api/docs
+    \`\`\`
+    
+    ### Environment Variables
+    Required environment variables for configuration:
+    - \`DATABASE_URL\`: PostgreSQL connection string
+    - \`REDIS_URL\`: Redis connection string
+    - \`JWT_SECRET\`: JWT signing secret
+    - \`NODE_ENV\`: Environment (development/production)
+    
+    ## 📚 Additional Resources
+    
+    - **API Examples**: \`/api/docs/examples\`
+    - **Health Check**: \`/api/health\`
+    - **Metrics**: \`/api/metrics\`
+    - **Performance**: \`/api/performance\`
   `)
   .setVersion(CURRENT_API_VERSION)
   .setContact(

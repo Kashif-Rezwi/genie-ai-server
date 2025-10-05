@@ -1,5 +1,22 @@
 # Genie AI Server API Examples
 
+This document provides comprehensive examples for using the Genie AI Server API. All examples assume the server is running on `http://localhost:3000` in development mode.
+
+## Table of Contents
+
+1. [Authentication Examples](#authentication-examples)
+2. [AI Chat Examples](#ai-chat-examples)
+3. [Credits Examples](#credits-examples)
+4. [Payment Examples](#payment-examples)
+5. [User Management Examples](#user-management-examples)
+6. [Monitoring Examples](#monitoring-examples)
+7. [Security Examples](#security-examples)
+8. [Performance Examples](#performance-examples)
+9. [Error Handling Examples](#error-handling-examples)
+10. [Rate Limiting Examples](#rate-limiting-examples)
+11. [Webhook Examples](#webhook-examples)
+12. [SDK Examples](#sdk-examples)
+
 ## Authentication Examples
 
 ### Register a new user
@@ -171,6 +188,52 @@ curl -X GET http://localhost:3000/api/performance/metrics \
 ```bash
 curl -X GET http://localhost:3000/api/performance/cache/stats \
   -H "Authorization: Bearer your-jwt-token"
+```
+
+## Security Examples
+
+### Get security audit logs
+```bash
+curl -X GET "http://localhost:3000/api/security/audit?page=1&limit=20" \
+  -H "Authorization: Bearer your-admin-jwt-token"
+```
+
+### Get brute force protection stats
+```bash
+curl -X GET http://localhost:3000/api/security/brute-force/stats \
+  -H "Authorization: Bearer your-admin-jwt-token"
+```
+
+### Get rate limit status
+```bash
+curl -X GET http://localhost:3000/api/security/rate-limits \
+  -H "Authorization: Bearer your-jwt-token"
+```
+
+## Performance Examples
+
+### Get database optimization report
+```bash
+curl -X GET http://localhost:3000/api/performance/database/optimize \
+  -H "Authorization: Bearer your-admin-jwt-token"
+```
+
+### Get memory optimization report
+```bash
+curl -X GET http://localhost:3000/api/performance/memory/optimize \
+  -H "Authorization: Bearer your-admin-jwt-token"
+```
+
+### Get Redis optimization report
+```bash
+curl -X GET http://localhost:3000/api/performance/redis/optimize \
+  -H "Authorization: Bearer your-admin-jwt-token"
+```
+
+### Get comprehensive performance report
+```bash
+curl -X GET http://localhost:3000/api/performance/report \
+  -H "Authorization: Bearer your-admin-jwt-token"
 ```
 
 ## Error Handling Examples

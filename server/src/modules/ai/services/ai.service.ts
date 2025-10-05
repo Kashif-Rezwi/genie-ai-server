@@ -6,6 +6,31 @@ import { CreditsService } from '../../credits/services/credits.service';
 import { MetricsService } from '../../monitoring/services/metrics.service';
 import { getModelConfig, AIModelConfig, aiProvidersConfig } from '../../../config';
 import { v4 as uuidv4 } from 'uuid';
+
+/**
+ * AI Service
+ * 
+ * Provides AI model integration and management for the Genie AI Server.
+ * Supports multiple AI providers (OpenAI, Anthropic, Groq) with unified interface.
+ * 
+ * @example
+ * ```typescript
+ * // Generate AI response
+ * const response = await aiService.generateResponse(userId, {
+ *   messages: [{ role: 'user', content: 'Hello!' }],
+ *   model: 'gpt-4',
+ *   temperature: 0.7
+ * });
+ * 
+ * // Stream AI response
+ * for await (const chunk of aiService.streamResponse(userId, request)) {
+ *   console.log(chunk.content);
+ * }
+ * ```
+ * 
+ * @since 1.0.0
+ * @author Genie AI Team
+ */
 @Injectable()
 export class AIService {
   private readonly config = aiProvidersConfig();
@@ -16,7 +41,36 @@ export class AIService {
     private readonly metricsService: MetricsService
   ) {}
 
-  // Non-streaming endpoint (collects stream internally)
+  /**
+   * Generate AI response (non-streaming)
+   * 
+   * Processes an AI request and returns a complete response. This method handles
+   * credit reservation, provider communication, and response formatting.
+   * 
+   * @param userId - The ID of the user making the request
+   * @param request - The AI request containing messages and parameters
+   * @returns Promise<AIResponseDto> - The complete AI response
+   * 
+   * @throws {BadRequestException} When the specified model is not supported
+   * @throws {InsufficientCreditsException} When user doesn't have enough credits
+   * 
+   * @example
+   * ```typescript
+   * const response = await aiService.generateResponse('user123', {
+   *   messages: [
+   *     { role: 'user', content: 'What is the capital of France?' }
+   *   ],
+   *   model: 'gpt-4',
+   *   temperature: 0.7,
+   *   maxTokens: 100
+   * });
+   * 
+   * console.log(response.content); // "The capital of France is Paris."
+   * console.log(response.creditsUsed); // 0.05
+   * ```
+   * 
+   * @since 1.0.0
+   */
   async generateResponse(userId: string, request: AIRequestDto): Promise<AIResponseDto> {
     const modelId = request.model || this.config.defaultModel;
     const modelConfig = getModelConfig(modelId);
